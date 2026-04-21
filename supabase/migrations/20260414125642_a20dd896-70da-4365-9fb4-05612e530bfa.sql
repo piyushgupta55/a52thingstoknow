@@ -1,0 +1,1 @@
+ALTER TABLE public.books ADD COLUMN author_label text DEFAULT NULL;

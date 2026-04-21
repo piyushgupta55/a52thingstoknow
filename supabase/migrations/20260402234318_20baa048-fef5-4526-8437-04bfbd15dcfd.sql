@@ -1,0 +1,1 @@
+ALTER TABLE public.chapters ADD COLUMN is_photo_chapter boolean NOT NULL DEFAULT false;

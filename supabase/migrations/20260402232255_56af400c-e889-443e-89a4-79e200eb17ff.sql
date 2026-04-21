@@ -1,0 +1,1 @@
+ALTER TABLE public.chapters ADD COLUMN photo_layout TEXT NOT NULL DEFAULT 'horizontal';
