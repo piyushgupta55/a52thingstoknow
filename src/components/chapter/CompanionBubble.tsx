@@ -106,7 +106,10 @@ const CompanionBubble = ({
   }, [chapterId, hasPulsed]);
 
   const handleOpen = () => {
-    if (onRequestEdit) onRequestEdit();
+    if (onRequestEdit) {
+      onRequestEdit();
+      return;
+    }
     setOpen(true);
   };
 
@@ -121,6 +124,11 @@ const CompanionBubble = ({
     if (!input.trim() || isLoading) return;
     send(input);
     setInput('');
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSend();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -258,7 +266,7 @@ const CompanionBubble = ({
           <div ref={bottomRef} />
         </div>
 
-        <div className="border-t border-border px-3 py-2.5 flex items-end gap-2">
+        <form onSubmit={handleSubmit} className="border-t border-border px-3 py-2.5 flex items-end gap-2">
           <textarea
             ref={inputRef}
             value={input}
@@ -274,9 +282,9 @@ const CompanionBubble = ({
             }}
           />
           <Button
+            type="submit"
             size="icon"
             variant="ghost"
-            onClick={handleSend}
             disabled={!input.trim() || isLoading}
             className="shrink-0 h-8 w-8"
           >
@@ -286,7 +294,7 @@ const CompanionBubble = ({
               <Send className="h-4 w-4" />
             )}
           </Button>
-        </div>
+        </form>
       </div>
     );
   }
