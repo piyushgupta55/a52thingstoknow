@@ -72,8 +72,8 @@ export function useCompanionChat(
             messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
             bookId,
             chapterId,
-            currentContent,
-            currentReferenceText,
+            currentContent: liveContent,
+            currentReferenceText: liveReferenceText,
           }),
           signal: abortRef.current.signal,
         });
