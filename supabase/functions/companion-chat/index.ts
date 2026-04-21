@@ -240,38 +240,51 @@ ${chapterContext}`;
       ? { type: "function", function: { name: "apply_edit" } }
       : "auto";
 
-    console.log("companion-chat: lastUserMsg=", lastUserMsg.slice(0, 120), "looksLikeEdit=", looksLikeEdit, "hasContent=", hasContent);
+    console.log(`[${reqId}] lastUserMsg=`, lastUserMsg.slice(0, 120), "looksLikeEdit=", looksLikeEdit, "hasContent=", hasContent);
+    console.log(`[${reqId}] -> calling AI gateway, model=openai/gpt-5-mini, msgs=${messages.length + 1}, tool_choice=`, typeof toolChoice === "string" ? toolChoice : "forced");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-5-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        tools,
-        tool_choice: toolChoice,
-      }),
-    });
+    const aiStart = Date.now();
+    let response: Response;
+    try {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-5-mini",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages,
+          ],
+          tools,
+          tool_choice: toolChoice,
+        }),
+      });
+    } catch (fetchErr) {
+      console.error(`[${reqId}] AI gateway fetch THREW after ${Date.now() - aiStart}ms:`, fetchErr);
+      return new Response(JSON.stringify({ error: "Could not reach AI service." }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.log(`[${reqId}] <- AI gateway status=${response.status} in ${Date.now() - aiStart}ms`);
 
     if (!response.ok) {
       if (response.status === 429) {
+        console.warn(`[${reqId}] AI 429 rate-limited`);
         return new Response(JSON.stringify({ error: "We're getting a lot of requests right now. Give it a moment and try again." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
+        console.warn(`[${reqId}] AI 402 needs credits`);
         return new Response(JSON.stringify({ error: "AI credits need a top-up. Check Settings > Workspace > Usage." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error(`[${reqId}] AI gateway error ${response.status}:`, t.slice(0, 500));
       return new Response(JSON.stringify({ error: "Something went wrong with the AI service." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -282,7 +295,7 @@ ${chapterContext}`;
     const message = choice?.message;
     const toolCalls = message?.tool_calls;
 
-    console.log("companion-chat: finish_reason=", choice?.finish_reason, "has_tool_calls=", !!toolCalls?.length, "content_len=", (message?.content || "").length);
+    console.log(`[${reqId}] AI result: finish_reason=`, choice?.finish_reason, "has_tool_calls=", !!toolCalls?.length, "content_len=", (message?.content || "").length);
 
     // Edit path: tool call returned
     if (toolCalls && toolCalls.length > 0) {
