@@ -111,6 +111,13 @@ const CompanionBubble = ({
   };
 
   const handleSend = () => {
+    console.log('[CompanionBubble] handleSend called', {
+      input,
+      isLoading,
+      bookId,
+      chapterId,
+      hasSend: typeof send,
+    });
     if (!input.trim() || isLoading) return;
     send(input);
     setInput('');
