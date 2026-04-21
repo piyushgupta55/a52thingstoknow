@@ -26,8 +26,24 @@ export function useCompanionChat(
   const abortRef = useRef<AbortController | null>(null);
   const { onApplyEdit, currentContent, currentReferenceText } = options;
 
+  // Keep latest values in refs so `send` always reads fresh content,
+  // even if the consumer recreates the options object on every render.
+  const currentContentRef = useRef(currentContent);
+  const currentReferenceTextRef = useRef(currentReferenceText);
+  const onApplyEditRef = useRef(onApplyEdit);
+  currentContentRef.current = currentContent;
+  currentReferenceTextRef.current = currentReferenceText;
+  onApplyEditRef.current = onApplyEdit;
+
   const send = useCallback(
     async (input: string) => {
+      const liveContent = currentContentRef.current ?? '';
+      const liveReferenceText = currentReferenceTextRef.current ?? '';
+      console.log('[companion-chat] sending', {
+        contentLen: liveContent.length,
+        refLen: liveReferenceText.length,
+        contentPreview: liveContent.slice(0, 80),
+      });
       if (!bookId || !input.trim()) return;
       const trimmedInput = input.trim();
 
