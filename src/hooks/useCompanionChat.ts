@@ -97,12 +97,12 @@ export function useCompanionChat(
           if (data.action === 'full_replace' && typeof data.content === 'string') {
             nextContent = data.content;
           } else if (data.action === 'replace' && typeof data.find === 'string' && typeof data.replace === 'string') {
-            const source = field === 'reference_text' ? (currentReferenceText ?? '') : (currentContent ?? '');
+            const source = field === 'reference_text' ? liveReferenceText : liveContent;
             nextContent = source.replace(data.find, data.replace);
           }
 
-          if (nextContent !== undefined && onApplyEdit) {
-            await onApplyEdit(nextContent, { summary, field });
+          if (nextContent !== undefined && onApplyEditRef.current) {
+            await onApplyEditRef.current(nextContent, { summary, field });
           }
           setMessages(prev => [...prev, { role: 'assistant', content: summary }]);
           return;
