@@ -124,7 +124,7 @@ export function useCompanionChat(
         setIsLoading(false);
       }
     },
-    [bookId, chapterId, messages, onApplyEdit, currentContent, currentReferenceText],
+    [bookId, chapterId, messages],
   );
 
   const clearMessages = useCallback(() => setMessages([]), []);
