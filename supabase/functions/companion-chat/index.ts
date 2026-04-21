@@ -55,18 +55,30 @@ WHAT YOU NEVER DO
 - Never use generic AI affirmations.`;
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const reqId = crypto.randomUUID().slice(0, 8);
+  console.log(`[${reqId}] >>> ${req.method} ${req.url}`);
+
+  if (req.method === "OPTIONS") {
+    console.log(`[${reqId}] OPTIONS preflight -> 204`);
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
     const authHeader = req.headers.get("Authorization");
+    console.log(`[${reqId}] auth header present:`, !!authHeader);
     if (!authHeader) {
+      console.warn(`[${reqId}] missing Authorization -> 401`);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { messages, bookId, chapterId, currentContent: clientContent, currentReferenceText: clientReferenceText } = await req.json();
+    const body = await req.json();
+    const { messages, bookId, chapterId, currentContent: clientContent, currentReferenceText: clientReferenceText } = body;
+    console.log(`[${reqId}] body: bookId=${bookId} chapterId=${chapterId} msgs=${messages?.length} contentLen=${(clientContent || "").length} refLen=${(clientReferenceText || "").length}`);
+
     if (!messages || !bookId) {
+      console.warn(`[${reqId}] missing fields -> 400`);
       return new Response(JSON.stringify({ error: "messages and bookId are required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
