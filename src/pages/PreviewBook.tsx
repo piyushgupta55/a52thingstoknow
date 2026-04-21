@@ -528,18 +528,20 @@ const PreviewBook = () => {
           }}
         >
           {/* 52 Companion badge on chapter spreads */}
-          {bookId && spreads[clampedSpread]?.type === 'chapter' && (
-            <CompanionBubble
-              bookId={bookId}
-              chapterId={(spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter.id}
-              chapterTitle={getChapterTitle((spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter)}
-              onRequestEdit={() => {
-                const ch = (spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter;
-                navigate(`/book/${bookId}/chapter/${ch.id}`);
-              }}
-              variant="badge"
-            />
-          )}
+          {bookId && spreads[clampedSpread]?.type === 'chapter' && (() => {
+            const ch = (spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter;
+            return (
+              <CompanionBubble
+                bookId={bookId}
+                chapterId={ch.id}
+                chapterTitle={getChapterTitle(ch)}
+                currentContent={ch.content ?? ''}
+                currentReferenceText={ch.reference_text ?? ''}
+                onRequestEdit={() => navigate(`/book/${bookId}/chapter/${ch.id}`)}
+                variant="badge"
+              />
+            );
+          })()}
 
           <div className="flex w-full" style={{ borderRadius: '3px', overflow: 'hidden' }}>
             {fullSpread ? (
