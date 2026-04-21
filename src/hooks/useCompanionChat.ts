@@ -26,8 +26,24 @@ export function useCompanionChat(
   const abortRef = useRef<AbortController | null>(null);
   const { onApplyEdit, currentContent, currentReferenceText } = options;
 
+  // Keep latest values in refs so `send` always reads fresh content,
+  // even if the consumer recreates the options object on every render.
+  const currentContentRef = useRef(currentContent);
+  const currentReferenceTextRef = useRef(currentReferenceText);
+  const onApplyEditRef = useRef(onApplyEdit);
+  currentContentRef.current = currentContent;
+  currentReferenceTextRef.current = currentReferenceText;
+  onApplyEditRef.current = onApplyEdit;
+
   const send = useCallback(
     async (input: string) => {
+      const liveContent = currentContentRef.current ?? '';
+      const liveReferenceText = currentReferenceTextRef.current ?? '';
+      console.log('[companion-chat] sending', {
+        contentLen: liveContent.length,
+        refLen: liveReferenceText.length,
+        contentPreview: liveContent.slice(0, 80),
+      });
       if (!bookId || !input.trim()) return;
       const trimmedInput = input.trim();
 
@@ -56,8 +72,8 @@ export function useCompanionChat(
             messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
             bookId,
             chapterId,
-            currentContent,
-            currentReferenceText,
+            currentContent: liveContent,
+            currentReferenceText: liveReferenceText,
           }),
           signal: abortRef.current.signal,
         });
@@ -81,12 +97,12 @@ export function useCompanionChat(
           if (data.action === 'full_replace' && typeof data.content === 'string') {
             nextContent = data.content;
           } else if (data.action === 'replace' && typeof data.find === 'string' && typeof data.replace === 'string') {
-            const source = field === 'reference_text' ? (currentReferenceText ?? '') : (currentContent ?? '');
+            const source = field === 'reference_text' ? liveReferenceText : liveContent;
             nextContent = source.replace(data.find, data.replace);
           }
 
-          if (nextContent !== undefined && onApplyEdit) {
-            await onApplyEdit(nextContent, { summary, field });
+          if (nextContent !== undefined && onApplyEditRef.current) {
+            await onApplyEditRef.current(nextContent, { summary, field });
           }
           setMessages(prev => [...prev, { role: 'assistant', content: summary }]);
           return;
@@ -108,7 +124,7 @@ export function useCompanionChat(
         setIsLoading(false);
       }
     },
-    [bookId, chapterId, messages, onApplyEdit, currentContent, currentReferenceText],
+    [bookId, chapterId, messages],
   );
 
   const clearMessages = useCallback(() => setMessages([]), []);
