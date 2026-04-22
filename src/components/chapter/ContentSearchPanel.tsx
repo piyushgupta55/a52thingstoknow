@@ -122,8 +122,12 @@ const ContentSearchPanel = ({ open, onClose, type, defaultTopic, onSelect, exclu
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/20" />
+      {/* Backdrop — click to dismiss; pointer-events-none ensures it never traps clicks
+          intended for higher-stacking-context elements like the floating chat panel. */}
+      <div
+        className="fixed inset-0 z-40 bg-black/20 pointer-events-auto"
+        onClick={onClose}
+      />
 
       {/* Panel */}
       <div
