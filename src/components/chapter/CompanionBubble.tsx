@@ -293,7 +293,8 @@ const CompanionBubble = ({
             )}
           </Button>
         </form>
-      </div>
+      </div>,
+      document.body,
     );
   }
 
