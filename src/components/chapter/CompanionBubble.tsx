@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCompanionChat, type CompanionEdit } from '@/hooks/useCompanionChat';
@@ -176,7 +177,7 @@ const CompanionBubble = ({
       ? { top: `${position.y}px`, left: `${position.x}px` }
       : { bottom: '24px', right: '24px' };
 
-    return (
+    return createPortal(
       <div
         ref={panelRef}
         className="fixed z-[9999] flex flex-col rounded-2xl shadow-2xl border border-border overflow-hidden"
@@ -292,7 +293,8 @@ const CompanionBubble = ({
             )}
           </Button>
         </form>
-      </div>
+      </div>,
+      document.body,
     );
   }
 
