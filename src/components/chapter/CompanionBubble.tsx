@@ -182,7 +182,8 @@ const CompanionBubble = ({
 
     return createPortal(
       <div
-        className="fixed z-50 flex flex-col rounded-2xl shadow-2xl border border-border overflow-hidden"
+        ref={panelRef}
+        className="fixed z-[60] flex flex-col rounded-2xl shadow-2xl border border-border overflow-hidden"
         style={{
           width: '380px',
           maxWidth: 'calc(100vw - 48px)',
