@@ -343,9 +343,11 @@ export type Database = {
           book_id: string
           chapter_id: string | null
           contributor_name: string
+          contributor_type: string
           created_at: string
           id: string
           memory_text: string
+          placed_at: string | null
           size_tag: string
           status: string
         }
@@ -353,9 +355,11 @@ export type Database = {
           book_id: string
           chapter_id?: string | null
           contributor_name: string
+          contributor_type?: string
           created_at?: string
           id?: string
           memory_text: string
+          placed_at?: string | null
           size_tag?: string
           status?: string
         }
@@ -363,9 +367,11 @@ export type Database = {
           book_id?: string
           chapter_id?: string | null
           contributor_name?: string
+          contributor_type?: string
           created_at?: string
           id?: string
           memory_text?: string
+          placed_at?: string | null
           size_tag?: string
           status?: string
         }
@@ -385,6 +391,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      memory_invites: {
+        Row: {
+          book_id: string
+          created_at: string
+          created_by: string
+          id: string
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -496,12 +529,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_invite_context: {
+        Args: { _token: string }
+        Returns: {
+          author_name: string
+          book_id: string
+          recipient_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      submit_memory_via_invite: {
+        Args: { _from_name: string; _memory_text: string; _token: string }
+        Returns: string
       }
     }
     Enums: {
