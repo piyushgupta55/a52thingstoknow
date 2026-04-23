@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import AdminSetup from "./pages/AdminSetup";
 import PreviewBook from "./pages/PreviewBook";
+import MemoryManager from "./pages/MemoryManager";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/book/:bookId/chapters" element={<ProtectedRoute><ChapterGrid /></ProtectedRoute>} />
             <Route path="/book/:bookId/chapter/:chapterId" element={<ProtectedRoute><ChapterEditor /></ProtectedRoute>} />
             <Route path="/book/:bookId/preview" element={<ProtectedRoute><PreviewBook /></ProtectedRoute>} />
+            <Route path="/book/:bookId/memories" element={<ProtectedRoute><MemoryManager /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/admin-setup" element={<ProtectedRoute><AdminSetup /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
