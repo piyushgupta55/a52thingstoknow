@@ -65,28 +65,35 @@ const MemoryManager = () => {
   useEffect(() => {
     if (!bookId) return;
     const load = async () => {
-      const { data: bookData } = await supabase
-        .from('books').select('id, recipient_name, user_id').eq('id', bookId).single();
-      setBook(bookData);
-      if (bookData) {
-        const { data: profile } = await supabase
-          .from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
-        const name = profile?.display_name || '';
-        setAuthorName(name);
-        setNewFrom(name);
-      }
-      const { data: memData } = await supabase
-        .from('memories').select('*').eq('book_id', bookId).order('created_at', { ascending: false });
-      setMemories(memData || []);
+      try {
+        const { data: bookData, error: bookErr } = await supabase
+          .from('books').select('id, recipient_name, user_id').eq('id', bookId).maybeSingle();
+        if (bookErr) console.error('[MemoryManager] book load error', bookErr);
+        setBook(bookData);
+        if (bookData) {
+          const { data: profile } = await supabase
+            .from('profiles').select('display_name').eq('user_id', bookData.user_id).maybeSingle();
+          const name = profile?.display_name || '';
+          setAuthorName(name);
+          setNewFrom(name);
+        }
+        const { data: memData, error: memErr } = await supabase
+          .from('memories').select('*').eq('book_id', bookId).order('created_at', { ascending: false });
+        if (memErr) console.error('[MemoryManager] memories load error', memErr);
+        setMemories(memData || []);
 
-      const { data: inviteData } = await supabase
-        .from('memory_invites').select('token').eq('book_id', bookId).is('revoked_at', null)
-        .order('created_at', { ascending: false }).limit(1);
-      if (inviteData && inviteData.length > 0) {
-        setInviteUrl(`${window.location.origin}/invite/${inviteData[0].token}`);
+        const { data: inviteData, error: invErr } = await supabase
+          .from('memory_invites').select('token').eq('book_id', bookId).is('revoked_at', null)
+          .order('created_at', { ascending: false }).limit(1);
+        if (invErr) console.error('[MemoryManager] invites load error', invErr);
+        if (inviteData && inviteData.length > 0) {
+          setInviteUrl(`${window.location.origin}/invite/${inviteData[0].token}`);
+        }
+      } catch (err) {
+        console.error('[MemoryManager] unexpected load error', err);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
     load();
   }, [bookId]);
