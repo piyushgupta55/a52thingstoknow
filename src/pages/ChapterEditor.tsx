@@ -1166,6 +1166,18 @@ const ChapterEditor = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Memory capture overlay (toolbar manual entry + post-complete guided flow) */}
+      {bookId && (
+        <MemoryCaptureOverlay
+          open={memoryOverlayOpen}
+          onClose={() => setMemoryOverlayOpen(false)}
+          bookId={bookId}
+          defaultFromName={authorName || 'Me'}
+          mode={memoryOverlayMode}
+          recipientName={recipientName}
+        />
+      )}
+
     </div>
   );
 };
