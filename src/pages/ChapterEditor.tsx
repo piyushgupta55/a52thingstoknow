@@ -796,6 +796,16 @@ const ChapterEditor = () => {
               </div>
             )}
 
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setMemoryOverlayMode('manual'); setMemoryOverlayOpen(true); }}
+              className="gap-1.5 text-xs h-8"
+              title="Add a memory to the pool"
+            >
+              <MessageCircleHeart className="h-3.5 w-3.5" /> Memory
+            </Button>
+
             {!previewMode && (
               <Button variant="ghost" size="sm" onClick={() => save(false)} disabled={saving} className="gap-1.5 text-xs h-8">
                 <Save className="h-3 w-3" /> {saving ? 'Saving…' : 'Save'}
