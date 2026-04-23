@@ -176,15 +176,15 @@ const BookDashboard = () => {
             <div className="space-y-1.5 text-sm">
               <div className="flex items-center gap-2">
                 <Inbox className="h-3.5 w-3.5 text-primary" />
-                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{memories.length}</span> in pool</span>
+                <span className="text-muted-foreground">
+                  Memories in pool: <span className="font-semibold text-foreground">{memories.length}</span>
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-3.5 w-3.5 text-primary" />
-                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{memoriesPlaced}</span> placed</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Circle className="h-3.5 w-3.5 text-muted-foreground/40" />
-                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{memoriesUnplaced}</span> unplaced</span>
+                <span className="text-muted-foreground">
+                  Memories placed: <span className="font-semibold text-foreground">{memoriesPlaced}</span> of {numberedChapters.length} chapters
+                </span>
               </div>
             </div>
           </div>
@@ -226,15 +226,13 @@ const BookDashboard = () => {
           <div className="lg:col-span-2 space-y-6">
             <h2 className="font-heading text-lg font-bold text-foreground">Quick Actions</h2>
             <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start gap-3 h-12" disabled>
+              <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate(`/book/${bookId}/memories`)}>
                 <Users className="h-4 w-4 text-primary" />
-                Request Memories from Family
-                <Badge variant="secondary" className="ml-auto text-[0.6rem]">Soon</Badge>
+                Invite Family to Share Memories
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-3 h-12" disabled>
+              <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate(`/book/${bookId}/memories`)}>
                 <MessageSquare className="h-4 w-4 text-primary" />
                 View Memory Pool
-                <Badge variant="secondary" className="ml-auto text-[0.6rem]">Soon</Badge>
               </Button>
               <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate(`/book/${bookId}/chapters`)}>
                 <LayoutGrid className="h-4 w-4 text-primary" />
