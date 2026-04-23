@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
-import { Save, CheckCircle, AlertTriangle, Settings2, Check, Sparkles } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, Settings2, Check, Sparkles, MessageCircleHeart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import DevotionalVerse from '@/components/chapter/DevotionalVerse';
@@ -15,6 +15,7 @@ import ChapterNav from '@/components/chapter/ChapterNav';
 import ContentSearchPanel from '@/components/chapter/ContentSearchPanel';
 import PageCanvas from '@/components/chapter/PageCanvas';
 import CompanionBubble from '@/components/chapter/CompanionBubble';
+import MemoryCaptureOverlay from '@/components/chapter/MemoryCaptureOverlay';
 import { type CompanionEdit } from '@/hooks/useCompanionChat';
 import {
   AlertDialog,
