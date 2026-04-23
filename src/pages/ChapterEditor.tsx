@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
-import { Save, CheckCircle, AlertTriangle, Settings2, Check, Sparkles } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, Settings2, Check, Sparkles, MessageCircleHeart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import DevotionalVerse from '@/components/chapter/DevotionalVerse';
@@ -15,6 +15,7 @@ import ChapterNav from '@/components/chapter/ChapterNav';
 import ContentSearchPanel from '@/components/chapter/ContentSearchPanel';
 import PageCanvas from '@/components/chapter/PageCanvas';
 import CompanionBubble from '@/components/chapter/CompanionBubble';
+import MemoryCaptureOverlay from '@/components/chapter/MemoryCaptureOverlay';
 import { type CompanionEdit } from '@/hooks/useCompanionChat';
 import {
   AlertDialog,
@@ -173,6 +174,10 @@ const ChapterEditor = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+
+  // Memory capture
+  const [memoryOverlayOpen, setMemoryOverlayOpen] = useState(false);
+  const [memoryOverlayMode, setMemoryOverlayMode] = useState<'manual' | 'guided'>('manual');
 
   // Per-chapter flag: has the author edited the wisdom text?
   const [hasEditedWisdom, setHasEditedWisdom] = useState(false);
@@ -444,6 +449,13 @@ const ChapterEditor = () => {
       setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: content || null } : c));
       setHasUnsavedChanges(false);
       toast({ title: markComplete ? 'Chapter marked complete!' : 'Draft saved!' });
+      // After Mark Complete, invite the author to share a memory
+      if (markComplete && recipientName) {
+        setTimeout(() => {
+          setMemoryOverlayMode('guided');
+          setMemoryOverlayOpen(true);
+        }, 600);
+      }
     }
     setSaving(false);
   };
@@ -783,6 +795,16 @@ const ChapterEditor = () => {
                 )}
               </div>
             )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setMemoryOverlayMode('manual'); setMemoryOverlayOpen(true); }}
+              className="gap-1.5 text-xs h-8"
+              title="Add a memory to the pool"
+            >
+              <MessageCircleHeart className="h-3.5 w-3.5" /> Memory
+            </Button>
 
             {!previewMode && (
               <Button variant="ghost" size="sm" onClick={() => save(false)} disabled={saving} className="gap-1.5 text-xs h-8">
@@ -1143,6 +1165,18 @@ const ChapterEditor = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Memory capture overlay (toolbar manual entry + post-complete guided flow) */}
+      {bookId && (
+        <MemoryCaptureOverlay
+          open={memoryOverlayOpen}
+          onClose={() => setMemoryOverlayOpen(false)}
+          bookId={bookId}
+          defaultFromName={authorName || 'Me'}
+          mode={memoryOverlayMode}
+          recipientName={recipientName}
+        />
+      )}
 
     </div>
   );
