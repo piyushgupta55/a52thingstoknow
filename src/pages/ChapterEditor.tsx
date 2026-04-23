@@ -449,6 +449,13 @@ const ChapterEditor = () => {
       setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: content || null } : c));
       setHasUnsavedChanges(false);
       toast({ title: markComplete ? 'Chapter marked complete!' : 'Draft saved!' });
+      // After Mark Complete, invite the author to share a memory
+      if (markComplete && recipientName) {
+        setTimeout(() => {
+          setMemoryOverlayMode('guided');
+          setMemoryOverlayOpen(true);
+        }, 600);
+      }
     }
     setSaving(false);
   };
