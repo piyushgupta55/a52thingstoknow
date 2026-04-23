@@ -175,6 +175,10 @@ const ChapterEditor = () => {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
+  // Memory capture
+  const [memoryOverlayOpen, setMemoryOverlayOpen] = useState(false);
+  const [memoryOverlayMode, setMemoryOverlayMode] = useState<'manual' | 'guided'>('manual');
+
   // Per-chapter flag: has the author edited the wisdom text?
   const [hasEditedWisdom, setHasEditedWisdom] = useState(false);
 
