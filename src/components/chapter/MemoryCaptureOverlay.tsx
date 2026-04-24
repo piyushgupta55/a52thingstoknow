@@ -15,43 +15,48 @@ const sizeFromText = (text: string): 'small' | 'medium' | 'full' => {
   return 'full';
 };
 
+const pronounFromGender = (gender?: string): 'him' | 'her' | 'them' => {
+  if (!gender) return 'them';
+  const g = gender.toLowerCase();
+  if (g.includes('girl') || g.includes('woman') || g === 'female') return 'her';
+  if (g.includes('boy') || g.includes('man') || g === 'male') return 'him';
+  return 'them';
+};
+
 interface Props {
   open: boolean;
   onClose: () => void;
   bookId: string;
+  /** Current chapter id — required to support "Place in this chapter" from the toolbar */
+  chapterId?: string;
   defaultFromName: string;
   /**
-   * 'manual' — toolbar overlay: From + textarea + Add to pool
-   * 'guided' — post-completion AI flow: scripted prompts, up to 3 memories
+   * 'manual' — toolbar overlay: From + textarea + Add to pool / Place in this chapter
+   * 'guided' — post-completion AI flow: 1 prompt, then "Want to add another?" (max 2)
    */
   mode: 'manual' | 'guided';
   recipientName?: string;
+  recipientGender?: string;
   onSaved?: () => void;
 }
-
-const PROMPTS = [
-  (name: string) =>
-    `Nice work on that chapter. While ${name} is on your mind — tell me one thing you remember about them. It doesn't have to be long. Just a moment.`,
-  () => `That's a keeper. One more — do you have a funny one?`,
-  () => `One last one if it comes to you — anything that made you proud, or quiet, or surprised.`,
-];
-const FAREWELL =
-  `These will find their way into the book wherever there's space. You can always add more from your dashboard anytime.`;
 
 const MemoryCaptureOverlay = ({
   open,
   onClose,
   bookId,
+  chapterId,
   defaultFromName,
   mode,
   recipientName = 'them',
+  recipientGender,
   onSaved,
 }: Props) => {
   const [fromName, setFromName] = useState(defaultFromName);
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   // Guided-mode state
-  const [step, setStep] = useState(0); // 0..2 = prompt index, 3 = farewell
+  // 'prompt' = show textarea, 'ask-another' = Yes/No, 'farewell' = closing line
+  const [stage, setStage] = useState<'prompt' | 'ask-another' | 'farewell'>('prompt');
   const [savedCount, setSavedCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -60,7 +65,7 @@ const MemoryCaptureOverlay = ({
       setFromName(defaultFromName);
       setText('');
       setSaving(false);
-      setStep(0);
+      setStage('prompt');
       setSavedCount(0);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
@@ -68,16 +73,24 @@ const MemoryCaptureOverlay = ({
 
   if (!open) return null;
 
-  const saveMemory = async (): Promise<boolean> => {
+  const pronoun = pronounFromGender(recipientGender);
+
+  const PROMPT = `Nice work on that chapter. While ${recipientName} is on your mind — tell me one thing you remember about ${pronoun}. It doesn't have to be long. Just a moment.`;
+  const FAREWELL = `These will find their way into the book wherever there's space. You can always add more from your dashboard anytime.`;
+
+  const saveMemory = async (placeInChapter = false): Promise<boolean> => {
     if (!text.trim() || !fromName.trim()) return false;
     setSaving(true);
+    const shouldPlace = placeInChapter && !!chapterId;
     const { error } = await supabase.from('memories').insert({
       book_id: bookId,
       contributor_name: fromName.trim(),
       contributor_type: 'author',
       memory_text: text.trim(),
       size_tag: sizeFromText(text),
-      status: 'unplaced',
+      status: shouldPlace ? 'placed' : 'unplaced',
+      chapter_id: shouldPlace ? chapterId : null,
+      placed_at: shouldPlace ? new Date().toISOString() : null,
     });
     setSaving(false);
     if (error) {
@@ -88,37 +101,41 @@ const MemoryCaptureOverlay = ({
     return true;
   };
 
-  const handleManualSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const ok = await saveMemory();
+  const handleAddToPool = async () => {
+    const ok = await saveMemory(false);
     if (ok) {
       toast({ title: 'Memory added to pool' });
       onClose();
     }
   };
 
+  const handlePlaceHere = async () => {
+    const ok = await saveMemory(true);
+    if (ok) {
+      toast({ title: 'Memory placed in this chapter' });
+      onClose();
+    }
+  };
+
   const handleGuidedSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = await saveMemory();
+    const ok = await saveMemory(false);
     if (!ok) return;
     const nextCount = savedCount + 1;
     setSavedCount(nextCount);
     setText('');
-    if (nextCount >= 3) {
-      setStep(3);
+    if (nextCount >= 2) {
+      // Already at max — go straight to farewell
+      setStage('farewell');
       return;
     }
-    setStep(s => s + 1);
-    setTimeout(() => inputRef.current?.focus(), 50);
+    setStage('ask-another');
   };
 
-  const handleSkipGuided = () => {
-    if (step >= 1 && savedCount >= 1) {
-      // After at least one memory, allow finishing early
-      setStep(3);
-    } else {
-      onClose();
-    }
+  const handleAnotherYes = () => {
+    setStage('prompt');
+    setText('');
+    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const titleText =
@@ -146,7 +163,7 @@ const MemoryCaptureOverlay = ({
         </div>
 
         {mode === 'manual' && (
-          <form onSubmit={handleManualSubmit} className="p-5 space-y-4">
+          <div className="p-5 space-y-4">
             <div>
               <Label htmlFor="mc-from" className="text-xs uppercase tracking-wider text-muted-foreground">From</Label>
               <Input
@@ -171,18 +188,32 @@ const MemoryCaptureOverlay = ({
                 className="mt-1"
               />
             </div>
-            <div className="flex gap-2 justify-end">
+            <div className="flex flex-wrap gap-2 justify-end">
               <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
-              <Button type="submit" disabled={saving || !text.trim() || !fromName.trim()}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddToPool}
+                disabled={saving || !text.trim() || !fromName.trim()}
+              >
                 {saving ? <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Saving…</> : 'Add to pool'}
               </Button>
+              {chapterId && (
+                <Button
+                  type="button"
+                  onClick={handlePlaceHere}
+                  disabled={saving || !text.trim() || !fromName.trim()}
+                >
+                  {saving ? <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Saving…</> : 'Place in this chapter'}
+                </Button>
+              )}
             </div>
-          </form>
+          </div>
         )}
 
         {mode === 'guided' && (
           <div className="p-5 space-y-4">
-            {step < 3 ? (
+            {stage === 'prompt' && (
               <>
                 <div
                   className="rounded-xl px-4 py-3 text-sm leading-relaxed"
@@ -192,7 +223,7 @@ const MemoryCaptureOverlay = ({
                     fontFamily: 'var(--font-body)',
                   }}
                 >
-                  {PROMPTS[step](recipientName)}
+                  {PROMPT}
                 </div>
                 <form onSubmit={handleGuidedSubmit} className="space-y-3">
                   <Textarea
@@ -205,23 +236,48 @@ const MemoryCaptureOverlay = ({
                   <div className="flex items-center justify-between gap-2">
                     <button
                       type="button"
-                      onClick={handleSkipGuided}
+                      onClick={onClose}
                       className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {savedCount >= 1 ? 'Done for now' : 'Maybe later'}
                     </button>
                     <Button type="submit" disabled={saving || !text.trim()}>
-                      {saving ? <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Saving…</> : 'Save & continue'}
+                      {saving ? <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Saving…</> : 'Save memory'}
                     </Button>
                   </div>
-                  {savedCount > 0 && (
-                    <p className="text-[0.65rem] uppercase tracking-wider text-muted-foreground/60 text-center">
-                      {savedCount} saved · {3 - savedCount} more if you'd like
-                    </p>
-                  )}
                 </form>
               </>
-            ) : (
+            )}
+
+            {stage === 'ask-another' && (
+              <>
+                <div
+                  className="rounded-xl px-4 py-3 text-sm leading-relaxed"
+                  style={{
+                    background: 'hsl(var(--secondary))',
+                    color: 'hsl(var(--foreground))',
+                    fontFamily: 'var(--font-body)',
+                  }}
+                >
+                  Want to add another?
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Done for now
+                  </button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setStage('farewell')}>No</Button>
+                    <Button onClick={handleAnotherYes}>Yes</Button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {stage === 'farewell' && (
               <>
                 <div
                   className="rounded-xl px-4 py-3 text-sm leading-relaxed"
