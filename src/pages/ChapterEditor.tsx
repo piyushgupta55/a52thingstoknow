@@ -1172,9 +1172,11 @@ const ChapterEditor = () => {
           open={memoryOverlayOpen}
           onClose={() => setMemoryOverlayOpen(false)}
           bookId={bookId}
+          chapterId={chapterId}
           defaultFromName={authorName || 'Me'}
           mode={memoryOverlayMode}
           recipientName={recipientName}
+          recipientGender={recipientGender}
         />
       )}
 
