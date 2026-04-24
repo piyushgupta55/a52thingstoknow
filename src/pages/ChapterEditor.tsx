@@ -11,6 +11,7 @@ import DevotionalQuote from '@/components/chapter/DevotionalQuote';
 import PhotoUploadZone from '@/components/chapter/PhotoUploadZone';
 import TemplateSelector, { type ChapterTemplate } from '@/components/chapter/TemplateSelector';
 import MemoryPlaceholder from '@/components/chapter/MemoryPlaceholder';
+import PlacedMemory from '@/components/chapter/PlacedMemory';
 import ChapterNav from '@/components/chapter/ChapterNav';
 import ContentSearchPanel from '@/components/chapter/ContentSearchPanel';
 import PageCanvas from '@/components/chapter/PageCanvas';
