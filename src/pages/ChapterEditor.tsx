@@ -170,6 +170,7 @@ const ChapterEditor = () => {
   const [allChapters, setAllChapters] = useState<{ id: string; chapter_number: number; title: string; status: string; created_at: string; updated_at: string; content: string | null; verse_id: string | null; quote_id: string | null; bible_verse_text: string | null; quote_text: string | null; chapter_template: string; photo_urls?: string[] }[]>([]);
   const [photoChapterNums, setPhotoChapterNums] = useState<Set<number>>(new Set());
   const [memoryCountsByChapter, setMemoryCountsByChapter] = useState<Record<string, number>>({});
+  const [placedMemories, setPlacedMemories] = useState<{ id: string; memory_text: string; contributor_name: string }[]>([]);
 
   // Unsaved changes tracking
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
