@@ -491,20 +491,42 @@ const ChapterEditor = () => {
     toast({ title: 'Change applied', description: edit.summary });
   }, [chapterId, toast]);
 
-  // Navigation with unsaved changes check
-  const tryNavigate = (targetChapterId: string) => {
-    if (hasUnsavedChanges) {
-      setPendingNavigation(targetChapterId);
+  // Block ANY in-app navigation away from this chapter editor while there are unsaved changes
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // When the blocker triggers, surface the dialog
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
       setShowUnsavedDialog(true);
-    } else {
-      navigate(`/book/${bookId}/chapter/${targetChapterId}`);
     }
+  }, [blocker.state]);
+
+  // Warn on tab close / hard refresh
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges]);
+
+  // Used by ChapterNav arrows — relies on blocker for the prompt
+  const tryNavigate = (targetChapterId: string) => {
+    navigate(`/book/${bookId}/chapter/${targetChapterId}`);
   };
 
   const handleDialogSaveAndContinue = async () => {
     await save(false);
     setShowUnsavedDialog(false);
-    if (pendingNavigation) {
+    if (blocker.state === 'blocked') {
+      blocker.proceed();
+    } else if (pendingNavigation) {
       navigate(`/book/${bookId}/chapter/${pendingNavigation}`);
       setPendingNavigation(null);
     }
@@ -513,9 +535,19 @@ const ChapterEditor = () => {
   const handleDialogDiscard = () => {
     setHasUnsavedChanges(false);
     setShowUnsavedDialog(false);
-    if (pendingNavigation) {
+    if (blocker.state === 'blocked') {
+      blocker.proceed();
+    } else if (pendingNavigation) {
       navigate(`/book/${bookId}/chapter/${pendingNavigation}`);
       setPendingNavigation(null);
+    }
+  };
+
+  const handleDialogCancel = () => {
+    setShowUnsavedDialog(false);
+    setPendingNavigation(null);
+    if (blocker.state === 'blocked') {
+      blocker.reset();
     }
   };
 
