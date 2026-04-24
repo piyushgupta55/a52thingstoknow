@@ -272,7 +272,7 @@ const ChapterEditor = () => {
         supabase.from('chapters').select('*').eq('id', chapterId).single(),
         supabase.from('chapters').select('id, chapter_number, title, status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls').eq('book_id', bookId).order('chapter_number'),
         supabase.from('books').select('recipient_name, recipient_gender, user_id, author_label').eq('id', bookId).single(),
-        supabase.from('memories').select('chapter_id').eq('book_id', bookId),
+        supabase.from('memories').select('id, chapter_id, memory_text, contributor_name').eq('book_id', bookId),
         supabase.from('app_settings').select('value').eq('key', 'photo_chapter_cap').single(),
         supabase.from('chapter_templates').select('chapter_number, is_photo_chapter, gender, title'),
       ]);
