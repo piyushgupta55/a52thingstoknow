@@ -346,6 +346,11 @@ const ChapterEditor = () => {
         const counts: Record<string, number> = {};
         memoriesData.forEach((m: any) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
         setMemoryCountsByChapter(counts);
+        setPlacedMemories(
+          memoriesData
+            .filter((m: any) => m.chapter_id === chapterId)
+            .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+        );
       }
       if (allCh) {
         const withCorrectTitles = allCh.map((c: any) =>
