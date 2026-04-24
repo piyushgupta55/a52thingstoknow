@@ -931,7 +931,14 @@ const ChapterEditor = () => {
                 <div className="mb-6">{renderParagraphs(previewSplit.page2, false, true, 'reference')}</div>
               )}
               {content && <div className="min-h-[300px]">{renderParagraphs(content, true, false)}</div>}
-              {showMemoryPlaceholder && <MemoryPlaceholder recipientName={recipientName} realistic />}
+              {placedMemories.length > 0 && (
+                <>
+                  {placedMemories.map(m => (
+                    <PlacedMemory key={m.id} text={m.memory_text} fromName={m.contributor_name} />
+                  ))}
+                </>
+              )}
+              {showMemoryPlaceholder && placedMemories.length === 0 && <MemoryPlaceholder recipientName={recipientName} realistic />}
             </PageCanvas>
           </>
           )
