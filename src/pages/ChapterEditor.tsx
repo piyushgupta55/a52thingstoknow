@@ -1183,23 +1183,23 @@ const ChapterEditor = () => {
       />
 
       {/* Unsaved changes dialog */}
-      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+      <AlertDialog
+        open={showUnsavedDialog}
+        onOpenChange={(open) => { if (!open) handleDialogCancel(); }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>You have unsaved changes to this chapter.</AlertDialogTitle>
+            <AlertDialogTitle>You have unsaved changes.</AlertDialogTitle>
             <AlertDialogDescription>
-              Would you like to save before leaving?
+              Save before leaving?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setShowUnsavedDialog(false); setPendingNavigation(null); }}>
-              Cancel
-            </AlertDialogCancel>
             <Button variant="outline" onClick={handleDialogDiscard}>
-              Discard
+              Leave without saving
             </Button>
             <AlertDialogAction onClick={handleDialogSaveAndContinue}>
-              Save & Continue
+              Save &amp; leave
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1216,6 +1216,23 @@ const ChapterEditor = () => {
           mode={memoryOverlayMode}
           recipientName={recipientName}
           recipientGender={recipientGender}
+          onSaved={async () => {
+            // Refresh placed memories so a freshly-placed memory shows up immediately
+            const { data } = await supabase
+              .from('memories')
+              .select('id, chapter_id, memory_text, contributor_name')
+              .eq('book_id', bookId);
+            if (data) {
+              const counts: Record<string, number> = {};
+              data.forEach((m: any) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
+              setMemoryCountsByChapter(counts);
+              setPlacedMemories(
+                data
+                  .filter((m: any) => m.chapter_id === chapterId)
+                  .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+              );
+            }
+          }}
         />
       )}
 
