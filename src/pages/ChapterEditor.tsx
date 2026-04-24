@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import DevotionalQuote from '@/components/chapter/DevotionalQuote';
 import PhotoUploadZone from '@/components/chapter/PhotoUploadZone';
 import TemplateSelector, { type ChapterTemplate } from '@/components/chapter/TemplateSelector';
 import MemoryPlaceholder from '@/components/chapter/MemoryPlaceholder';
+import PlacedMemory from '@/components/chapter/PlacedMemory';
 import ChapterNav from '@/components/chapter/ChapterNav';
 import ContentSearchPanel from '@/components/chapter/ContentSearchPanel';
 import PageCanvas from '@/components/chapter/PageCanvas';
@@ -169,6 +170,7 @@ const ChapterEditor = () => {
   const [allChapters, setAllChapters] = useState<{ id: string; chapter_number: number; title: string; status: string; created_at: string; updated_at: string; content: string | null; verse_id: string | null; quote_id: string | null; bible_verse_text: string | null; quote_text: string | null; chapter_template: string; photo_urls?: string[] }[]>([]);
   const [photoChapterNums, setPhotoChapterNums] = useState<Set<number>>(new Set());
   const [memoryCountsByChapter, setMemoryCountsByChapter] = useState<Record<string, number>>({});
+  const [placedMemories, setPlacedMemories] = useState<{ id: string; memory_text: string; contributor_name: string }[]>([]);
 
   // Unsaved changes tracking
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -270,7 +272,7 @@ const ChapterEditor = () => {
         supabase.from('chapters').select('*').eq('id', chapterId).single(),
         supabase.from('chapters').select('id, chapter_number, title, status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls').eq('book_id', bookId).order('chapter_number'),
         supabase.from('books').select('recipient_name, recipient_gender, user_id, author_label').eq('id', bookId).single(),
-        supabase.from('memories').select('chapter_id').eq('book_id', bookId),
+        supabase.from('memories').select('id, chapter_id, memory_text, contributor_name').eq('book_id', bookId),
         supabase.from('app_settings').select('value').eq('key', 'photo_chapter_cap').single(),
         supabase.from('chapter_templates').select('chapter_number, is_photo_chapter, gender, title'),
       ]);
@@ -344,6 +346,11 @@ const ChapterEditor = () => {
         const counts: Record<string, number> = {};
         memoriesData.forEach((m: any) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
         setMemoryCountsByChapter(counts);
+        setPlacedMemories(
+          memoriesData
+            .filter((m: any) => m.chapter_id === chapterId)
+            .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+        );
       }
       if (allCh) {
         const withCorrectTitles = allCh.map((c: any) =>
@@ -484,20 +491,42 @@ const ChapterEditor = () => {
     toast({ title: 'Change applied', description: edit.summary });
   }, [chapterId, toast]);
 
-  // Navigation with unsaved changes check
-  const tryNavigate = (targetChapterId: string) => {
-    if (hasUnsavedChanges) {
-      setPendingNavigation(targetChapterId);
+  // Block ANY in-app navigation away from this chapter editor while there are unsaved changes
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // When the blocker triggers, surface the dialog
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
       setShowUnsavedDialog(true);
-    } else {
-      navigate(`/book/${bookId}/chapter/${targetChapterId}`);
     }
+  }, [blocker.state]);
+
+  // Warn on tab close / hard refresh
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges]);
+
+  // Used by ChapterNav arrows — relies on blocker for the prompt
+  const tryNavigate = (targetChapterId: string) => {
+    navigate(`/book/${bookId}/chapter/${targetChapterId}`);
   };
 
   const handleDialogSaveAndContinue = async () => {
     await save(false);
     setShowUnsavedDialog(false);
-    if (pendingNavigation) {
+    if (blocker.state === 'blocked') {
+      blocker.proceed();
+    } else if (pendingNavigation) {
       navigate(`/book/${bookId}/chapter/${pendingNavigation}`);
       setPendingNavigation(null);
     }
@@ -506,9 +535,19 @@ const ChapterEditor = () => {
   const handleDialogDiscard = () => {
     setHasUnsavedChanges(false);
     setShowUnsavedDialog(false);
-    if (pendingNavigation) {
+    if (blocker.state === 'blocked') {
+      blocker.proceed();
+    } else if (pendingNavigation) {
       navigate(`/book/${bookId}/chapter/${pendingNavigation}`);
       setPendingNavigation(null);
+    }
+  };
+
+  const handleDialogCancel = () => {
+    setShowUnsavedDialog(false);
+    setPendingNavigation(null);
+    if (blocker.state === 'blocked') {
+      blocker.reset();
     }
   };
 
@@ -873,7 +912,14 @@ const ChapterEditor = () => {
               {referenceText && (
                 <div className="my-8">{renderParagraphs(previewSplit.page1, true, false, 'reference')}</div>
               )}
-              {showMemoryPlaceholder && !previewSplit.page2 && <MemoryPlaceholder recipientName={recipientName} realistic />}
+              {placedMemories.length > 0 && !previewSplit.page2 && (
+                <>
+                  {placedMemories.map(m => (
+                    <PlacedMemory key={m.id} text={m.memory_text} fromName={m.contributor_name} />
+                  ))}
+                </>
+              )}
+              {showMemoryPlaceholder && placedMemories.length === 0 && !previewSplit.page2 && <MemoryPlaceholder recipientName={recipientName} realistic />}
             </PageCanvas>
 
             <div style={{ height: '32px' }} />
@@ -885,7 +931,14 @@ const ChapterEditor = () => {
                 <div className="mb-6">{renderParagraphs(previewSplit.page2, false, true, 'reference')}</div>
               )}
               {content && <div className="min-h-[300px]">{renderParagraphs(content, true, false)}</div>}
-              {showMemoryPlaceholder && <MemoryPlaceholder recipientName={recipientName} realistic />}
+              {placedMemories.length > 0 && (
+                <>
+                  {placedMemories.map(m => (
+                    <PlacedMemory key={m.id} text={m.memory_text} fromName={m.contributor_name} />
+                  ))}
+                </>
+              )}
+              {showMemoryPlaceholder && placedMemories.length === 0 && <MemoryPlaceholder recipientName={recipientName} realistic />}
             </PageCanvas>
           </>
           )
@@ -1078,7 +1131,14 @@ const ChapterEditor = () => {
               </div>
             </div>
 
-            {showMemoryPlaceholder && <MemoryPlaceholder recipientName={recipientName} realistic />}
+            {placedMemories.length > 0 && (
+              <>
+                {placedMemories.map(m => (
+                  <PlacedMemory key={m.id} text={m.memory_text} fromName={m.contributor_name} />
+                ))}
+              </>
+            )}
+            {showMemoryPlaceholder && placedMemories.length === 0 && <MemoryPlaceholder recipientName={recipientName} realistic />}
 
 
             {/* Photo quality warning */}
@@ -1144,23 +1204,23 @@ const ChapterEditor = () => {
       />
 
       {/* Unsaved changes dialog */}
-      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+      <AlertDialog
+        open={showUnsavedDialog}
+        onOpenChange={(open) => { if (!open) handleDialogCancel(); }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>You have unsaved changes to this chapter.</AlertDialogTitle>
+            <AlertDialogTitle>You have unsaved changes.</AlertDialogTitle>
             <AlertDialogDescription>
-              Would you like to save before leaving?
+              Save before leaving?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setShowUnsavedDialog(false); setPendingNavigation(null); }}>
-              Cancel
-            </AlertDialogCancel>
             <Button variant="outline" onClick={handleDialogDiscard}>
-              Discard
+              Leave without saving
             </Button>
             <AlertDialogAction onClick={handleDialogSaveAndContinue}>
-              Save & Continue
+              Save &amp; leave
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1177,6 +1237,23 @@ const ChapterEditor = () => {
           mode={memoryOverlayMode}
           recipientName={recipientName}
           recipientGender={recipientGender}
+          onSaved={async () => {
+            // Refresh placed memories so a freshly-placed memory shows up immediately
+            const { data } = await supabase
+              .from('memories')
+              .select('id, chapter_id, memory_text, contributor_name')
+              .eq('book_id', bookId);
+            if (data) {
+              const counts: Record<string, number> = {};
+              data.forEach((m: any) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
+              setMemoryCountsByChapter(counts);
+              setPlacedMemories(
+                data
+                  .filter((m: any) => m.chapter_id === chapterId)
+                  .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+              );
+            }
+          }}
         />
       )}
 
