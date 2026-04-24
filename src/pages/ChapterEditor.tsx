@@ -1131,7 +1131,14 @@ const ChapterEditor = () => {
               </div>
             </div>
 
-            {showMemoryPlaceholder && <MemoryPlaceholder recipientName={recipientName} realistic />}
+            {placedMemories.length > 0 && (
+              <>
+                {placedMemories.map(m => (
+                  <PlacedMemory key={m.id} text={m.memory_text} fromName={m.contributor_name} />
+                ))}
+              </>
+            )}
+            {showMemoryPlaceholder && placedMemories.length === 0 && <MemoryPlaceholder recipientName={recipientName} realistic />}
 
 
             {/* Photo quality warning */}
