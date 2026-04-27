@@ -493,7 +493,7 @@ const ChapterEditor = () => {
 
   // Stub blocker — react-router v6 useBlocker requires a Data Router (createBrowserRouter),
   // which this app doesn't use. We rely on `pendingNavigation` + `beforeunload` instead.
-  const blocker = { state: 'unblocked' as const, proceed: () => {}, reset: () => {} };
+  const blocker: { state: string; proceed: () => void; reset: () => void } = { state: 'unblocked', proceed: () => {}, reset: () => {} };
 
   // Warn on tab close / hard refresh
   useEffect(() => {
