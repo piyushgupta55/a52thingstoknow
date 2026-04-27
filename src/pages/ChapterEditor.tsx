@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate, useBlocker } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
@@ -491,18 +491,9 @@ const ChapterEditor = () => {
     toast({ title: 'Change applied', description: edit.summary });
   }, [chapterId, toast]);
 
-  // Block ANY in-app navigation away from this chapter editor while there are unsaved changes
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
-  );
-
-  // When the blocker triggers, surface the dialog
-  useEffect(() => {
-    if (blocker.state === 'blocked') {
-      setShowUnsavedDialog(true);
-    }
-  }, [blocker.state]);
+  // Stub blocker — react-router v6 useBlocker requires a Data Router (createBrowserRouter),
+  // which this app doesn't use. We rely on `pendingNavigation` + `beforeunload` instead.
+  const blocker = { state: 'unblocked' as const, proceed: () => {}, reset: () => {} };
 
   // Warn on tab close / hard refresh
   useEffect(() => {
