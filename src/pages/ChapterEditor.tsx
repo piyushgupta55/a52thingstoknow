@@ -12,6 +12,8 @@ import PhotoUploadZone from '@/components/chapter/PhotoUploadZone';
 import TemplateSelector, { type ChapterTemplate } from '@/components/chapter/TemplateSelector';
 import MemoryPlaceholder from '@/components/chapter/MemoryPlaceholder';
 import PlacedMemory from '@/components/chapter/PlacedMemory';
+import MemorySuggestion from '@/components/chapter/MemorySuggestion';
+import { getPage2Status } from '@/lib/page2Status';
 import ChapterNav from '@/components/chapter/ChapterNav';
 import ContentSearchPanel from '@/components/chapter/ContentSearchPanel';
 import PageCanvas from '@/components/chapter/PageCanvas';
@@ -168,6 +170,9 @@ const ChapterEditor = () => {
   const [photoChapterNums, setPhotoChapterNums] = useState<Set<number>>(new Set());
   const [memoryCountsByChapter, setMemoryCountsByChapter] = useState<Record<string, number>>({});
   const [placedMemories, setPlacedMemories] = useState<{ id: string; memory_text: string; contributor_name: string }[]>([]);
+  const [unplacedMemories, setUnplacedMemories] = useState<{ id: string; memory_text: string; contributor_name: string }[]>([]);
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [overflowConfirm, setOverflowConfirm] = useState<{ memoryId: string } | null>(null);
 
   // Unsaved changes tracking
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -269,7 +274,7 @@ const ChapterEditor = () => {
         supabase.from('chapters').select('*').eq('id', chapterId).single(),
         supabase.from('chapters').select('id, chapter_number, title, status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls').eq('book_id', bookId).order('chapter_number'),
         supabase.from('books').select('recipient_name, recipient_gender, user_id, author_label').eq('id', bookId).single(),
-        supabase.from('memories').select('id, chapter_id, memory_text, contributor_name').eq('book_id', bookId),
+        supabase.from('memories').select('id, chapter_id, memory_text, contributor_name, placed_at, created_at').eq('book_id', bookId).order('placed_at', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
         supabase.from('app_settings').select('value').eq('key', 'photo_chapter_cap').single(),
         supabase.from('chapter_templates').select('chapter_number, is_photo_chapter, gender, title'),
       ]);
@@ -348,6 +353,12 @@ const ChapterEditor = () => {
             .filter((m: any) => m.chapter_id === chapterId)
             .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
         );
+        setUnplacedMemories(
+          memoriesData
+            .filter((m: any) => !m.chapter_id)
+            .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+        );
+        setSuggestionIndex(0);
       }
       if (allCh) {
         const withCorrectTitles = allCh.map((c: any) =>
@@ -558,6 +569,43 @@ const ChapterEditor = () => {
   const handleDialogCancel = () => {
     setShowUnsavedDialog(false);
     setPendingNavigation(null);
+  };
+
+  // —— Memory placement from in-editor suggestion ——
+  const placeSuggestionMemory = async (memoryId: string) => {
+    if (!chapterId) return;
+    const { error } = await supabase
+      .from('memories')
+      .update({
+        chapter_id: chapterId,
+        status: 'placed',
+        placed_at: new Date().toISOString(),
+      })
+      .eq('id', memoryId);
+    if (error) {
+      toast({ title: 'Could not place memory', description: error.message, variant: 'destructive' });
+      return;
+    }
+    // Optimistic local update
+    const placed = unplacedMemories.find(m => m.id === memoryId);
+    if (placed) {
+      setPlacedMemories(prev => [...prev, placed]);
+      setUnplacedMemories(prev => prev.filter(m => m.id !== memoryId));
+    }
+    setSuggestionIndex(0);
+    setHasUnsavedChanges(true);
+    toast({ title: 'Memory placed — remember to Save Draft.' });
+  };
+
+  const handlePlaceSuggestion = (memoryId: string) => {
+    // Overflow check: would adding this memory push the chapter past budget?
+    const projectedMemoryCount = placedMemories.length + 1;
+    const projected = refWords + contentWords + (paragraphBreaks * 3) + (projectedMemoryCount * 40);
+    if (projected > budget) {
+      setOverflowConfirm({ memoryId });
+      return;
+    }
+    placeSuggestionMemory(memoryId);
   };
 
   const [photoWarning, setPhotoWarning] = useState<string | null>(null);
@@ -1117,6 +1165,23 @@ const ChapterEditor = () => {
             )}
             {showMemoryPlaceholder && placedMemories.length === 0 && <MemoryPlaceholder recipientName={recipientName} realistic />}
 
+            {/* Smart memory suggestion — only when chapter has room (yellow/red) */}
+            {(() => {
+              const status = getPage2Status(totalWords, template).status;
+              if (status === 'full') return null;
+              const suggestion = unplacedMemories.length > 0
+                ? unplacedMemories[suggestionIndex % unplacedMemories.length]
+                : null;
+              return (
+                <MemorySuggestion
+                  suggestion={suggestion}
+                  poolEmpty={unplacedMemories.length === 0}
+                  onPlace={() => suggestion && handlePlaceSuggestion(suggestion.id)}
+                  onShowAnother={() => setSuggestionIndex(i => i + 1)}
+                />
+              );
+            })()}
+
 
             {/* Photo quality warning */}
             {photoWarning && (
@@ -1203,6 +1268,33 @@ const ChapterEditor = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Overflow confirmation when placing a memory would exceed budget */}
+      <AlertDialog
+        open={overflowConfirm !== null}
+        onOpenChange={(open) => { if (!open) setOverflowConfirm(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Over the word limit</AlertDialogTitle>
+            <AlertDialogDescription>
+              This memory would put you over the word limit. Place it anyway?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setOverflowConfirm(null)}>No</Button>
+            <AlertDialogAction
+              onClick={() => {
+                const id = overflowConfirm?.memoryId;
+                setOverflowConfirm(null);
+                if (id) placeSuggestionMemory(id);
+              }}
+            >
+              Yes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Memory capture overlay (toolbar manual entry + post-complete guided flow) */}
       {bookId && (
         <MemoryCaptureOverlay
@@ -1215,11 +1307,13 @@ const ChapterEditor = () => {
           recipientName={recipientName}
           recipientGender={recipientGender}
           onSaved={async () => {
-            // Refresh placed memories so a freshly-placed memory shows up immediately
+            // Refresh placed + unplaced memories so freshly-placed/added items show up
             const { data } = await supabase
               .from('memories')
-              .select('id, chapter_id, memory_text, contributor_name')
-              .eq('book_id', bookId);
+              .select('id, chapter_id, memory_text, contributor_name, placed_at, created_at')
+              .eq('book_id', bookId)
+              .order('placed_at', { ascending: true, nullsFirst: false })
+              .order('created_at', { ascending: true });
             if (data) {
               const counts: Record<string, number> = {};
               data.forEach((m: any) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
@@ -1229,6 +1323,12 @@ const ChapterEditor = () => {
                   .filter((m: any) => m.chapter_id === chapterId)
                   .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
               );
+              setUnplacedMemories(
+                data
+                  .filter((m: any) => !m.chapter_id)
+                  .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+              );
+              setSuggestionIndex(0);
             }
             // A placed memory is a chapter change — author must explicitly Save Draft.
             setHasUnsavedChanges(true);
