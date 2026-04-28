@@ -214,8 +214,76 @@ const MemoryCaptureOverlay = ({
           </button>
         </div>
 
-        {mode === 'manual' && (
+        {mode === 'manual' && manualView === 'choose' && chapterId && (
+          <div className="p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Choose from pool
+              </p>
+              <button
+                type="button"
+                onClick={() => setManualView('compose')}
+                className="text-xs text-primary hover:underline"
+              >
+                + New memory
+              </button>
+            </div>
+
+            {poolLoading ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 inline animate-spin mr-2" /> Loading…
+              </div>
+            ) : pool.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                No memories in pool yet — add one below.
+              </div>
+            ) : (
+              <div className="max-h-[50vh] overflow-y-auto space-y-2 -mx-1 px-1">
+                {pool.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => placeFromPool(m.id)}
+                    disabled={placingId !== null}
+                    className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-accent/30 transition-colors p-3 disabled:opacity-50"
+                  >
+                    <p
+                      className="text-[15px] leading-snug text-foreground/90"
+                      style={{ fontFamily: "'Caveat', cursive", fontSize: '1.1rem' }}
+                    >
+                      {m.memory_text}
+                    </p>
+                    <p
+                      className="mt-1 text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground/60"
+                      style={{ fontFamily: 'var(--font-body)' }}
+                    >
+                      — {m.contributor_name}
+                      {placingId === m.id && (
+                        <span className="ml-2 normal-case tracking-normal">Placing…</span>
+                      )}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-1">
+              <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
+        {mode === 'manual' && (manualView === 'compose' || !chapterId) && (
           <div className="p-5 space-y-4">
+            {chapterId && pool.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setManualView('choose')}
+                className="text-xs text-primary hover:underline"
+              >
+                ← Choose from pool
+              </button>
+            )}
             <div>
               <Label htmlFor="mc-from" className="text-xs uppercase tracking-wider text-muted-foreground">From</Label>
               <Input
