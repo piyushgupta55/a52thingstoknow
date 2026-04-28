@@ -571,6 +571,43 @@ const ChapterEditor = () => {
     setPendingNavigation(null);
   };
 
+  // —— Memory placement from in-editor suggestion ——
+  const placeSuggestionMemory = async (memoryId: string) => {
+    if (!chapterId) return;
+    const { error } = await supabase
+      .from('memories')
+      .update({
+        chapter_id: chapterId,
+        status: 'placed',
+        placed_at: new Date().toISOString(),
+      })
+      .eq('id', memoryId);
+    if (error) {
+      toast({ title: 'Could not place memory', description: error.message, variant: 'destructive' });
+      return;
+    }
+    // Optimistic local update
+    const placed = unplacedMemories.find(m => m.id === memoryId);
+    if (placed) {
+      setPlacedMemories(prev => [...prev, placed]);
+      setUnplacedMemories(prev => prev.filter(m => m.id !== memoryId));
+    }
+    setSuggestionIndex(0);
+    setHasUnsavedChanges(true);
+    toast({ title: 'Memory placed — remember to Save Draft.' });
+  };
+
+  const handlePlaceSuggestion = (memoryId: string) => {
+    // Overflow check: would adding this memory push the chapter past budget?
+    const projectedMemoryCount = placedMemories.length + 1;
+    const projected = refWords + contentWords + (paragraphBreaks * 3) + (projectedMemoryCount * 40);
+    if (projected > budget) {
+      setOverflowConfirm({ memoryId });
+      return;
+    }
+    placeSuggestionMemory(memoryId);
+  };
+
   const [photoWarning, setPhotoWarning] = useState<string | null>(null);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
