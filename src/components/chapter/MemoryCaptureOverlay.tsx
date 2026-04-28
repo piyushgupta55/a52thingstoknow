@@ -60,6 +60,13 @@ const MemoryCaptureOverlay = ({
   const [savedCount, setSavedCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Manual-mode: pool browsing
+  // 'choose' = list of unplaced memories; 'compose' = the From + textarea form
+  const [manualView, setManualView] = useState<'choose' | 'compose'>('choose');
+  const [pool, setPool] = useState<Array<{ id: string; memory_text: string; contributor_name: string }>>([]);
+  const [poolLoading, setPoolLoading] = useState(false);
+  const [placingId, setPlacingId] = useState<string | null>(null);
+
   useEffect(() => {
     if (open) {
       setFromName(defaultFromName);
@@ -67,9 +74,33 @@ const MemoryCaptureOverlay = ({
       setSaving(false);
       setStage('prompt');
       setSavedCount(0);
+      setManualView('choose');
+      setPlacingId(null);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open, defaultFromName]);
+
+  // Load unplaced memories from the pool (manual mode only)
+  useEffect(() => {
+    if (!open || mode !== 'manual') return;
+    let cancelled = false;
+    (async () => {
+      setPoolLoading(true);
+      const { data } = await supabase
+        .from('memories')
+        .select('id, memory_text, contributor_name')
+        .eq('book_id', bookId)
+        .eq('status', 'unplaced')
+        .order('created_at', { ascending: false });
+      if (cancelled) return;
+      const items = data || [];
+      setPool(items);
+      // If pool is empty, drop straight into compose
+      if (items.length === 0) setManualView('compose');
+      setPoolLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [open, mode, bookId]);
 
   if (!open) return null;
 
