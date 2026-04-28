@@ -491,10 +491,6 @@ const ChapterEditor = () => {
     toast({ title: 'Change applied', description: edit.summary });
   }, [chapterId, toast]);
 
-  // Stub blocker — react-router v6 useBlocker requires a Data Router (createBrowserRouter),
-  // which this app doesn't use. We rely on `pendingNavigation` + `beforeunload` instead.
-  const blocker: { state: string; proceed: () => void; reset: () => void } = { state: 'unblocked', proceed: () => {}, reset: () => {} };
-
   // Warn on tab close / hard refresh
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -507,39 +503,96 @@ const ChapterEditor = () => {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsavedChanges]);
 
-  // Used by ChapterNav arrows — relies on blocker for the prompt
+  // Global in-app navigation interceptor while we have unsaved changes.
+  // We monkey-patch history.pushState/replaceState and watch popstate so that
+  // ANY navigation (Navbar links, logo, back button, chapter arrows) prompts first.
+  const hasUnsavedRef = useRef(false);
+  useEffect(() => { hasUnsavedRef.current = hasUnsavedChanges; }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    const currentPath = window.location.pathname + window.location.search;
+    const origPush = window.history.pushState;
+    const origReplace = window.history.replaceState;
+
+    // Push a sentinel state so the first Back press fires popstate (which we intercept).
+    window.history.pushState({ __chapterEditorSentinel: true }, '', currentPath);
+
+    const intercept = (target: string): boolean => {
+      // Allow same-URL navigations (no real change)
+      if (target === currentPath) return false;
+      if (!hasUnsavedRef.current) return false;
+      setPendingNavigation(target);
+      setShowUnsavedDialog(true);
+      return true;
+    };
+
+    window.history.pushState = function (data: any, unused: string, url?: string | URL | null) {
+      const target = url ? (typeof url === 'string' ? url : url.toString()) : currentPath;
+      if (intercept(target)) return;
+      return origPush.apply(this, [data, unused, url] as any);
+    };
+    window.history.replaceState = function (data: any, unused: string, url?: string | URL | null) {
+      const target = url ? (typeof url === 'string' ? url : url.toString()) : currentPath;
+      if (intercept(target)) return;
+      return origReplace.apply(this, [data, unused, url] as any);
+    };
+
+    const onPop = () => {
+      if (hasUnsavedRef.current) {
+        // Re-push sentinel so we stay on the page until user decides
+        origPush.call(window.history, { __chapterEditorSentinel: true }, '', currentPath);
+        setPendingNavigation('__BACK__');
+        setShowUnsavedDialog(true);
+      }
+    };
+    window.addEventListener('popstate', onPop);
+
+    return () => {
+      window.history.pushState = origPush;
+      window.history.replaceState = origReplace;
+      window.removeEventListener('popstate', onPop);
+    };
+  }, [chapterId]);
+
+  // Used by ChapterNav arrows
   const tryNavigate = (targetChapterId: string) => {
-    navigate(`/book/${bookId}/chapter/${targetChapterId}`);
+    const target = `/book/${bookId}/chapter/${targetChapterId}`;
+    if (hasUnsavedChanges) {
+      setPendingNavigation(target);
+      setShowUnsavedDialog(true);
+      return;
+    }
+    navigate(target);
+  };
+
+  const proceedPendingNav = () => {
+    const target = pendingNavigation;
+    setPendingNavigation(null);
+    if (!target) return;
+    if (target === '__BACK__') {
+      // Use raw history to bypass our patched pushState
+      window.history.back();
+    } else {
+      navigate(target);
+    }
   };
 
   const handleDialogSaveAndContinue = async () => {
     await save(false);
     setShowUnsavedDialog(false);
-    if (blocker.state === 'blocked') {
-      blocker.proceed();
-    } else if (pendingNavigation) {
-      navigate(`/book/${bookId}/chapter/${pendingNavigation}`);
-      setPendingNavigation(null);
-    }
+    proceedPendingNav();
   };
 
   const handleDialogDiscard = () => {
     setHasUnsavedChanges(false);
+    hasUnsavedRef.current = false;
     setShowUnsavedDialog(false);
-    if (blocker.state === 'blocked') {
-      blocker.proceed();
-    } else if (pendingNavigation) {
-      navigate(`/book/${bookId}/chapter/${pendingNavigation}`);
-      setPendingNavigation(null);
-    }
+    proceedPendingNav();
   };
 
   const handleDialogCancel = () => {
     setShowUnsavedDialog(false);
     setPendingNavigation(null);
-    if (blocker.state === 'blocked') {
-      blocker.reset();
-    }
   };
 
   const [photoWarning, setPhotoWarning] = useState<string | null>(null);
