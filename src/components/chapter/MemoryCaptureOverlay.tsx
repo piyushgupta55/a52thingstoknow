@@ -148,6 +148,27 @@ const MemoryCaptureOverlay = ({
     }
   };
 
+  const placeFromPool = async (memoryId: string) => {
+    if (!chapterId) return;
+    setPlacingId(memoryId);
+    const { error } = await supabase
+      .from('memories')
+      .update({
+        chapter_id: chapterId,
+        status: 'placed',
+        placed_at: new Date().toISOString(),
+      })
+      .eq('id', memoryId);
+    setPlacingId(null);
+    if (error) {
+      toast({ title: 'Could not place memory', description: error.message, variant: 'destructive' });
+      return;
+    }
+    onSaved?.();
+    toast({ title: 'Memory placed in this chapter' });
+    onClose();
+  };
+
   const handleGuidedSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const ok = await saveMemory(false);
