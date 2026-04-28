@@ -12,7 +12,7 @@ interface Props {
   placingId?: string | null;
 }
 
-const MemorySuggestion = ({ memories, onPlace, placingId }: Props) => {
+const MemorySuggestion = ({ memories = [], onPlace, placingId }: Props) => {
   return (
     <div
       className="mt-6 rounded-lg border border-dashed border-[#C9A84C]/50 bg-[#FDFAF4] px-4 py-4"
