@@ -170,6 +170,9 @@ const ChapterEditor = () => {
   const [photoChapterNums, setPhotoChapterNums] = useState<Set<number>>(new Set());
   const [memoryCountsByChapter, setMemoryCountsByChapter] = useState<Record<string, number>>({});
   const [placedMemories, setPlacedMemories] = useState<{ id: string; memory_text: string; contributor_name: string }[]>([]);
+  const [unplacedMemories, setUnplacedMemories] = useState<{ id: string; memory_text: string; contributor_name: string }[]>([]);
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [overflowConfirm, setOverflowConfirm] = useState<{ memoryId: string } | null>(null);
 
   // Unsaved changes tracking
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
