@@ -1169,15 +1169,10 @@ const ChapterEditor = () => {
             {(() => {
               const status = getPage2Status(totalWords, template).status;
               if (status === 'full') return null;
-              const suggestion = unplacedMemories.length > 0
-                ? unplacedMemories[suggestionIndex % unplacedMemories.length]
-                : null;
               return (
                 <MemorySuggestion
-                  suggestion={suggestion}
-                  poolEmpty={unplacedMemories.length === 0}
-                  onPlace={() => suggestion && handlePlaceSuggestion(suggestion.id)}
-                  onShowAnother={() => setSuggestionIndex(i => i + 1)}
+                  memories={unplacedMemories}
+                  onPlace={(id) => handlePlaceSuggestion(id)}
                 />
               );
             })()}

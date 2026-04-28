@@ -7,13 +7,12 @@ interface PoolMemory {
 }
 
 interface Props {
-  suggestion: PoolMemory | null;
-  poolEmpty: boolean;
-  onPlace: () => void;
-  onShowAnother: () => void;
+  memories: PoolMemory[];
+  onPlace: (memoryId: string) => void;
+  placingId?: string | null;
 }
 
-const MemorySuggestion = ({ suggestion, poolEmpty, onPlace, onShowAnother }: Props) => {
+const MemorySuggestion = ({ memories, onPlace, placingId }: Props) => {
   return (
     <div
       className="mt-6 rounded-lg border border-dashed border-[#C9A84C]/50 bg-[#FDFAF4] px-4 py-4"
@@ -23,34 +22,36 @@ const MemorySuggestion = ({ suggestion, poolEmpty, onPlace, onShowAnother }: Pro
         💭 This chapter has room for a memory.
       </p>
 
-      {poolEmpty || !suggestion ? (
+      {memories.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">
-          No memories in pool yet — add one using the 💭 button above.
+          No memories in pool yet — use the 💭 button above to add one.
         </p>
       ) : (
-        <>
-          <div
-            className="rounded-md bg-white/60 border border-border/50 px-3 py-3 mb-3"
-          >
-            <p
-              className="leading-snug text-foreground/90"
-              style={{ fontFamily: "'Caveat', cursive", fontSize: '1.15rem' }}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {memories.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onPlace(m.id)}
+              disabled={placingId !== null && placingId !== undefined}
+              className="text-left rounded-md bg-white/60 border border-border/50 hover:border-[#C9A84C] hover:bg-white transition-colors px-3 py-3 disabled:opacity-50"
             >
-              {suggestion.memory_text}
-            </p>
-            <p className="mt-1 text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground/60">
-              — {suggestion.contributor_name}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 justify-end">
-            <Button type="button" variant="ghost" size="sm" onClick={onShowAnother}>
-              Show another
-            </Button>
-            <Button type="button" size="sm" onClick={onPlace}>
-              Place it here
-            </Button>
-          </div>
-        </>
+              <p
+                className="leading-snug text-foreground/90"
+                style={{ fontFamily: "'Caveat', cursive", fontSize: '1.15rem' }}
+              >
+                <span className="text-[#C9A84C] mr-1">✦</span>
+                {m.memory_text}
+              </p>
+              <p className="mt-1 text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground/60">
+                — {m.contributor_name}
+                {placingId === m.id && (
+                  <span className="ml-2 normal-case tracking-normal">Placing…</span>
+                )}
+              </p>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
