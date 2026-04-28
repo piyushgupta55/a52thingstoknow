@@ -818,29 +818,14 @@ const ChapterEditor = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Auto-save status — visible in edit mode */}
-            {!previewMode && autoSaveStatus !== 'idle' && (
-              <div>
-                {autoSaveStatus === 'saving' && (
-                  <span className="text-[0.6rem] text-muted-foreground/50" style={{ fontFamily: 'var(--font-body)' }}>
-                    Saving…
-                  </span>
-                )}
-                {autoSaveStatus === 'saved' && (
-                  <span className="text-[0.6rem] text-primary/60" style={{ fontFamily: 'var(--font-body)' }}>
-                    Saved ✓
-                  </span>
-                )}
-                {autoSaveStatus === 'failed' && (
-                  <button
-                    onClick={() => autoSaveRef()}
-                    className="text-[0.6rem] text-[#F87171] hover:text-[#EF4444] cursor-pointer"
-                    style={{ fontFamily: 'var(--font-body)' }}
-                  >
-                    Save failed — tap to retry
-                  </button>
-                )}
-              </div>
+            {/* Unsaved-changes indicator — visible in edit mode */}
+            {!previewMode && hasUnsavedChanges && (
+              <span
+                className="text-[0.6rem] uppercase tracking-wider text-muted-foreground/70"
+                style={{ fontFamily: 'var(--font-body)' }}
+              >
+                • Unsaved changes
+              </span>
             )}
 
             <Button
@@ -855,7 +840,7 @@ const ChapterEditor = () => {
 
             {!previewMode && (
               <Button variant="ghost" size="sm" onClick={() => save(false)} disabled={saving} className="gap-1.5 text-xs h-8">
-                <Save className="h-3 w-3" /> {saving ? 'Saving…' : 'Save'}
+                <Save className="h-3 w-3" /> {saving ? 'Saving…' : 'Save Draft'}
               </Button>
             )}
           </div>
