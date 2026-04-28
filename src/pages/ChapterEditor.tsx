@@ -29,7 +29,7 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 
-type AutoSaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
+
 
 interface ChapterData {
   id: string;
