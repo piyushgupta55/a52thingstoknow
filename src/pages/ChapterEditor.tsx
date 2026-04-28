@@ -368,43 +368,7 @@ const ChapterEditor = () => {
     load();
   }, [chapterId, bookId]);
 
-  // Auto-save edited text only; status changes happen only on explicit save
-  const autoSaveRef = useCallback(async () => {
-    if (!chapterId || !hasUnsavedChanges) return;
-    setAutoSaveStatus('saving');
-    const savedAt = new Date().toISOString();
-    const { error } = await supabase.from('chapters').update({
-      bible_verse_text: bibleVerseText || null,
-      bible_verse_reference: bibleVerseRef || null,
-      quote_text: quoteText || null,
-      quote_attribution: quoteAttribution || null,
-      content: content || null,
-      reference_text: referenceText || null,
-      photo_urls: photoUrls,
-      chapter_template: template,
-      verse_id: verseId,
-      quote_id: quoteId,
-      updated_at: savedAt,
-    }).eq('id', chapterId);
-
-    if (error) {
-      setAutoSaveStatus('failed');
-    } else {
-      setAutoSaveStatus('saved');
-      setHasUnsavedChanges(false);
-      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, updated_at: savedAt, content: content || null } : c));
-      if (autoSaveStatusTimer.current) clearTimeout(autoSaveStatusTimer.current);
-      autoSaveStatusTimer.current = setTimeout(() => setAutoSaveStatus('idle'), 3000);
-    }
-  }, [chapterId, hasUnsavedChanges, bibleVerseText, bibleVerseRef, quoteText, quoteAttribution, content, referenceText, photoUrls, template, verseId, quoteId]);
-
-  // Debounce auto-save only after a real user edit
-  useEffect(() => {
-    if (!hasUnsavedChanges) return;
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => autoSaveRef(), 2000);
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [hasUnsavedChanges, referenceText, content, autoSaveRef]);
+  // Auto-save removed — author saves explicitly via the Save Draft button.
 
   const siblingChapters = allChapters.filter(c => c.id !== chapterId);
   const chaptersForNav = allChapters.map(ch => ({
