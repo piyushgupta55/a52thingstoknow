@@ -12,6 +12,8 @@ import PhotoUploadZone from '@/components/chapter/PhotoUploadZone';
 import TemplateSelector, { type ChapterTemplate } from '@/components/chapter/TemplateSelector';
 import MemoryPlaceholder from '@/components/chapter/MemoryPlaceholder';
 import PlacedMemory from '@/components/chapter/PlacedMemory';
+import MemorySuggestion from '@/components/chapter/MemorySuggestion';
+import { getPage2Status } from '@/lib/page2Status';
 import ChapterNav from '@/components/chapter/ChapterNav';
 import ContentSearchPanel from '@/components/chapter/ContentSearchPanel';
 import PageCanvas from '@/components/chapter/PageCanvas';
