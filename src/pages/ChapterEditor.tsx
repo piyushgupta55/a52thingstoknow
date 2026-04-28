@@ -540,6 +540,10 @@ const ChapterEditor = () => {
 
   const handleDialogSaveAndContinue = async () => {
     await save(false);
+    // Force the ref false synchronously so the navigation interceptor
+    // (which reads from hasUnsavedRef, updated only via useEffect after render)
+    // does not re-trigger the prompt before React flushes the state update.
+    hasUnsavedRef.current = false;
     setShowUnsavedDialog(false);
     proceedPendingNav();
   };
