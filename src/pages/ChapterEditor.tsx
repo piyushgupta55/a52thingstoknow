@@ -353,6 +353,12 @@ const ChapterEditor = () => {
             .filter((m: any) => m.chapter_id === chapterId)
             .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
         );
+        setUnplacedMemories(
+          memoriesData
+            .filter((m: any) => !m.chapter_id)
+            .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+        );
+        setSuggestionIndex(0);
       }
       if (allCh) {
         const withCorrectTitles = allCh.map((c: any) =>
