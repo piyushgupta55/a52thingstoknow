@@ -1165,6 +1165,23 @@ const ChapterEditor = () => {
             )}
             {showMemoryPlaceholder && placedMemories.length === 0 && <MemoryPlaceholder recipientName={recipientName} realistic />}
 
+            {/* Smart memory suggestion — only when chapter has room (yellow/red) */}
+            {(() => {
+              const status = getPage2Status(totalWords, template).status;
+              if (status === 'full') return null;
+              const suggestion = unplacedMemories.length > 0
+                ? unplacedMemories[suggestionIndex % unplacedMemories.length]
+                : null;
+              return (
+                <MemorySuggestion
+                  suggestion={suggestion}
+                  poolEmpty={unplacedMemories.length === 0}
+                  onPlace={() => suggestion && handlePlaceSuggestion(suggestion.id)}
+                  onShowAnother={() => setSuggestionIndex(i => i + 1)}
+                />
+              );
+            })()}
+
 
             {/* Photo quality warning */}
             {photoWarning && (
