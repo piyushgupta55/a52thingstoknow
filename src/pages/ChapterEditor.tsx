@@ -29,7 +29,7 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 
-type AutoSaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
+
 
 interface ChapterData {
   id: string;
@@ -150,9 +150,6 @@ const ChapterEditor = () => {
 
   const [referenceContent, setReferenceContent] = useState<string | null>(null);
   const [referenceText, setReferenceText] = useState('');
-  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>('idle');
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
-  const autoSaveStatusTimer = useRef<ReturnType<typeof setTimeout>>();
   const [recipientName, setRecipientName] = useState('');
   const [recipientGender, setRecipientGender] = useState('');
   const [authorLabel, setAuthorLabel] = useState('');
@@ -368,43 +365,7 @@ const ChapterEditor = () => {
     load();
   }, [chapterId, bookId]);
 
-  // Auto-save edited text only; status changes happen only on explicit save
-  const autoSaveRef = useCallback(async () => {
-    if (!chapterId || !hasUnsavedChanges) return;
-    setAutoSaveStatus('saving');
-    const savedAt = new Date().toISOString();
-    const { error } = await supabase.from('chapters').update({
-      bible_verse_text: bibleVerseText || null,
-      bible_verse_reference: bibleVerseRef || null,
-      quote_text: quoteText || null,
-      quote_attribution: quoteAttribution || null,
-      content: content || null,
-      reference_text: referenceText || null,
-      photo_urls: photoUrls,
-      chapter_template: template,
-      verse_id: verseId,
-      quote_id: quoteId,
-      updated_at: savedAt,
-    }).eq('id', chapterId);
-
-    if (error) {
-      setAutoSaveStatus('failed');
-    } else {
-      setAutoSaveStatus('saved');
-      setHasUnsavedChanges(false);
-      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, updated_at: savedAt, content: content || null } : c));
-      if (autoSaveStatusTimer.current) clearTimeout(autoSaveStatusTimer.current);
-      autoSaveStatusTimer.current = setTimeout(() => setAutoSaveStatus('idle'), 3000);
-    }
-  }, [chapterId, hasUnsavedChanges, bibleVerseText, bibleVerseRef, quoteText, quoteAttribution, content, referenceText, photoUrls, template, verseId, quoteId]);
-
-  // Debounce auto-save only after a real user edit
-  useEffect(() => {
-    if (!hasUnsavedChanges) return;
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => autoSaveRef(), 2000);
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [hasUnsavedChanges, referenceText, content, autoSaveRef]);
+  // Auto-save removed — author saves explicitly via the Save Draft button.
 
   const siblingChapters = allChapters.filter(c => c.id !== chapterId);
   const chaptersForNav = allChapters.map(ch => ({
@@ -657,32 +618,15 @@ const ChapterEditor = () => {
       setBibleVerseRef(item.attribution);
       setVerseId(null);
       checkDuplicate('verse', item.id, item.text);
-      // Save immediately — content_pool IDs are not compatible with verse_library FK, so clear verse_id
-      if (chapterId) {
-        await supabase.from('chapters').update({
-          bible_verse_text: item.text,
-          bible_verse_reference: item.attribution,
-          verse_id: null,
-          updated_at: new Date().toISOString(),
-        }).eq('id', chapterId);
-      }
     } else {
       setQuoteText(item.text);
       setQuoteAttribution(item.attribution);
       setQuoteId(null);
       checkDuplicate('quote', item.id, item.text);
-      // Save immediately — content_pool IDs are not compatible with quote_library FK, so clear quote_id
-      if (chapterId) {
-        await supabase.from('chapters').update({
-          quote_text: item.text,
-          quote_attribution: item.attribution,
-          quote_id: null,
-          updated_at: new Date().toISOString(),
-        }).eq('id', chapterId);
-      }
     }
+    setHasUnsavedChanges(true);
     setSearchPanelOpen(false);
-    toast({ title: `${searchPanelType === 'verse' ? 'Bible verse' : 'Quote'} swapped and saved!` });
+    toast({ title: `${searchPanelType === 'verse' ? 'Bible verse' : 'Quote'} swapped — remember to Save Draft.` });
   };
 
   const handleChapterNavigate = (targetChapterId: string) => {
@@ -854,29 +798,14 @@ const ChapterEditor = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Auto-save status — visible in edit mode */}
-            {!previewMode && autoSaveStatus !== 'idle' && (
-              <div>
-                {autoSaveStatus === 'saving' && (
-                  <span className="text-[0.6rem] text-muted-foreground/50" style={{ fontFamily: 'var(--font-body)' }}>
-                    Saving…
-                  </span>
-                )}
-                {autoSaveStatus === 'saved' && (
-                  <span className="text-[0.6rem] text-primary/60" style={{ fontFamily: 'var(--font-body)' }}>
-                    Saved ✓
-                  </span>
-                )}
-                {autoSaveStatus === 'failed' && (
-                  <button
-                    onClick={() => autoSaveRef()}
-                    className="text-[0.6rem] text-[#F87171] hover:text-[#EF4444] cursor-pointer"
-                    style={{ fontFamily: 'var(--font-body)' }}
-                  >
-                    Save failed — tap to retry
-                  </button>
-                )}
-              </div>
+            {/* Unsaved-changes indicator — visible in edit mode */}
+            {!previewMode && hasUnsavedChanges && (
+              <span
+                className="text-[0.6rem] uppercase tracking-wider text-muted-foreground/70"
+                style={{ fontFamily: 'var(--font-body)' }}
+              >
+                • Unsaved changes
+              </span>
             )}
 
             <Button
@@ -891,7 +820,7 @@ const ChapterEditor = () => {
 
             {!previewMode && (
               <Button variant="ghost" size="sm" onClick={() => save(false)} disabled={saving} className="gap-1.5 text-xs h-8">
-                <Save className="h-3 w-3" /> {saving ? 'Saving…' : 'Save'}
+                <Save className="h-3 w-3" /> {saving ? 'Saving…' : 'Save Draft'}
               </Button>
             )}
           </div>
@@ -1297,6 +1226,8 @@ const ChapterEditor = () => {
                   .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
               );
             }
+            // A placed memory is a chapter change — author must explicitly Save Draft.
+            setHasUnsavedChanges(true);
           }}
         />
       )}
