@@ -150,9 +150,6 @@ const ChapterEditor = () => {
 
   const [referenceContent, setReferenceContent] = useState<string | null>(null);
   const [referenceText, setReferenceText] = useState('');
-  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>('idle');
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
-  const autoSaveStatusTimer = useRef<ReturnType<typeof setTimeout>>();
   const [recipientName, setRecipientName] = useState('');
   const [recipientGender, setRecipientGender] = useState('');
   const [authorLabel, setAuthorLabel] = useState('');
