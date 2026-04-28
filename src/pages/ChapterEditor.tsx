@@ -1226,7 +1226,7 @@ const ChapterEditor = () => {
           recipientName={recipientName}
           recipientGender={recipientGender}
           onSaved={async () => {
-            // Refresh placed memories so a freshly-placed memory shows up immediately
+            // Refresh placed + unplaced memories so freshly-placed/added items show up
             const { data } = await supabase
               .from('memories')
               .select('id, chapter_id, memory_text, contributor_name')
@@ -1240,6 +1240,12 @@ const ChapterEditor = () => {
                   .filter((m: any) => m.chapter_id === chapterId)
                   .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
               );
+              setUnplacedMemories(
+                data
+                  .filter((m: any) => !m.chapter_id)
+                  .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+              );
+              setSuggestionIndex(0);
             }
             // A placed memory is a chapter change — author must explicitly Save Draft.
             setHasUnsavedChanges(true);
