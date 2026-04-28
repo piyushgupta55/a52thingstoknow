@@ -618,32 +618,15 @@ const ChapterEditor = () => {
       setBibleVerseRef(item.attribution);
       setVerseId(null);
       checkDuplicate('verse', item.id, item.text);
-      // Save immediately — content_pool IDs are not compatible with verse_library FK, so clear verse_id
-      if (chapterId) {
-        await supabase.from('chapters').update({
-          bible_verse_text: item.text,
-          bible_verse_reference: item.attribution,
-          verse_id: null,
-          updated_at: new Date().toISOString(),
-        }).eq('id', chapterId);
-      }
     } else {
       setQuoteText(item.text);
       setQuoteAttribution(item.attribution);
       setQuoteId(null);
       checkDuplicate('quote', item.id, item.text);
-      // Save immediately — content_pool IDs are not compatible with quote_library FK, so clear quote_id
-      if (chapterId) {
-        await supabase.from('chapters').update({
-          quote_text: item.text,
-          quote_attribution: item.attribution,
-          quote_id: null,
-          updated_at: new Date().toISOString(),
-        }).eq('id', chapterId);
-      }
     }
+    setHasUnsavedChanges(true);
     setSearchPanelOpen(false);
-    toast({ title: `${searchPanelType === 'verse' ? 'Bible verse' : 'Quote'} swapped and saved!` });
+    toast({ title: `${searchPanelType === 'verse' ? 'Bible verse' : 'Quote'} swapped — remember to Save Draft.` });
   };
 
   const handleChapterNavigate = (targetChapterId: string) => {
