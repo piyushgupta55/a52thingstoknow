@@ -60,6 +60,13 @@ const MemoryCaptureOverlay = ({
   const [savedCount, setSavedCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Manual-mode: pool browsing
+  // 'choose' = list of unplaced memories; 'compose' = the From + textarea form
+  const [manualView, setManualView] = useState<'choose' | 'compose'>('choose');
+  const [pool, setPool] = useState<Array<{ id: string; memory_text: string; contributor_name: string }>>([]);
+  const [poolLoading, setPoolLoading] = useState(false);
+  const [placingId, setPlacingId] = useState<string | null>(null);
+
   useEffect(() => {
     if (open) {
       setFromName(defaultFromName);
@@ -67,9 +74,33 @@ const MemoryCaptureOverlay = ({
       setSaving(false);
       setStage('prompt');
       setSavedCount(0);
+      setManualView('choose');
+      setPlacingId(null);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open, defaultFromName]);
+
+  // Load unplaced memories from the pool (manual mode only)
+  useEffect(() => {
+    if (!open || mode !== 'manual') return;
+    let cancelled = false;
+    (async () => {
+      setPoolLoading(true);
+      const { data } = await supabase
+        .from('memories')
+        .select('id, memory_text, contributor_name')
+        .eq('book_id', bookId)
+        .eq('status', 'unplaced')
+        .order('created_at', { ascending: false });
+      if (cancelled) return;
+      const items = data || [];
+      setPool(items);
+      // If pool is empty, drop straight into compose
+      if (items.length === 0) setManualView('compose');
+      setPoolLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [open, mode, bookId]);
 
   if (!open) return null;
 
@@ -117,6 +148,27 @@ const MemoryCaptureOverlay = ({
     }
   };
 
+  const placeFromPool = async (memoryId: string) => {
+    if (!chapterId) return;
+    setPlacingId(memoryId);
+    const { error } = await supabase
+      .from('memories')
+      .update({
+        chapter_id: chapterId,
+        status: 'placed',
+        placed_at: new Date().toISOString(),
+      })
+      .eq('id', memoryId);
+    setPlacingId(null);
+    if (error) {
+      toast({ title: 'Could not place memory', description: error.message, variant: 'destructive' });
+      return;
+    }
+    onSaved?.();
+    toast({ title: 'Memory placed in this chapter' });
+    onClose();
+  };
+
   const handleGuidedSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const ok = await saveMemory(false);
@@ -162,8 +214,76 @@ const MemoryCaptureOverlay = ({
           </button>
         </div>
 
-        {mode === 'manual' && (
+        {mode === 'manual' && manualView === 'choose' && chapterId && (
+          <div className="p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Choose from pool
+              </p>
+              <button
+                type="button"
+                onClick={() => setManualView('compose')}
+                className="text-xs text-primary hover:underline"
+              >
+                + New memory
+              </button>
+            </div>
+
+            {poolLoading ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 inline animate-spin mr-2" /> Loading…
+              </div>
+            ) : pool.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                No memories in pool yet — add one below.
+              </div>
+            ) : (
+              <div className="max-h-[50vh] overflow-y-auto space-y-2 -mx-1 px-1">
+                {pool.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => placeFromPool(m.id)}
+                    disabled={placingId !== null}
+                    className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-accent/30 transition-colors p-3 disabled:opacity-50"
+                  >
+                    <p
+                      className="text-[15px] leading-snug text-foreground/90"
+                      style={{ fontFamily: "'Caveat', cursive", fontSize: '1.1rem' }}
+                    >
+                      {m.memory_text}
+                    </p>
+                    <p
+                      className="mt-1 text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground/60"
+                      style={{ fontFamily: 'var(--font-body)' }}
+                    >
+                      — {m.contributor_name}
+                      {placingId === m.id && (
+                        <span className="ml-2 normal-case tracking-normal">Placing…</span>
+                      )}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-1">
+              <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
+        {mode === 'manual' && (manualView === 'compose' || !chapterId) && (
           <div className="p-5 space-y-4">
+            {chapterId && pool.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setManualView('choose')}
+                className="text-xs text-primary hover:underline"
+              >
+                ← Choose from pool
+              </button>
+            )}
             <div>
               <Label htmlFor="mc-from" className="text-xs uppercase tracking-wider text-muted-foreground">From</Label>
               <Input
