@@ -1226,6 +1226,8 @@ const ChapterEditor = () => {
                   .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
               );
             }
+            // A placed memory is a chapter change — author must explicitly Save Draft.
+            setHasUnsavedChanges(true);
           }}
         />
       )}
