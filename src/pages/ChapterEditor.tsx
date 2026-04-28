@@ -1268,6 +1268,33 @@ const ChapterEditor = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Overflow confirmation when placing a memory would exceed budget */}
+      <AlertDialog
+        open={overflowConfirm !== null}
+        onOpenChange={(open) => { if (!open) setOverflowConfirm(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Over the word limit</AlertDialogTitle>
+            <AlertDialogDescription>
+              This memory would put you over the word limit. Place it anyway?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setOverflowConfirm(null)}>No</Button>
+            <AlertDialogAction
+              onClick={() => {
+                const id = overflowConfirm?.memoryId;
+                setOverflowConfirm(null);
+                if (id) placeSuggestionMemory(id);
+              }}
+            >
+              Yes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Memory capture overlay (toolbar manual entry + post-complete guided flow) */}
       {bookId && (
         <MemoryCaptureOverlay
