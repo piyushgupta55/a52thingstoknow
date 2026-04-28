@@ -1310,8 +1310,10 @@ const ChapterEditor = () => {
             // Refresh placed + unplaced memories so freshly-placed/added items show up
             const { data } = await supabase
               .from('memories')
-              .select('id, chapter_id, memory_text, contributor_name')
-              .eq('book_id', bookId);
+              .select('id, chapter_id, memory_text, contributor_name, placed_at, created_at')
+              .eq('book_id', bookId)
+              .order('placed_at', { ascending: true, nullsFirst: false })
+              .order('created_at', { ascending: true });
             if (data) {
               const counts: Record<string, number> = {};
               data.forEach((m: any) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
