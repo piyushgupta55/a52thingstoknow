@@ -1138,6 +1138,19 @@ const ChapterEditor = () => {
 
             {template === 'photo_second' && renderPhotoZone('vertical')}
 
+            {/* ─── Page break divider ─── */}
+            <div
+              className="mt-10 mb-2 flex items-center gap-3 select-none"
+              aria-hidden="true"
+              style={{ fontFamily: 'var(--font-body)' }}
+            >
+              <div className="flex-1 h-px bg-muted-foreground/20" />
+              <span className="text-[0.65rem] uppercase tracking-[0.22em] text-muted-foreground/55">
+                <span className="text-[#C9A84C] mr-1.5">✦</span>Page 2
+              </span>
+              <div className="flex-1 h-px bg-muted-foreground/20" />
+            </div>
+
              {/* Your Wisdom */}
             <div className="relative mt-8">
               <div className="transition-all duration-200 rounded-sm inline-block w-full" style={{ borderLeft: '3px solid #C9A84C', background: '#FDFAF4', margin: '0 -8px', padding: '12px 8px 12px 19px' }}>
