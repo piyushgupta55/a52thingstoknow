@@ -1254,12 +1254,10 @@ const ChapterEditor = () => {
                 ))}
               </>
             )}
-            {showMemoryPlaceholder && placedMemories.length === 0 && <MemoryPlaceholder recipientName={recipientName} realistic />}
-
-            {/* Smart memory suggestion — only when page 2 has available words */}
             {(() => {
               const page2Remaining = budget - totalWords;
               if (page2Remaining <= 0) {
+                // Strictly hide the placeholder ghost and the suggestion grid when page 2 is full or over.
                 return (
                   <p
                     className="mt-6 text-center text-[0.78rem] italic text-[#EF4444]"
@@ -1270,10 +1268,15 @@ const ChapterEditor = () => {
                 );
               }
               return (
-                <MemorySuggestion
-                  memories={unplacedMemories}
-                  onPlace={(id) => handlePlaceSuggestion(id)}
-                />
+                <>
+                  {showMemoryPlaceholder && placedMemories.length === 0 && (
+                    <MemoryPlaceholder recipientName={recipientName} realistic />
+                  )}
+                  <MemorySuggestion
+                    memories={unplacedMemories}
+                    onPlace={(id) => handlePlaceSuggestion(id)}
+                  />
+                </>
               );
             })()}
 
