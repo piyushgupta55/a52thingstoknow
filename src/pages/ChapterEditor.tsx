@@ -61,8 +61,8 @@ const MAX_CONTENT_LENGTH = 5000;
 // Unified word budgets per template
 const WORD_BUDGETS: Record<string, number> = {
   all_words: 450,
-  photo_top: 225,
-  photo_second: 225,
+  photo_top: 350,
+  photo_second: 350,
   letter: 200,
 };
 
@@ -1137,6 +1137,19 @@ const ChapterEditor = () => {
             })()}
 
             {template === 'photo_second' && renderPhotoZone('vertical')}
+
+            {/* ─── Page break divider ─── */}
+            <div
+              className="mt-10 mb-2 flex items-center gap-3 select-none"
+              aria-hidden="true"
+              style={{ fontFamily: 'var(--font-body)' }}
+            >
+              <div className="flex-1 h-px bg-muted-foreground/20" />
+              <span className="text-[0.65rem] uppercase tracking-[0.22em] text-muted-foreground/55">
+                <span className="text-[#C9A84C] mr-1.5">✦</span>Page 2
+              </span>
+              <div className="flex-1 h-px bg-muted-foreground/20" />
+            </div>
 
              {/* Your Wisdom */}
             <div className="relative mt-8">

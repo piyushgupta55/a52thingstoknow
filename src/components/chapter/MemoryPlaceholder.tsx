@@ -37,13 +37,7 @@ const MemoryPlaceholder = ({ recipientName, realistic = false }: Props) => {
           <span className="text-[#C9A84C] mr-1">✦</span>
           {memory.text}
         </p>
-        <div className="mt-2 flex items-center justify-between">
-          <p
-            className="text-[0.6rem] uppercase tracking-[0.12em] text-muted-foreground/50"
-            style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem' }}
-          >
-            — A memory from someone who loves {recipientName || 'them'}
-          </p>
+        <div className="mt-2 flex items-center justify-end">
           <span
             className="text-[0.55rem] text-muted-foreground/30"
             style={{ fontFamily: 'var(--font-body)' }}
@@ -68,12 +62,6 @@ const MemoryPlaceholder = ({ recipientName, realistic = false }: Props) => {
       <p className="leading-relaxed">
         <span className="text-[#C9A84C] mr-1">✦</span>
         A memory will go here — a short story from someone who loves {recipientName || 'them'} that they'll keep forever.
-      </p>
-      <p
-        className="mt-2 text-[0.6rem] uppercase tracking-[0.12em] text-muted-foreground/50"
-        style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem' }}
-      >
-        — Contributor Name
       </p>
     </div>
   );
