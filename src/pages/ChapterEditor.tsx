@@ -224,8 +224,10 @@ const ChapterEditor = () => {
   const refWords = referenceText.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
   const contentWords = content.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
   const paragraphBreaks = (referenceText.match(/\n\n/g) || []).length;
-  const memorySlots = showMemoryPlaceholder ? 1 : 0;
-  const totalWords = refWords + contentWords + (paragraphBreaks * 3) + (memorySlots * 40);
+  // Show the empty placeholder slot only when there are no real placed memories
+  const memorySlots = showMemoryPlaceholder && (placedMemories?.length ?? 0) === 0 ? 1 : 0;
+  const placedMemoryWords = (placedMemories?.length ?? 0) * 40;
+  const totalWords = refWords + contentWords + (paragraphBreaks * 3) + (memorySlots * 40) + placedMemoryWords;
 
   const enterPreview = () => {
     setPreviewMode(true);
