@@ -1256,10 +1256,19 @@ const ChapterEditor = () => {
             )}
             {showMemoryPlaceholder && placedMemories.length === 0 && <MemoryPlaceholder recipientName={recipientName} realistic />}
 
-            {/* Smart memory suggestion — only when chapter has room (yellow/red) */}
+            {/* Smart memory suggestion — only when page 2 has available words */}
             {(() => {
-              const status = getPage2Status(totalWords, template).status;
-              if (status === 'full') return null;
+              const page2Remaining = budget - totalWords;
+              if (page2Remaining <= 0) {
+                return (
+                  <p
+                    className="mt-6 text-center text-[0.78rem] italic text-[#EF4444]"
+                    style={{ fontFamily: 'var(--font-body)' }}
+                  >
+                    Page 2 is full — trim your writing to add a memory.
+                  </p>
+                );
+              }
               return (
                 <MemorySuggestion
                   memories={unplacedMemories}
