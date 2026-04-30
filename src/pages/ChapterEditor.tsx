@@ -1109,13 +1109,7 @@ const ChapterEditor = () => {
             <DevotionalQuote text={quoteText} attribution={quoteAttribution} onTextChange={v => { setQuoteText(v); setQuoteId(null); setHasUnsavedChanges(true); }} onAttrChange={v => { setQuoteAttribution(v); setHasUnsavedChanges(true); }} onFindAlternatives={() => handleFindAlternatives('quote')} editing={editingQuote} onToggleEdit={() => setEditingQuote(!editingQuote)} previewMode={false} />
 
             {/* Reference text — page 1 portion (overflow shown below page break) */}
-            {referenceText && (() => {
-              const refPage1Limit = isPhotoTemplate ? 75 : 150;
-              const refSplit = splitRefByWordLimit(referenceText, refPage1Limit);
-              const refOverflowWords = refSplit.page2
-                ? refSplit.page2.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length
-                : 0;
-              return (
+            {referenceText && (
               <div className="my-8 relative">
                 <div
                   className="transition-all duration-200 rounded-sm"
