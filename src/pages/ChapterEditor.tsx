@@ -1305,6 +1305,14 @@ const ChapterEditor = () => {
               <span className="font-medium" style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: wordCountColor(totalWords, budget) }}>
                 Chapter · {totalWords} / {budget} words
               </span>
+              {totalWords > budget && (
+                <p
+                  className="mt-2 text-[0.7rem] font-medium"
+                  style={{ fontFamily: 'var(--font-body)', color: '#EF4444' }}
+                >
+                  {totalWords - budget} word{totalWords - budget === 1 ? '' : 's'} over limit — trim to fit the book.
+                </p>
+              )}
               {isPhotoTemplate && (
                 <p className="text-[0.55rem] text-muted-foreground/40 mt-1" style={{ fontFamily: 'var(--font-body)' }}>
                   ↑ Photo uses ~50% of this page — word limit adjusted
