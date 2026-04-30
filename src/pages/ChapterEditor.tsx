@@ -1181,7 +1181,12 @@ const ChapterEditor = () => {
             {placedMemories.length > 0 && (
               <>
                 {placedMemories.map(m => (
-                  <PlacedMemory key={m.id} text={m.memory_text} fromName={m.contributor_name} />
+                  <PlacedMemory
+                    key={m.id}
+                    text={m.memory_text}
+                    fromName={m.contributor_name}
+                    onRemove={() => handleUnplaceMemory(m.id)}
+                  />
                 ))}
               </>
             )}
