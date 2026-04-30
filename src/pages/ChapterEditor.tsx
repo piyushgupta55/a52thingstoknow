@@ -778,10 +778,30 @@ const ChapterEditor = () => {
 
   // Word count color helper
   const wordCountColor = (count: number, limit: number) => {
-    const pct = limit ? (count / limit) * 100 : 0;
-    if (pct >= 90) return '#EF4444';
-    if (pct >= 75) return '#D97706';
-    return '#9CA3AF';
+    if (limit && count > limit) return '#EF4444';
+    if (limit && count >= limit * 0.9) return '#D97706';
+    return '#16A34A';
+  };
+
+  // Split reference text by word count for the editor's two-page visual.
+  // page1Limit = ~150 words for classic chapters, ~75 for photo chapters
+  // (photo chapters give half of page 1 to the image).
+  const splitRefByWordLimit = (text: string, wordLimit: number) => {
+    if (!text) return { page1: '', page2: '' };
+    // Tokenize while preserving whitespace so we can re-join exactly.
+    const tokens = text.split(/(\s+)/);
+    let words = 0;
+    let splitAt = tokens.length;
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i] && !/^\s+$/.test(tokens[i])) {
+        words++;
+        if (words > wordLimit) { splitAt = i; break; }
+      }
+    }
+    return {
+      page1: tokens.slice(0, splitAt).join(''),
+      page2: tokens.slice(splitAt).join('').replace(/^\s+/, ''),
+    };
   };
 
   if (loading) return (
@@ -1088,13 +1108,24 @@ const ChapterEditor = () => {
 
             <DevotionalQuote text={quoteText} attribution={quoteAttribution} onTextChange={v => { setQuoteText(v); setQuoteId(null); setHasUnsavedChanges(true); }} onAttrChange={v => { setQuoteAttribution(v); setHasUnsavedChanges(true); }} onFindAlternatives={() => handleFindAlternatives('quote')} editing={editingQuote} onToggleEdit={() => setEditingQuote(!editingQuote)} previewMode={false} />
 
-            {/* Reference text — full, no split */}
+            {/* Reference text — page 1 portion (overflow shown below page break) */}
             {referenceText && (() => {
-              const page1Limit = Math.floor(budget / 2);
-              const refWordCount = referenceText.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+              const refPage1Limit = isPhotoTemplate ? 75 : 150;
+              const refSplit = splitRefByWordLimit(referenceText, refPage1Limit);
+              const refOverflowWords = refSplit.page2
+                ? refSplit.page2.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length
+                : 0;
               return (
               <div className="my-8 relative">
-                <div className="transition-all duration-200 rounded-sm" style={{ borderLeft: '3px solid #C9A84C', background: '#FDFAF4', margin: '0 -8px', padding: '12px 8px 12px 19px' }}>
+                <div
+                  className="transition-all duration-200 rounded-sm"
+                  style={{
+                    borderLeft: '3px solid #C9A84C',
+                    background: '#FDFAF4',
+                    margin: '0 -8px',
+                    padding: '12px 8px 12px 19px',
+                  }}
+                >
                 <textarea
                     ref={refTextareaRef}
                     value={referenceText}
@@ -1132,6 +1163,14 @@ const ChapterEditor = () => {
                     style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '200px' }}
                   />
                 </div>
+                {refOverflowWords > 0 && (
+                  <p
+                    className="mt-2 text-[0.6rem] uppercase tracking-wider text-muted-foreground/60"
+                    style={{ fontFamily: 'var(--font-body)' }}
+                  >
+                    ↓ {refOverflowWords} word{refOverflowWords === 1 ? '' : 's'} continue onto page 2
+                  </p>
+                )}
               </div>
               );
             })()}
@@ -1150,6 +1189,39 @@ const ChapterEditor = () => {
               </span>
               <div className="flex-1 h-px bg-muted-foreground/20" />
             </div>
+
+            {/* Reference text overflow — read-only echo of what spills to page 2 */}
+            {referenceText && (() => {
+              const refPage1Limit = isPhotoTemplate ? 75 : 150;
+              const refSplit = splitRefByWordLimit(referenceText, refPage1Limit);
+              if (!refSplit.page2) return null;
+              return (
+                <div className="mt-6 mb-2 relative">
+                  <div
+                    className="rounded-sm"
+                    style={{
+                      borderLeft: '3px solid #C9A84C',
+                      background: '#FDFAF4',
+                      margin: '0 -8px',
+                      padding: '12px 8px 12px 19px',
+                    }}
+                  >
+                    <p
+                      className="text-[14px] italic leading-[1.75] text-foreground/55 whitespace-pre-wrap m-0"
+                      style={{ fontFamily: 'var(--font-devotional)' }}
+                    >
+                      {refSplit.page2}
+                    </p>
+                  </div>
+                  <p
+                    className="mt-1 text-[0.55rem] uppercase tracking-wider text-muted-foreground/45"
+                    style={{ fontFamily: 'var(--font-body)' }}
+                  >
+                    Continued from page 1 — edit above
+                  </p>
+                </div>
+              );
+            })()}
 
              {/* Your Wisdom */}
             <div className="relative mt-8">
@@ -1233,6 +1305,14 @@ const ChapterEditor = () => {
               <span className="font-medium" style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: wordCountColor(totalWords, budget) }}>
                 Chapter · {totalWords} / {budget} words
               </span>
+              {totalWords > budget && (
+                <p
+                  className="mt-2 text-[0.7rem] font-medium"
+                  style={{ fontFamily: 'var(--font-body)', color: '#EF4444' }}
+                >
+                  {totalWords - budget} word{totalWords - budget === 1 ? '' : 's'} over limit — trim to fit the book.
+                </p>
+              )}
               {isPhotoTemplate && (
                 <p className="text-[0.55rem] text-muted-foreground/40 mt-1" style={{ fontFamily: 'var(--font-body)' }}>
                   ↑ Photo uses ~50% of this page — word limit adjusted
