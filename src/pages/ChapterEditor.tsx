@@ -1109,13 +1109,7 @@ const ChapterEditor = () => {
             <DevotionalQuote text={quoteText} attribution={quoteAttribution} onTextChange={v => { setQuoteText(v); setQuoteId(null); setHasUnsavedChanges(true); }} onAttrChange={v => { setQuoteAttribution(v); setHasUnsavedChanges(true); }} onFindAlternatives={() => handleFindAlternatives('quote')} editing={editingQuote} onToggleEdit={() => setEditingQuote(!editingQuote)} previewMode={false} />
 
             {/* Reference text — page 1 portion (overflow shown below page break) */}
-            {referenceText && (() => {
-              const refPage1Limit = isPhotoTemplate ? 75 : 150;
-              const refSplit = splitRefByWordLimit(referenceText, refPage1Limit);
-              const refOverflowWords = refSplit.page2
-                ? refSplit.page2.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length
-                : 0;
-              return (
+            {referenceText && (
               <div className="my-8 relative">
                 <div
                   className="transition-all duration-200 rounded-sm"
@@ -1163,17 +1157,8 @@ const ChapterEditor = () => {
                     style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '200px' }}
                   />
                 </div>
-                {refOverflowWords > 0 && (
-                  <p
-                    className="mt-2 text-[0.6rem] uppercase tracking-wider text-muted-foreground/60"
-                    style={{ fontFamily: 'var(--font-body)' }}
-                  >
-                    ↓ {refOverflowWords} word{refOverflowWords === 1 ? '' : 's'} continue onto page 2
-                  </p>
-                )}
               </div>
-              );
-            })()}
+            )}
 
             {template === 'photo_second' && renderPhotoZone('vertical')}
 
@@ -1213,12 +1198,6 @@ const ChapterEditor = () => {
                       {refSplit.page2}
                     </p>
                   </div>
-                  <p
-                    className="mt-1 text-[0.55rem] uppercase tracking-wider text-muted-foreground/45"
-                    style={{ fontFamily: 'var(--font-body)' }}
-                  >
-                    Continued from page 1 — edit above
-                  </p>
                 </div>
               );
             })()}
@@ -1277,10 +1256,19 @@ const ChapterEditor = () => {
             )}
             {showMemoryPlaceholder && placedMemories.length === 0 && <MemoryPlaceholder recipientName={recipientName} realistic />}
 
-            {/* Smart memory suggestion — only when chapter has room (yellow/red) */}
+            {/* Smart memory suggestion — only when page 2 has available words */}
             {(() => {
-              const status = getPage2Status(totalWords, template).status;
-              if (status === 'full') return null;
+              const page2Remaining = budget - totalWords;
+              if (page2Remaining <= 0) {
+                return (
+                  <p
+                    className="mt-6 text-center text-[0.78rem] italic text-[#EF4444]"
+                    style={{ fontFamily: 'var(--font-body)' }}
+                  >
+                    Page 2 is full — trim your writing to add a memory.
+                  </p>
+                );
+              }
               return (
                 <MemorySuggestion
                   memories={unplacedMemories}
@@ -1300,24 +1288,27 @@ const ChapterEditor = () => {
               </div>
             )}
 
-            {/* Unified word count */}
+            {/* Page 2 status — single simple line */}
             <div className="text-center mt-8 pt-4 border-t border-[hsl(var(--devotional-border))]">
-              <span className="font-medium" style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: wordCountColor(totalWords, budget) }}>
-                Chapter · {totalWords} / {budget} words
-              </span>
-              {totalWords > budget && (
-                <p
-                  className="mt-2 text-[0.7rem] font-medium"
-                  style={{ fontFamily: 'var(--font-body)', color: '#EF4444' }}
-                >
-                  {totalWords - budget} word{totalWords - budget === 1 ? '' : 's'} over limit — trim to fit the book.
-                </p>
-              )}
-              {isPhotoTemplate && (
-                <p className="text-[0.55rem] text-muted-foreground/40 mt-1" style={{ fontFamily: 'var(--font-body)' }}>
-                  ↑ Photo uses ~50% of this page — word limit adjusted
-                </p>
-              )}
+              {(() => {
+                const remaining = budget - totalWords;
+                const isOver = remaining < 0;
+                const color = isOver ? '#EF4444' : '#16A34A';
+                let label: string;
+                if (isOver) {
+                  const over = Math.abs(remaining);
+                  label = `Page 2 · ${over} word${over === 1 ? '' : 's'} over`;
+                } else if (remaining === 0) {
+                  label = 'Page 2 · Full';
+                } else {
+                  label = `Page 2 · ${remaining} word${remaining === 1 ? '' : 's'} available`;
+                }
+                return (
+                  <span className="font-medium" style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color }}>
+                    {label}
+                  </span>
+                );
+              })()}
             </div>
           </PageCanvas>
         )}
