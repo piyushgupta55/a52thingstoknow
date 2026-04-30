@@ -1288,24 +1288,27 @@ const ChapterEditor = () => {
               </div>
             )}
 
-            {/* Unified word count */}
+            {/* Page 2 status — single simple line */}
             <div className="text-center mt-8 pt-4 border-t border-[hsl(var(--devotional-border))]">
-              <span className="font-medium" style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: wordCountColor(totalWords, budget) }}>
-                Chapter · {totalWords} / {budget} words
-              </span>
-              {totalWords > budget && (
-                <p
-                  className="mt-2 text-[0.7rem] font-medium"
-                  style={{ fontFamily: 'var(--font-body)', color: '#EF4444' }}
-                >
-                  {totalWords - budget} word{totalWords - budget === 1 ? '' : 's'} over limit — trim to fit the book.
-                </p>
-              )}
-              {isPhotoTemplate && (
-                <p className="text-[0.55rem] text-muted-foreground/40 mt-1" style={{ fontFamily: 'var(--font-body)' }}>
-                  ↑ Photo uses ~50% of this page — word limit adjusted
-                </p>
-              )}
+              {(() => {
+                const remaining = budget - totalWords;
+                const isOver = remaining < 0;
+                const color = isOver ? '#EF4444' : '#16A34A';
+                let label: string;
+                if (isOver) {
+                  const over = Math.abs(remaining);
+                  label = `Page 2 · ${over} word${over === 1 ? '' : 's'} over`;
+                } else if (remaining === 0) {
+                  label = 'Page 2 · Full';
+                } else {
+                  label = `Page 2 · ${remaining} word${remaining === 1 ? '' : 's'} available`;
+                }
+                return (
+                  <span className="font-medium" style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color }}>
+                    {label}
+                  </span>
+                );
+              })()}
             </div>
           </PageCanvas>
         )}
