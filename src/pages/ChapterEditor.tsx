@@ -61,8 +61,8 @@ const MAX_CONTENT_LENGTH = 5000;
 // Unified word budgets per template
 const WORD_BUDGETS: Record<string, number> = {
   all_words: 450,
-  photo_top: 225,
-  photo_second: 225,
+  photo_top: 350,
+  photo_second: 350,
   letter: 200,
 };
 
