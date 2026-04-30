@@ -1222,9 +1222,6 @@ const ChapterEditor = () => {
                 </div>
               );
             })()}
-              </span>
-              <div className="flex-1 h-px bg-muted-foreground/20" />
-            </div>
 
              {/* Your Wisdom */}
             <div className="relative mt-8">
