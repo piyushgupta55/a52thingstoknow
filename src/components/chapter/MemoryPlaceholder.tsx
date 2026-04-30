@@ -37,14 +37,6 @@ const MemoryPlaceholder = ({ recipientName, realistic = false }: Props) => {
           <span className="text-[#C9A84C] mr-1">✦</span>
           {memory.text}
         </p>
-        <div className="mt-2 flex items-center justify-end">
-          <span
-            className="text-[0.55rem] text-muted-foreground/30"
-            style={{ fontFamily: 'var(--font-body)' }}
-          >
-            ~{memory.words} words
-          </span>
-        </div>
       </div>
     );
   }
