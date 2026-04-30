@@ -63,12 +63,6 @@ const MemoryPlaceholder = ({ recipientName, realistic = false }: Props) => {
         <span className="text-[#C9A84C] mr-1">✦</span>
         A memory will go here — a short story from someone who loves {recipientName || 'them'} that they'll keep forever.
       </p>
-      <p
-        className="mt-2 text-[0.6rem] uppercase tracking-[0.12em] text-muted-foreground/50"
-        style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem' }}
-      >
-        — Contributor Name
-      </p>
     </div>
   );
 };
