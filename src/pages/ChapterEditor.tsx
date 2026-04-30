@@ -1209,7 +1209,7 @@ const ChapterEditor = () => {
                   ref={wisdomTextareaRef}
                   placeholder=""
                   value={content}
-                  onInput={e => {
+                  onChange={e => {
                     const ta = e.target as HTMLTextAreaElement;
                     if (ta.value.length <= MAX_CONTENT_LENGTH) {
                       setContent(ta.value);
