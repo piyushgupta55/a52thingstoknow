@@ -1163,17 +1163,8 @@ const ChapterEditor = () => {
                     style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '200px' }}
                   />
                 </div>
-                {refOverflowWords > 0 && (
-                  <p
-                    className="mt-2 text-[0.6rem] uppercase tracking-wider text-muted-foreground/60"
-                    style={{ fontFamily: 'var(--font-body)' }}
-                  >
-                    ↓ {refOverflowWords} word{refOverflowWords === 1 ? '' : 's'} continue onto page 2
-                  </p>
-                )}
               </div>
-              );
-            })()}
+            )}
 
             {template === 'photo_second' && renderPhotoZone('vertical')}
 
