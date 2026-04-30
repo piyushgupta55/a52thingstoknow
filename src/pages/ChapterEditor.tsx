@@ -1238,6 +1238,7 @@ const ChapterEditor = () => {
         defaultTopic={chapter.title}
         onSelect={handleSelectFromPanel}
         excludeText={searchPanelType === 'verse' ? bibleVerseText : quoteText}
+        bookId={bookId}
       />
 
       {/* Unsaved changes dialog */}

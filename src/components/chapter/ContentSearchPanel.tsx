@@ -19,9 +19,10 @@ interface Props {
   defaultTopic: string;
   onSelect: (item: LibraryItem) => void;
   excludeText?: string;
+  bookId?: string;
 }
 
-const ContentSearchPanel = ({ open, onClose, type, defaultTopic, onSelect, excludeText }: Props) => {
+const ContentSearchPanel = ({ open, onClose, type, defaultTopic, onSelect, excludeText, bookId }: Props) => {
   const [searchTerm, setSearchTerm] = useState(defaultTopic);
   const [results, setResults] = useState<LibraryItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,7 +97,7 @@ const ContentSearchPanel = ({ open, onClose, type, defaultTopic, onSelect, exclu
     if (!manualText.trim()) return;
     setSavingManual(true);
 
-    const { data, error } = await supabase.from('content_pool').insert({
+    const insertPayload: any = {
       type: activeFilter,
       text: manualText.trim(),
       source: manualSource.trim() || null,
@@ -104,7 +105,14 @@ const ContentSearchPanel = ({ open, onClose, type, defaultTopic, onSelect, exclu
       topic_tags: [defaultTopic],
       status: 'approved',
       origin: 'author_written',
-    }).select('id, text, source, translation').single();
+    };
+    if (bookId) insertPayload.book_id = bookId;
+
+    const { data, error } = await supabase
+      .from('content_pool')
+      .insert(insertPayload)
+      .select('id, text, source, translation')
+      .single();
 
     setSavingManual(false);
 
@@ -114,6 +122,14 @@ const ContentSearchPanel = ({ open, onClose, type, defaultTopic, onSelect, exclu
         text: data.text,
         attribution: data.source || '',
         translation: data.translation,
+      });
+    } else {
+      // Fallback: still apply to chapter even if pool insert fails (e.g., RLS)
+      onSelect({
+        id: crypto.randomUUID(),
+        text: manualText.trim(),
+        attribution: manualSource.trim() || '',
+        translation: activeFilter === 'verse' ? (manualTranslation.trim() || null) : null,
       });
     }
   };
