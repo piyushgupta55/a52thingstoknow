@@ -19,9 +19,10 @@ interface Props {
   defaultTopic: string;
   onSelect: (item: LibraryItem) => void;
   excludeText?: string;
+  bookId?: string;
 }
 
-const ContentSearchPanel = ({ open, onClose, type, defaultTopic, onSelect, excludeText }: Props) => {
+const ContentSearchPanel = ({ open, onClose, type, defaultTopic, onSelect, excludeText, bookId }: Props) => {
   const [searchTerm, setSearchTerm] = useState(defaultTopic);
   const [results, setResults] = useState<LibraryItem[]>([]);
   const [loading, setLoading] = useState(false);
