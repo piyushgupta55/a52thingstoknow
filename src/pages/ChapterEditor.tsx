@@ -778,10 +778,30 @@ const ChapterEditor = () => {
 
   // Word count color helper
   const wordCountColor = (count: number, limit: number) => {
-    const pct = limit ? (count / limit) * 100 : 0;
-    if (pct >= 90) return '#EF4444';
-    if (pct >= 75) return '#D97706';
-    return '#9CA3AF';
+    if (limit && count > limit) return '#EF4444';
+    if (limit && count >= limit * 0.9) return '#D97706';
+    return '#16A34A';
+  };
+
+  // Split reference text by word count for the editor's two-page visual.
+  // page1Limit = ~150 words for classic chapters, ~75 for photo chapters
+  // (photo chapters give half of page 1 to the image).
+  const splitRefByWordLimit = (text: string, wordLimit: number) => {
+    if (!text) return { page1: '', page2: '' };
+    // Tokenize while preserving whitespace so we can re-join exactly.
+    const tokens = text.split(/(\s+)/);
+    let words = 0;
+    let splitAt = tokens.length;
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i] && !/^\s+$/.test(tokens[i])) {
+        words++;
+        if (words > wordLimit) { splitAt = i; break; }
+      }
+    }
+    return {
+      page1: tokens.slice(0, splitAt).join(''),
+      page2: tokens.slice(splitAt).join('').replace(/^\s+/, ''),
+    };
   };
 
   if (loading) return (
