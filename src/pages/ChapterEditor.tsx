@@ -224,8 +224,10 @@ const ChapterEditor = () => {
   const refWords = referenceText.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
   const contentWords = content.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
   const paragraphBreaks = (referenceText.match(/\n\n/g) || []).length;
-  const memorySlots = showMemoryPlaceholder ? 1 : 0;
-  const totalWords = refWords + contentWords + (paragraphBreaks * 3) + (memorySlots * 40);
+  // Show the empty placeholder slot only when there are no real placed memories
+  const memorySlots = showMemoryPlaceholder && (placedMemories?.length ?? 0) === 0 ? 1 : 0;
+  const placedMemoryWords = (placedMemories?.length ?? 0) * 40;
+  const totalWords = refWords + contentWords + (paragraphBreaks * 3) + (memorySlots * 40) + placedMemoryWords;
 
   const enterPreview = () => {
     setPreviewMode(true);
@@ -599,13 +601,33 @@ const ChapterEditor = () => {
 
   const handlePlaceSuggestion = (memoryId: string) => {
     // Overflow check: would adding this memory push the chapter past budget?
+    // Use the same components as the displayed totalWords so the warning
+    // matches what the author sees in the word counter.
     const projectedMemoryCount = placedMemories.length + 1;
-    const projected = refWords + contentWords + (paragraphBreaks * 3) + (projectedMemoryCount * 40);
+    // After placement the empty placeholder slot disappears, so don't count it.
+    const projected =
+      refWords + contentWords + paragraphBreaks * 3 + projectedMemoryCount * 40;
     if (projected > budget) {
       setOverflowConfirm({ memoryId });
       return;
     }
     placeSuggestionMemory(memoryId);
+  };
+
+  const handleUnplaceMemory = async (memoryId: string) => {
+    const target = placedMemories.find(m => m.id === memoryId);
+    const { error } = await supabase
+      .from('memories')
+      .update({ chapter_id: null, status: 'unplaced', placed_at: null })
+      .eq('id', memoryId);
+    if (error) {
+      toast({ title: 'Could not remove memory', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setPlacedMemories(prev => prev.filter(m => m.id !== memoryId));
+    if (target) setUnplacedMemories(prev => [...prev, target]);
+    setHasUnsavedChanges(true);
+    toast({ title: 'Memory returned to pool — remember to Save Draft.' });
   };
 
   const [photoWarning, setPhotoWarning] = useState<string | null>(null);
@@ -1159,7 +1181,12 @@ const ChapterEditor = () => {
             {placedMemories.length > 0 && (
               <>
                 {placedMemories.map(m => (
-                  <PlacedMemory key={m.id} text={m.memory_text} fromName={m.contributor_name} />
+                  <PlacedMemory
+                    key={m.id}
+                    text={m.memory_text}
+                    fromName={m.contributor_name}
+                    onRemove={() => handleUnplaceMemory(m.id)}
+                  />
                 ))}
               </>
             )}
