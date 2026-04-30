@@ -1198,12 +1198,6 @@ const ChapterEditor = () => {
                       {refSplit.page2}
                     </p>
                   </div>
-                  <p
-                    className="mt-1 text-[0.55rem] uppercase tracking-wider text-muted-foreground/45"
-                    style={{ fontFamily: 'var(--font-body)' }}
-                  >
-                    Continued from page 1 — edit above
-                  </p>
                 </div>
               );
             })()}
