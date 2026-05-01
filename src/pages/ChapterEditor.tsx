@@ -1211,10 +1211,8 @@ const ChapterEditor = () => {
                   value={content}
                   onChange={e => {
                     const ta = e.target as HTMLTextAreaElement;
-                    if (ta.value.length <= MAX_CONTENT_LENGTH) {
-                      setContent(ta.value);
-                      setHasUnsavedChanges(true);
-                    }
+                    setContent(ta.value);
+                    setHasUnsavedChanges(true);
                     ta.style.height = 'auto';
                     ta.style.height = ta.scrollHeight + 'px';
                   }}
@@ -1225,10 +1223,8 @@ const ChapterEditor = () => {
                     const start = ta.selectionStart;
                     const end = ta.selectionEnd;
                     const newVal = content.slice(0, start) + text + content.slice(end);
-                    if (newVal.length <= MAX_CONTENT_LENGTH) {
-                      setContent(newVal);
-                      setHasUnsavedChanges(true);
-                    }
+                    setContent(newVal);
+                    setHasUnsavedChanges(true);
                     requestAnimationFrame(() => {
                       ta.selectionStart = ta.selectionEnd = start + text.length;
                       ta.style.height = 'auto';
