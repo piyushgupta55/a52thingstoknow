@@ -1203,14 +1203,21 @@ const ChapterEditor = () => {
             })()}
 
              {/* Your Wisdom */}
-            <div className="relative mt-8">
-              <div className="transition-all duration-200 rounded-sm inline-block w-full" style={{ borderLeft: '3px solid #C9A84C', background: '#FDFAF4', margin: '0 -8px', padding: '12px 8px 12px 19px' }}>
+            <div className="relative z-10 mt-8" style={{ pointerEvents: 'auto' }}>
+              <div className="transition-all duration-200 rounded-sm inline-block w-full" style={{ borderLeft: '3px solid #C9A84C', background: '#FDFAF4', margin: '0 -8px', padding: '12px 8px 12px 19px', pointerEvents: 'auto' }}>
                 <textarea
                   ref={wisdomTextareaRef}
                   placeholder=""
                   value={content}
+                  onInput={e => {
+                    const ta = e.currentTarget;
+                    setContent(ta.value);
+                    setHasUnsavedChanges(true);
+                    ta.style.height = 'auto';
+                    ta.style.height = ta.scrollHeight + 'px';
+                  }}
                   onChange={e => {
-                    const ta = e.target as HTMLTextAreaElement;
+                    const ta = e.currentTarget;
                     setContent(ta.value);
                     setHasUnsavedChanges(true);
                     ta.style.height = 'auto';
@@ -1232,8 +1239,8 @@ const ChapterEditor = () => {
                     });
                   }}
                   rows={2}
-                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80 placeholder:text-muted-foreground/25"
-                  style={{ fontFamily: 'var(--font-devotional)', height: '80px', minHeight: '80px', overflow: 'hidden' }}
+                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80 placeholder:text-muted-foreground/25 pointer-events-auto"
+                  style={{ fontFamily: 'var(--font-devotional)', height: '80px', minHeight: '80px', overflow: 'hidden', pointerEvents: 'auto' }}
                 />
               </div>
             </div>
