@@ -1205,37 +1205,30 @@ const ChapterEditor = () => {
             })()}
 
             {/* Your Wisdom */}
-            <div className="my-8 relative z-10" style={{ isolation: 'isolate', pointerEvents: 'auto' }}>
+            <div className="my-8 relative">
               <div
-                className="transition-all duration-200 rounded-sm inline-block w-full"
+                className="transition-all duration-200 rounded-sm"
                 style={{
                   borderLeft: '3px solid #C9A84C',
                   background: '#FDFAF4',
                   margin: '0 -8px',
                   padding: '12px 8px 12px 19px',
-                  pointerEvents: 'auto',
                 }}
               >
                 <textarea
                   ref={wisdomTextareaRef}
-                  placeholder=""
                   value={content}
                   onFocus={e => {
+                    e.target.setAttribute('data-no-scroll', 'true');
                     const scrollY = window.scrollY;
                     requestAnimationFrame(() => {
                       window.scrollTo({ top: scrollY });
                     });
                   }}
-                  onInput={e => {
-                    const ta = e.currentTarget;
-                    setContent(ta.value);
-                    setHasUnsavedChanges(true);
-                    ta.style.height = 'auto';
-                    ta.style.height = ta.scrollHeight + 'px';
-                  }}
                   onChange={e => {
                     setContent(e.target.value);
                     setHasUnsavedChanges(true);
+                    if (!hasEditedWisdom) setHasEditedWisdom(true);
                     e.target.style.height = 'auto';
                     e.target.style.height = e.target.scrollHeight + 'px';
                   }}
@@ -1248,14 +1241,15 @@ const ChapterEditor = () => {
                     const newVal = content.slice(0, start) + text + content.slice(end);
                     setContent(newVal);
                     setHasUnsavedChanges(true);
+                    if (!hasEditedWisdom) setHasEditedWisdom(true);
                     requestAnimationFrame(() => {
                       ta.selectionStart = ta.selectionEnd = start + text.length;
                       ta.style.height = 'auto';
                       ta.style.height = ta.scrollHeight + 'px';
                     });
                   }}
-                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80 placeholder:text-muted-foreground/25 pointer-events-auto"
-                  style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '80px', pointerEvents: 'auto' }}
+                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25"
+                  style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '200px' }}
                 />
               </div>
             </div>
