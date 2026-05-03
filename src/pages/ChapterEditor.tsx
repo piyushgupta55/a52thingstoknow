@@ -263,7 +263,9 @@ const ChapterEditor = () => {
   }, []);
 
   useEffect(() => {
-    window.scrollTo(0, scrollPositionRef.current);
+    if (scrollPositionRef.current > 0) {
+      window.scrollTo(0, scrollPositionRef.current);
+    }
   });
 
   useEffect(() => {
@@ -1203,14 +1205,15 @@ const ChapterEditor = () => {
             })()}
 
             {/* Your Wisdom */}
-            <div className="my-8 relative">
+            <div className="my-8 relative z-10" style={{ isolation: 'isolate', pointerEvents: 'auto' }}>
               <div
-                className="transition-all duration-200 rounded-sm"
+                className="transition-all duration-200 rounded-sm inline-block w-full"
                 style={{
                   borderLeft: '3px solid #C9A84C',
                   background: '#FDFAF4',
                   margin: '0 -8px',
                   padding: '12px 8px 12px 19px',
+                  pointerEvents: 'auto',
                 }}
               >
                 <textarea
@@ -1222,6 +1225,13 @@ const ChapterEditor = () => {
                     requestAnimationFrame(() => {
                       window.scrollTo({ top: scrollY });
                     });
+                  }}
+                  onInput={e => {
+                    const ta = e.currentTarget;
+                    setContent(ta.value);
+                    setHasUnsavedChanges(true);
+                    ta.style.height = 'auto';
+                    ta.style.height = ta.scrollHeight + 'px';
                   }}
                   onChange={e => {
                     setContent(e.target.value);
@@ -1244,8 +1254,8 @@ const ChapterEditor = () => {
                       ta.style.height = ta.scrollHeight + 'px';
                     });
                   }}
-                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80 placeholder:text-muted-foreground/25"
-                  style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '80px' }}
+                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80 placeholder:text-muted-foreground/25 pointer-events-auto"
+                  style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '80px', pointerEvents: 'auto' }}
                 />
               </div>
             </div>
