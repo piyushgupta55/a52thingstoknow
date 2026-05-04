@@ -1171,35 +1171,7 @@ const ChapterEditor = () => {
               <div className="flex-1 h-px bg-muted-foreground/20" />
             </div>
 
-            {/* Reference text overflow — read-only echo of what spills to page 2 */}
-            {referenceText && (() => {
-              const refPage1Limit = isPhotoTemplate ? 75 : 150;
-              const refSplit = splitRefByWordLimit(referenceText, refPage1Limit);
-              if (!refSplit.page2) return null;
-              return (
-                <div className="mt-6 mb-2 relative" style={{ pointerEvents: 'none' }}>
-                  <div
-                    className="rounded-sm"
-                    style={{
-                      borderLeft: '3px solid #C9A84C',
-                      background: '#FDFAF4',
-                      margin: '0 -8px',
-                      padding: '12px 8px 12px 19px',
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    <div style={{ pointerEvents: 'none' }}>
-                      <p
-                        className="pointer-events-none select-none text-[14px] italic leading-[1.75] text-foreground/55 whitespace-pre-wrap m-0"
-                        style={{ fontFamily: 'var(--font-devotional)', pointerEvents: 'none', userSelect: 'none' }}
-                      >
-                        {refSplit.page2}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+            {/* Page 2 reference overflow removed — page 1 textarea scrolls naturally */}
 
             {/* Your Wisdom */}
             <div className="my-8 relative z-10">
