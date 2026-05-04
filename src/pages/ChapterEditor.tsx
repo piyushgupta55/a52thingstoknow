@@ -1257,7 +1257,8 @@ const ChapterEditor = () => {
                       ta.style.height = ta.scrollHeight + 'px';
                     });
                   }}
-                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25"
+                  className="w-full border-0 bg-transparent resize-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25 focus:outline focus:outline-2 focus:outline-red-500"
+                  id="page2-wisdom-textarea"
                   style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '200px' }}
                 />
               </div>
