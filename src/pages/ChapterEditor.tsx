@@ -1200,7 +1200,7 @@ const ChapterEditor = () => {
             })()}
 
             {/* Your Wisdom */}
-            <div className="my-8 relative">
+            <div className="my-8 relative z-10">
               <div
                 className="transition-all duration-200 rounded-sm"
                 style={{
