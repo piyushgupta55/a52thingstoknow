@@ -262,28 +262,6 @@ const ChapterEditor = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // DEBUG: log every click target and the active element after click
-  useEffect(() => {
-    const onCapture = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      // eslint-disable-next-line no-console
-      console.log('[click capture]', t.tagName, t.className?.toString().slice(0, 80), 'id=', t.id);
-    };
-    const onBubble = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      setTimeout(() => {
-        // eslint-disable-next-line no-console
-        console.log('[click bubble]', t.tagName, '→ activeElement:', document.activeElement?.tagName, (document.activeElement as HTMLElement)?.id || (document.activeElement as HTMLElement)?.className?.toString().slice(0, 80));
-      }, 0);
-    };
-    document.addEventListener('click', onCapture, true);
-    document.addEventListener('click', onBubble, false);
-    return () => {
-      document.removeEventListener('click', onCapture, true);
-      document.removeEventListener('click', onBubble, false);
-    };
-  }, []);
-
   useEffect(() => {
     if (!chapterId || !bookId) return;
     setLoading(true);
