@@ -1188,12 +1188,14 @@ const ChapterEditor = () => {
                       pointerEvents: 'none',
                     }}
                   >
-                    <p
-                      className="text-[14px] italic leading-[1.75] text-foreground/55 whitespace-pre-wrap m-0"
-                      style={{ fontFamily: 'var(--font-devotional)', pointerEvents: 'none' }}
-                    >
-                      {refSplit.page2}
-                    </p>
+                    <div style={{ pointerEvents: 'none' }}>
+                      <p
+                        className="text-[14px] italic leading-[1.75] text-foreground/55 whitespace-pre-wrap m-0"
+                        style={{ fontFamily: 'var(--font-devotional)', pointerEvents: 'none', userSelect: 'none' }}
+                      >
+                        {refSplit.page2}
+                      </p>
+                    </div>
                   </div>
                 </div>
               );
