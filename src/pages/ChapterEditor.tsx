@@ -263,12 +263,6 @@ const ChapterEditor = () => {
   }, []);
 
   useEffect(() => {
-    if (scrollPositionRef.current > 0) {
-      window.scrollTo(0, scrollPositionRef.current);
-    }
-  });
-
-  useEffect(() => {
     if (!chapterId || !bookId) return;
     setLoading(true);
     setHasUnsavedChanges(false);
