@@ -262,6 +262,28 @@ const ChapterEditor = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // DEBUG: log every click target and the active element after click
+  useEffect(() => {
+    const onCapture = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      // eslint-disable-next-line no-console
+      console.log('[click capture]', t.tagName, t.className?.toString().slice(0, 80), 'id=', t.id);
+    };
+    const onBubble = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      setTimeout(() => {
+        // eslint-disable-next-line no-console
+        console.log('[click bubble]', t.tagName, '→ activeElement:', document.activeElement?.tagName, (document.activeElement as HTMLElement)?.id || (document.activeElement as HTMLElement)?.className?.toString().slice(0, 80));
+      }, 0);
+    };
+    document.addEventListener('click', onCapture, true);
+    document.addEventListener('click', onBubble, false);
+    return () => {
+      document.removeEventListener('click', onCapture, true);
+      document.removeEventListener('click', onBubble, false);
+    };
+  }, []);
+
   useEffect(() => {
     if (!chapterId || !bookId) return;
     setLoading(true);
@@ -1235,7 +1257,8 @@ const ChapterEditor = () => {
                       ta.style.height = ta.scrollHeight + 'px';
                     });
                   }}
-                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25"
+                  className="w-full border-0 bg-transparent resize-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25 focus:outline focus:outline-2 focus:outline-red-500"
+                  id="page2-wisdom-textarea"
                   style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '200px' }}
                 />
               </div>
