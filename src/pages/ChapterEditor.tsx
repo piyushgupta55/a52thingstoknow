@@ -1104,117 +1104,113 @@ const ChapterEditor = () => {
 
             <DevotionalQuote text={quoteText} attribution={quoteAttribution} onTextChange={v => { setQuoteText(v); setQuoteId(null); setHasUnsavedChanges(true); }} onAttrChange={v => { setQuoteAttribution(v); setHasUnsavedChanges(true); }} onFindAlternatives={() => handleFindAlternatives('quote')} editing={editingQuote} onToggleEdit={() => setEditingQuote(!editingQuote)} previewMode={false} />
 
-            {/* Reference text — page 1 portion (overflow shown below page break) */}
-            {referenceText && (
-              <div className="my-8 relative">
-                <div
-                  className="transition-all duration-200 rounded-sm"
-                  style={{
-                    borderLeft: '3px solid #C9A84C',
-                    background: '#FDFAF4',
-                    margin: '0 -8px',
-                    padding: '12px 8px 12px 19px',
-                  }}
-                >
-                <textarea
-                    ref={refTextareaRef}
-                    value={referenceText}
-                    onFocus={e => {
-                      e.target.setAttribute('data-no-scroll', 'true');
-                      const scrollY = window.scrollY;
-                      requestAnimationFrame(() => {
-                        window.scrollTo({ top: scrollY });
-                      });
-                    }}
-                    onChange={e => {
-                      setReferenceText(e.target.value);
-                      setHasUnsavedChanges(true);
-                      if (!hasEditedWisdom) setHasEditedWisdom(true);
-                      e.target.style.height = 'auto';
-                      e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                    onPaste={e => {
-                      e.preventDefault();
-                      const text = e.clipboardData.getData('text/plain');
-                      const ta = e.target as HTMLTextAreaElement;
-                      const start = ta.selectionStart;
-                      const end = ta.selectionEnd;
-                      const newVal = referenceText.slice(0, start) + text + referenceText.slice(end);
-                      setReferenceText(newVal);
-                      setHasUnsavedChanges(true);
-                      if (!hasEditedWisdom) setHasEditedWisdom(true);
-                      requestAnimationFrame(() => {
-                        ta.selectionStart = ta.selectionEnd = start + text.length;
-                        ta.style.height = 'auto';
-                        ta.style.height = ta.scrollHeight + 'px';
-                      });
-                    }}
-                    className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25"
-                    style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '200px' }}
-                  />
-                </div>
-              </div>
-            )}
-
             {template === 'photo_second' && renderPhotoZone('vertical')}
 
-            {/* ─── Page break divider ─── */}
-            <div
-              className="mt-10 mb-2 flex items-center gap-3 select-none"
-              aria-hidden="true"
-              style={{ fontFamily: 'var(--font-body)' }}
-            >
-              <div className="flex-1 h-px bg-muted-foreground/20" />
-              <span className="text-[0.65rem] uppercase tracking-[0.22em] text-muted-foreground/55">
-                <span className="text-[#C9A84C] mr-1.5">✦</span>Page 2
-              </span>
-              <div className="flex-1 h-px bg-muted-foreground/20" />
-            </div>
+            {/* ─── Single continuous chapter textarea ─── */}
+            {(() => {
+              const SEP = '\n\n';
+              const combined = referenceText
+                ? (content ? `${referenceText}${SEP}${content}` : referenceText)
+                : content;
 
-            {/* Page 2 reference overflow removed — page 1 textarea scrolls naturally */}
+              // Page 1 word boundary — classic 150, photo templates 75
+              const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
+              const PAGE_1_WORD_LIMIT = isPhotoTpl ? 75 : 150;
 
-            {/* Your Wisdom */}
-            <div className="my-8 relative z-10">
-              <div
-                className="transition-all duration-200 rounded-sm"
-                style={{
-                  borderLeft: '3px solid #C9A84C',
-                  background: '#FDFAF4',
-                  margin: '0 -8px',
-                  padding: '12px 8px 12px 19px',
-                }}
-              >
-                <textarea
-                  ref={wisdomTextareaRef}
-                  value={content}
-                  onChange={e => {
-                    setContent(e.target.value);
-                    setHasUnsavedChanges(true);
-                    if (!hasEditedWisdom) setHasEditedWisdom(true);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = e.target.scrollHeight + 'px';
-                  }}
-                  onPaste={e => {
-                    e.preventDefault();
-                    const text = e.clipboardData.getData('text/plain');
-                    const ta = e.target as HTMLTextAreaElement;
-                    const start = ta.selectionStart;
-                    const end = ta.selectionEnd;
-                    const newVal = content.slice(0, start) + text + content.slice(end);
-                    setContent(newVal);
-                    setHasUnsavedChanges(true);
-                    if (!hasEditedWisdom) setHasEditedWisdom(true);
-                    requestAnimationFrame(() => {
-                      ta.selectionStart = ta.selectionEnd = start + text.length;
-                      ta.style.height = 'auto';
-                      ta.style.height = ta.scrollHeight + 'px';
-                    });
-                  }}
-                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25"
-                  style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '200px' }}
-                />
-              </div>
-            </div>
+              const splitAtWordLimit = (text: string, limit: number) => {
+                const tokens = text.split(/(\s+)/);
+                let words = 0;
+                let splitAt = tokens.length;
+                for (let i = 0; i < tokens.length; i++) {
+                  if (tokens[i] && !/^\s+$/.test(tokens[i])) {
+                    words++;
+                    if (words > limit) { splitAt = i; break; }
+                  }
+                }
+                return {
+                  ref: tokens.slice(0, splitAt).join(''),
+                  rest: tokens.slice(splitAt).join('').replace(/^\s+/, ''),
+                };
+              };
+
+              const applyCombined = (newVal: string) => {
+                const { ref, rest } = splitAtWordLimit(newVal, PAGE_1_WORD_LIMIT);
+                setReferenceText(ref);
+                setContent(rest);
+                setHasUnsavedChanges(true);
+                if (!hasEditedWisdom) setHasEditedWisdom(true);
+              };
+
+              const totalChapterWords = combined.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+              const showPageBreak = totalChapterWords > PAGE_1_WORD_LIMIT;
+
+              return (
+                <>
+                  <div className="my-8 relative">
+                    <div
+                      className="transition-all duration-200 rounded-sm"
+                      style={{
+                        borderLeft: '3px solid #C9A84C',
+                        background: '#FDFAF4',
+                        margin: '0 -8px',
+                        padding: '12px 8px 12px 19px',
+                      }}
+                    >
+                      <textarea
+                        ref={wisdomTextareaRef}
+                        value={combined}
+                        onFocus={e => {
+                          e.target.setAttribute('data-no-scroll', 'true');
+                          const scrollY = window.scrollY;
+                          requestAnimationFrame(() => {
+                            window.scrollTo({ top: scrollY });
+                          });
+                        }}
+                        onChange={e => {
+                          if (e.target.value.length <= MAX_CONTENT_LENGTH) {
+                            applyCombined(e.target.value);
+                          }
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        onPaste={e => {
+                          e.preventDefault();
+                          const text = e.clipboardData.getData('text/plain');
+                          const ta = e.target as HTMLTextAreaElement;
+                          const start = ta.selectionStart;
+                          const end = ta.selectionEnd;
+                          const newVal = combined.slice(0, start) + text + combined.slice(end);
+                          if (newVal.length <= MAX_CONTENT_LENGTH) {
+                            applyCombined(newVal);
+                          }
+                          requestAnimationFrame(() => {
+                            ta.selectionStart = ta.selectionEnd = start + text.length;
+                            ta.style.height = 'auto';
+                            ta.style.height = ta.scrollHeight + 'px';
+                          });
+                        }}
+                        className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25"
+                        style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '300px' }}
+                      />
+                    </div>
+                  </div>
+
+                  {showPageBreak && (
+                    <div
+                      className="mt-2 mb-6 flex items-center gap-3 select-none"
+                      aria-hidden="true"
+                      style={{ fontFamily: 'var(--font-body)' }}
+                    >
+                      <div className="flex-1 h-px bg-muted-foreground/20" />
+                      <span className="text-[0.65rem] uppercase tracking-[0.22em] text-muted-foreground/55">
+                        <span className="text-[#C9A84C] mr-1.5">✦</span>Page 2
+                      </span>
+                      <div className="flex-1 h-px bg-muted-foreground/20" />
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             {placedMemories.length > 0 && (
               <>
