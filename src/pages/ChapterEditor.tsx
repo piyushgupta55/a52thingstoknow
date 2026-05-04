@@ -263,12 +263,6 @@ const ChapterEditor = () => {
   }, []);
 
   useEffect(() => {
-    if (scrollPositionRef.current > 0) {
-      window.scrollTo(0, scrollPositionRef.current);
-    }
-  });
-
-  useEffect(() => {
     if (!chapterId || !bookId) return;
     setLoading(true);
     setHasUnsavedChanges(false);
@@ -1218,13 +1212,6 @@ const ChapterEditor = () => {
                 <textarea
                   ref={wisdomTextareaRef}
                   value={content}
-                  onFocus={e => {
-                    e.target.setAttribute('data-no-scroll', 'true');
-                    const scrollY = window.scrollY;
-                    requestAnimationFrame(() => {
-                      window.scrollTo({ top: scrollY });
-                    });
-                  }}
                   onChange={e => {
                     setContent(e.target.value);
                     setHasUnsavedChanges(true);
