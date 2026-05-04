@@ -1199,7 +1199,7 @@ const ChapterEditor = () => {
               const refSplit = splitRefByWordLimit(referenceText, refPage1Limit);
               if (!refSplit.page2) return null;
               return (
-                <div className="mt-6 mb-2 relative">
+                <div className="mt-6 mb-2 relative" style={{ pointerEvents: 'none' }}>
                   <div
                     className="rounded-sm"
                     style={{
@@ -1207,11 +1207,12 @@ const ChapterEditor = () => {
                       background: '#FDFAF4',
                       margin: '0 -8px',
                       padding: '12px 8px 12px 19px',
+                      pointerEvents: 'none',
                     }}
                   >
                     <p
                       className="text-[14px] italic leading-[1.75] text-foreground/55 whitespace-pre-wrap m-0"
-                      style={{ fontFamily: 'var(--font-devotional)' }}
+                      style={{ fontFamily: 'var(--font-devotional)', pointerEvents: 'none' }}
                     >
                       {refSplit.page2}
                     </p>
