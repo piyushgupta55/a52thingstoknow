@@ -1271,7 +1271,16 @@ const ChapterEditor = () => {
             {/* Page 2 status — single simple line */}
             <div className="text-center mt-8 pt-4 border-t border-[hsl(var(--devotional-border))]">
               {(() => {
-                const remaining = budget - totalWords;
+                const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
+                const PAGE_1_LIMIT = isPhotoTpl ? 75 : 150;
+                const page2Budget = Math.max(0, budget - PAGE_1_LIMIT);
+                const contentParagraphBreaks = (content.match(/\n\n/g) || []).length;
+                const page2Words =
+                  contentWords +
+                  contentParagraphBreaks * 3 +
+                  memorySlots * 40 +
+                  placedMemoryWords;
+                const remaining = page2Budget - page2Words;
                 const isOver = remaining < 0;
                 const color = isOver ? '#EF4444' : '#16A34A';
                 let label: string;
