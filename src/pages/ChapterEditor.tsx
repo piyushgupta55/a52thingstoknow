@@ -1108,10 +1108,17 @@ const ChapterEditor = () => {
 
             {/* ─── Single continuous chapter textarea ─── */}
             {(() => {
-              const SEP = '\n\n';
-              const combined = referenceText
-                ? (content ? `${referenceText}${SEP}${content}` : referenceText)
-                : content;
+              // Join without an artificial paragraph break — splitAtWordLimit
+              // preserves the boundary whitespace token in `ref`, so plain
+              // concatenation reconstructs the original text. Insert a single
+              // space only when neither side has a boundary whitespace
+              // (can happen after loading legacy DB rows).
+              const needsSpace =
+                referenceText.length > 0 &&
+                content.length > 0 &&
+                !/\s$/.test(referenceText) &&
+                !/^\s/.test(content);
+              const combined = referenceText + (needsSpace ? ' ' : '') + content;
 
               // Page 1 word boundary — classic 150, photo templates 75
               const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
