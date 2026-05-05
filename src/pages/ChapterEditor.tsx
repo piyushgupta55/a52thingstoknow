@@ -1108,10 +1108,17 @@ const ChapterEditor = () => {
 
             {/* ─── Single continuous chapter textarea ─── */}
             {(() => {
-              const SEP = '\n\n';
-              const combined = referenceText
-                ? (content ? `${referenceText}${SEP}${content}` : referenceText)
-                : content;
+              // Join without an artificial paragraph break — splitAtWordLimit
+              // preserves the boundary whitespace token in `ref`, so plain
+              // concatenation reconstructs the original text. Insert a single
+              // space only when neither side has a boundary whitespace
+              // (can happen after loading legacy DB rows).
+              const needsSpace =
+                referenceText.length > 0 &&
+                content.length > 0 &&
+                !/\s$/.test(referenceText) &&
+                !/^\s/.test(content);
+              const combined = referenceText + (needsSpace ? ' ' : '') + content;
 
               // Page 1 word boundary — classic 150, photo templates 75
               const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
@@ -1264,7 +1271,16 @@ const ChapterEditor = () => {
             {/* Page 2 status — single simple line */}
             <div className="text-center mt-8 pt-4 border-t border-[hsl(var(--devotional-border))]">
               {(() => {
-                const remaining = budget - totalWords;
+                const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
+                const PAGE_1_LIMIT = isPhotoTpl ? 75 : 150;
+                const page2Budget = Math.max(0, budget - PAGE_1_LIMIT);
+                const contentParagraphBreaks = (content.match(/\n\n/g) || []).length;
+                const page2Words =
+                  contentWords +
+                  contentParagraphBreaks * 3 +
+                  memorySlots * 40 +
+                  placedMemoryWords;
+                const remaining = page2Budget - page2Words;
                 const isOver = remaining < 0;
                 const color = isOver ? '#EF4444' : '#16A34A';
                 let label: string;
