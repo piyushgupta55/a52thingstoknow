@@ -226,7 +226,11 @@ const ChapterEditor = () => {
   const paragraphBreaks = (referenceText.match(/\n\n/g) || []).length;
   // Show the empty placeholder slot only when there are no real placed memories
   const memorySlots = showMemoryPlaceholder && (placedMemories?.length ?? 0) === 0 ? 1 : 0;
-  const placedMemoryWords = (placedMemories?.length ?? 0) * 40;
+  // Use actual word counts from memory text for display accuracy.
+  // The 40-word flat estimate is kept only for the overflow guard (conservative buffer).
+  const placedMemoryWords = (placedMemories ?? []).reduce((sum, m) => {
+    return sum + (m.memory_text || '').trim().split(/\s+/).filter(Boolean).length;
+  }, 0);
   const totalWords = refWords + contentWords + (paragraphBreaks * 3) + (memorySlots * 40) + placedMemoryWords;
 
   const enterPreview = () => {
@@ -370,6 +374,17 @@ const ChapterEditor = () => {
       }
       setLoading(false);
       setPreviewMode(true);
+
+      // After data is fully loaded, auto-resize the merged wisdom textarea
+      // so it fits its content with no empty gap on first edit.
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          if (wisdomTextareaRef.current) {
+            wisdomTextareaRef.current.style.height = 'auto';
+            wisdomTextareaRef.current.style.height = wisdomTextareaRef.current.scrollHeight + 'px';
+          }
+        }, 100);
+      });
     };
     load();
   }, [chapterId, bookId]);
