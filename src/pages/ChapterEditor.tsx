@@ -1288,7 +1288,7 @@ const ChapterEditor = () => {
               {(() => {
                 const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
                 const PAGE_1_LIMIT = isPhotoTpl ? 75 : 150;
-                const page2Budget = Math.max(0, budget - PAGE_1_LIMIT);
+                const page2Budget = Math.max(0, budget - refWords);
                 const contentParagraphBreaks = (content.match(/\n\n/g) || []).length;
                 const page2Words =
                   contentWords +
