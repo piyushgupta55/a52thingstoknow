@@ -1292,11 +1292,14 @@ const ChapterEditor = () => {
                 const combined = referenceText + ' ' + content;
                 const combinedWords = combined.trim().split(/\s+/).filter(Boolean).length;
                 const allParagraphBreaks = (combined.match(/\n\n/g) || []).length;
+                const actualPlacedWords = (placedMemories ?? []).reduce((sum, m) => {
+                  return sum + (m.memory_text || '').trim().split(/\s+/).filter(Boolean).length;
+                }, 0);
                 const page2Words =
                   Math.max(0, combinedWords - PAGE_1_LIMIT) +
                   allParagraphBreaks * 3 +
                   memorySlots * 40 +
-                  placedMemoryWords;
+                  actualPlacedWords;
                 const remaining = page2Budget - page2Words;
                 const isOver = remaining < 0;
                 const color = isOver ? '#EF4444' : '#16A34A';
