@@ -107,7 +107,6 @@ const MemoryCaptureOverlay = ({
   const pronoun = pronounFromGender(recipientGender);
 
   const PROMPT = `Nice work on that chapter. While ${recipientName} is on your mind — tell me one thing you remember about ${pronoun}. It doesn't have to be long. Just a moment.`;
-  const FAREWELL = `These will find their way into the book wherever there's space. You can always add more from your dashboard anytime.`;
 
   const saveMemory = async (placeInChapter = false): Promise<boolean> => {
     if (!text.trim() || !fromName.trim()) return false;
