@@ -398,16 +398,6 @@ const MemoryCaptureOverlay = ({
 
             {stage === 'farewell' && (
               <>
-                <div
-                  className="rounded-xl px-4 py-3 text-sm leading-relaxed"
-                  style={{
-                    background: 'hsl(var(--secondary))',
-                    color: 'hsl(var(--foreground))',
-                    fontFamily: 'var(--font-body)',
-                  }}
-                >
-                  {FAREWELL}
-                </div>
                 <div className="flex justify-end">
                   <Button onClick={onClose}>Close</Button>
                 </div>
