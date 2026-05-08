@@ -1289,9 +1289,9 @@ const ChapterEditor = () => {
                 const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
                 const PAGE_1_LIMIT = isPhotoTpl ? 75 : 150;
                 const page2Budget = Math.max(0, budget - PAGE_1_LIMIT);
-                const combined = referenceText + ' ' + content;
-                const combinedWords = combined.trim().split(/\s+/).filter(Boolean).length;
-                const allParagraphBreaks = (combined.match(/\n\n/g) || []).length;
+                const rawText = wisdomTextareaRef.current?.value ?? (referenceText + ' ' + content);
+                const combinedWords = rawText.trim().split(/\s+/).filter(Boolean).length;
+                const allParagraphBreaks = (rawText.match(/\n\n/g) || []).length;
                 const actualPlacedWords = (placedMemories ?? []).reduce((sum, m) => {
                   return sum + (m.memory_text || '').trim().split(/\s+/).filter(Boolean).length;
                 }, 0);
