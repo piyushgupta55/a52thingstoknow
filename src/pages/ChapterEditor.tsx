@@ -1292,7 +1292,9 @@ const ChapterEditor = () => {
                 const rawText = wisdomTextareaRef.current?.value ?? (referenceText + ' ' + content);
                 const combinedWords = rawText.trim().split(/\s+/).filter(Boolean).length;
                 const allParagraphBreaks = (rawText.match(/\n\n/g) || []).length;
-                const memoryWordCost = (memorySlots + (placedMemories?.length ?? 0)) * 40;
+                // Each placed memory costs 40 words; the empty placeholder slot (if shown) also costs 40.
+                const emptySlotCount = showMemoryPlaceholder ? 1 : 0;
+                const memoryWordCost = (emptySlotCount + (placedMemories?.length ?? 0)) * 40;
                 const page2Words =
                   Math.max(0, combinedWords - PAGE_1_LIMIT) +
                   allParagraphBreaks * 3 +
