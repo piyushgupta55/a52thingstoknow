@@ -1292,14 +1292,11 @@ const ChapterEditor = () => {
                 const rawText = wisdomTextareaRef.current?.value ?? (referenceText + ' ' + content);
                 const combinedWords = rawText.trim().split(/\s+/).filter(Boolean).length;
                 const allParagraphBreaks = (rawText.match(/\n\n/g) || []).length;
-                const actualPlacedWords = (placedMemories ?? []).reduce((sum, m) => {
-                  return sum + (m.memory_text || '').trim().split(/\s+/).filter(Boolean).length;
-                }, 0);
+                const memoryWordCost = (memorySlots + (placedMemories?.length ?? 0)) * 40;
                 const page2Words =
                   Math.max(0, combinedWords - PAGE_1_LIMIT) +
                   allParagraphBreaks * 3 +
-                  memorySlots * 40 +
-                  actualPlacedWords;
+                  memoryWordCost;
                 const remaining = page2Budget - page2Words;
                 const isOver = remaining < 0;
                 const color = isOver ? '#EF4444' : '#16A34A';
