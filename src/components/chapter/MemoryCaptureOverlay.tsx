@@ -55,8 +55,8 @@ const MemoryCaptureOverlay = ({
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   // Guided-mode state
-  // 'prompt' = show textarea, 'ask-another' = Yes/No, 'farewell' = closing line
-  const [stage, setStage] = useState<'prompt' | 'ask-another' | 'farewell'>('prompt');
+  // 'prompt' = show textarea, 'ask-another' = Yes/No
+  const [stage, setStage] = useState<'prompt' | 'ask-another'>('prompt');
   const [savedCount, setSavedCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -175,11 +175,6 @@ const MemoryCaptureOverlay = ({
     const nextCount = savedCount + 1;
     setSavedCount(nextCount);
     setText('');
-    if (nextCount >= 2) {
-      // Already at max — go straight to farewell
-      setStage('farewell');
-      return;
-    }
     setStage('ask-another');
   };
 
@@ -361,7 +356,7 @@ const MemoryCaptureOverlay = ({
                       {savedCount >= 1 ? 'Done for now' : 'Maybe later'}
                     </button>
                     <Button type="submit" disabled={saving || !text.trim()}>
-                      {saving ? <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Saving…</> : 'Save memory'}
+                      {saving ? <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Saving…</> : 'Save'}
                     </Button>
                   </div>
                 </form>
@@ -378,7 +373,7 @@ const MemoryCaptureOverlay = ({
                     fontFamily: 'var(--font-body)',
                   }}
                 >
-                  Want to add another?
+                  Would you like to add another memory?
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <button
@@ -389,17 +384,9 @@ const MemoryCaptureOverlay = ({
                     Done for now
                   </button>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={onClose}>No</Button>
-                    <Button onClick={handleAnotherYes}>Yes</Button>
+                    <Button variant="outline" onClick={onClose}>No, I'm done</Button>
+                    <Button onClick={handleAnotherYes}>Yes, add another</Button>
                   </div>
-                </div>
-              </>
-            )}
-
-            {stage === 'farewell' && (
-              <>
-                <div className="flex justify-end">
-                  <Button onClick={onClose}>Close</Button>
                 </div>
               </>
             )}
