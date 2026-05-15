@@ -373,7 +373,8 @@ const ChapterEditor = () => {
         setPhotoChapterCount(siblings.filter((s: any) => s.chapter_template === 'photo_top' || s.chapter_template === 'photo_second').length);
       }
       setLoading(false);
-      setPreviewMode(true);
+      const anyWritten = (allCh || []).some((c: any) => (c.content || '').trim().length > 0);
+      setPreviewMode(!anyWritten);
 
       // After data is fully loaded, auto-resize the merged wisdom textarea
       // so it fits its content with no empty gap on first edit.
