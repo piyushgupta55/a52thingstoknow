@@ -1185,6 +1185,28 @@ const ChapterEditor = () => {
                 _memoryWordCost;
               const isPage2Over = _page2Words > _page2Budget;
 
+              // Compute split point in `combined` so that overflow words can be highlighted.
+              // Allowed text words = page 1 limit + (page 2 budget minus paragraph-break and memory costs).
+              const _allowedPage2TextWords = Math.max(0, _page2Budget - _paragraphBreaks * 3 - _memoryWordCost);
+              const _allowedTextWords = PAGE_1_WORD_LIMIT + _allowedPage2TextWords;
+              let _splitIdx = combined.length;
+              if (isPage2Over) {
+                const tokenRe = /\s+|\S+/g;
+                let wordCount = 0;
+                let m: RegExpExecArray | null;
+                while ((m = tokenRe.exec(combined)) !== null) {
+                  if (!/^\s+$/.test(m[0])) {
+                    wordCount++;
+                    if (wordCount > _allowedTextWords) {
+                      _splitIdx = m.index;
+                      break;
+                    }
+                  }
+                }
+              }
+              const _normalText = combined.slice(0, _splitIdx);
+              const _overflowText = combined.slice(_splitIdx);
+
               return (
                 <>
                   <div className="my-8 relative">
@@ -1193,47 +1215,69 @@ const ChapterEditor = () => {
                       style={{
                         border: isPage2Over ? '2px solid #EF4444' : undefined,
                         borderLeft: isPage2Over ? '2px solid #EF4444' : '3px solid #C9A84C',
-                        background: isPage2Over ? 'rgba(239, 68, 68, 0.06)' : '#FDFAF4',
+                        background: '#FDFAF4',
                         margin: '0 -8px',
                         padding: '12px 8px 12px 19px',
                       }}
                     >
-                      <textarea
-                        ref={wisdomTextareaRef}
-                        value={combined}
-                        onFocus={e => {
-                          e.target.setAttribute('data-no-scroll', 'true');
-                          const scrollY = window.scrollY;
-                          requestAnimationFrame(() => {
-                            window.scrollTo({ top: scrollY });
-                          });
-                        }}
-                        onChange={e => {
-                          if (e.target.value.length <= MAX_CONTENT_LENGTH) {
-                            applyCombined(e.target.value);
-                          }
-                          e.target.style.height = 'auto';
-                          e.target.style.height = e.target.scrollHeight + 'px';
-                        }}
-                        onPaste={e => {
-                          e.preventDefault();
-                          const text = e.clipboardData.getData('text/plain');
-                          const ta = e.target as HTMLTextAreaElement;
-                          const start = ta.selectionStart;
-                          const end = ta.selectionEnd;
-                          const newVal = combined.slice(0, start) + text + combined.slice(end);
-                          if (newVal.length <= MAX_CONTENT_LENGTH) {
-                            applyCombined(newVal);
-                          }
-                          requestAnimationFrame(() => {
-                            ta.selectionStart = ta.selectionEnd = start + text.length;
-                            ta.style.height = 'auto';
-                            ta.style.height = ta.scrollHeight + 'px';
-                          });
-                        }}
-                        className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25"
-                        style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '300px' }}
-                      />
+                      <div className="relative">
+                        {isPage2Over && (
+                          <div
+                            aria-hidden="true"
+                            className="absolute inset-0 pointer-events-none text-[14px] italic leading-[1.75] px-0"
+                            style={{
+                              fontFamily: 'var(--font-devotional)',
+                              whiteSpace: 'pre-wrap',
+                              wordWrap: 'break-word',
+                              overflowWrap: 'break-word',
+                              color: 'transparent',
+                              minHeight: '300px',
+                            }}
+                          >
+                            {_normalText}
+                            <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.28)', borderRadius: '2px' }}>
+                              {_overflowText}
+                            </span>
+                            {'\u200b'}
+                          </div>
+                        )}
+                        <textarea
+                          ref={wisdomTextareaRef}
+                          value={combined}
+                          onFocus={e => {
+                            e.target.setAttribute('data-no-scroll', 'true');
+                            const scrollY = window.scrollY;
+                            requestAnimationFrame(() => {
+                              window.scrollTo({ top: scrollY });
+                            });
+                          }}
+                          onChange={e => {
+                            if (e.target.value.length <= MAX_CONTENT_LENGTH) {
+                              applyCombined(e.target.value);
+                            }
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                          }}
+                          onPaste={e => {
+                            e.preventDefault();
+                            const text = e.clipboardData.getData('text/plain');
+                            const ta = e.target as HTMLTextAreaElement;
+                            const start = ta.selectionStart;
+                            const end = ta.selectionEnd;
+                            const newVal = combined.slice(0, start) + text + combined.slice(end);
+                            if (newVal.length <= MAX_CONTENT_LENGTH) {
+                              applyCombined(newVal);
+                            }
+                            requestAnimationFrame(() => {
+                              ta.selectionStart = ta.selectionEnd = start + text.length;
+                              ta.style.height = 'auto';
+                              ta.style.height = ta.scrollHeight + 'px';
+                            });
+                          }}
+                          className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25"
+                          style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '300px' }}
+                        />
+                      </div>
                     </div>
                   </div>
 
