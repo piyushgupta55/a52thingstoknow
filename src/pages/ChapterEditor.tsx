@@ -1174,14 +1174,26 @@ const ChapterEditor = () => {
               const totalChapterWords = combined.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
               const showPageBreak = totalChapterWords > PAGE_1_WORD_LIMIT;
 
+              // Live page-2 over-budget check (mirrors the status bar formula below)
+              const _page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
+              const _paragraphBreaks = (combined.match(/\n\n/g) || []).length;
+              const _emptySlotCount = showMemoryPlaceholder ? 1 : 0;
+              const _memoryWordCost = (_emptySlotCount + (placedMemories?.length ?? 0)) * 40;
+              const _page2Words =
+                Math.max(0, totalChapterWords - PAGE_1_WORD_LIMIT) +
+                _paragraphBreaks * 3 +
+                _memoryWordCost;
+              const isPage2Over = _page2Words > _page2Budget;
+
               return (
                 <>
                   <div className="my-8 relative">
                     <div
                       className="transition-all duration-200 rounded-sm"
                       style={{
-                        borderLeft: '3px solid #C9A84C',
-                        background: '#FDFAF4',
+                        border: isPage2Over ? '2px solid #EF4444' : undefined,
+                        borderLeft: isPage2Over ? '2px solid #EF4444' : '3px solid #C9A84C',
+                        background: isPage2Over ? 'rgba(239, 68, 68, 0.06)' : '#FDFAF4',
                         margin: '0 -8px',
                         padding: '12px 8px 12px 19px',
                       }}
