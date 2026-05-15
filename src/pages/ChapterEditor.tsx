@@ -440,13 +440,21 @@ const ChapterEditor = () => {
       setChapter(prev => prev ? { ...prev, status: newStatus } : prev);
       setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: content || null } : c));
       setHasUnsavedChanges(false);
+      hasUnsavedRef.current = false;
       toast({ title: markComplete ? 'Chapter marked complete!' : 'Draft saved!' });
-      // After Mark Complete, invite the author to share a memory
-      if (markComplete && recipientName) {
-        setTimeout(() => {
-          setMemoryOverlayMode('guided');
-          setMemoryOverlayOpen(true);
-        }, 600);
+      // After Mark Complete, advance to the next chapter that isn't complete yet
+      if (markComplete) {
+        const nextIncomplete = allChapters
+          .filter(c => c.id !== chapterId && c.chapter_number > (chapter?.chapter_number ?? 0))
+          .sort((a, b) => a.chapter_number - b.chapter_number)
+          .find(c => c.status !== 'complete')
+          || allChapters
+            .filter(c => c.id !== chapterId)
+            .sort((a, b) => a.chapter_number - b.chapter_number)
+            .find(c => c.status !== 'complete');
+        if (nextIncomplete) {
+          navigate(`/book/${bookId}/chapter/${nextIncomplete.id}`);
+        }
       }
     }
     setSaving(false);
