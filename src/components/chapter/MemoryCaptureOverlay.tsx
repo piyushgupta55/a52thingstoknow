@@ -389,7 +389,7 @@ const MemoryCaptureOverlay = ({
                     Done for now
                   </button>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setStage('farewell')}>No</Button>
+                    <Button variant="outline" onClick={onClose}>No</Button>
                     <Button onClick={handleAnotherYes}>Yes</Button>
                   </div>
                 </div>
