@@ -1311,9 +1311,19 @@ const ChapterEditor = () => {
               </>
             )}
             {(() => {
-              const page2Remaining = budget - totalWords;
-              if (page2Remaining <= 0) {
-                // Strictly hide the placeholder ghost and the suggestion grid when page 2 is full or over.
+              const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
+              const PAGE_1_LIMIT = isPhotoTpl ? 75 : 150;
+              const page2Budget = Math.max(0, budget - PAGE_1_LIMIT);
+              const rawText = referenceText + ' ' + content;
+              const combinedWords = rawText.trim().split(/\s+/).filter(Boolean).length;
+              const allParagraphBreaks = (rawText.match(/\n\n/g) || []).length;
+              const memoryWordCost = (placedMemories?.length ?? 0) * 40;
+              const page2Words =
+                Math.max(0, combinedWords - PAGE_1_LIMIT) +
+                allParagraphBreaks * 3 +
+                memoryWordCost;
+              const page2Remaining = page2Budget - page2Words;
+              if (page2Remaining < 0) {
                 return (
                   <p
                     className="mt-6 text-center text-[0.78rem] italic text-[#EF4444]"
@@ -1322,6 +1332,9 @@ const ChapterEditor = () => {
                     Page 2 is full — trim your writing to add a memory.
                   </p>
                 );
+              }
+              if (page2Remaining < 40) {
+                return null;
               }
               return (
                 <>
