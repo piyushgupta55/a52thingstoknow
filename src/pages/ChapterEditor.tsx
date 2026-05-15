@@ -1257,10 +1257,8 @@ const ChapterEditor = () => {
                             }
                             const ta = e.target;
                             const prevScroll = window.scrollY;
-                            const needed = ta.scrollHeight;
-                            if (ta.clientHeight !== needed) {
-                              ta.style.height = needed + 'px';
-                            }
+                            ta.style.height = 'auto';
+                            ta.style.height = ta.scrollHeight + 'px';
                             if (window.scrollY !== prevScroll) {
                               window.scrollTo({ top: prevScroll });
                             }
