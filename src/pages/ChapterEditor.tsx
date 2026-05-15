@@ -1255,8 +1255,15 @@ const ChapterEditor = () => {
                             if (e.target.value.length <= MAX_CONTENT_LENGTH) {
                               applyCombined(e.target.value);
                             }
-                            e.target.style.height = 'auto';
-                            e.target.style.height = e.target.scrollHeight + 'px';
+                            const ta = e.target;
+                            const prevScroll = window.scrollY;
+                            const needed = ta.scrollHeight;
+                            if (ta.clientHeight !== needed) {
+                              ta.style.height = needed + 'px';
+                            }
+                            if (window.scrollY !== prevScroll) {
+                              window.scrollTo({ top: prevScroll });
+                            }
                           }}
                           onPaste={e => {
                             e.preventDefault();
