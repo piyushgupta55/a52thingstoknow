@@ -418,6 +418,27 @@ const ChapterEditor = () => {
     setDuplicateWarning(match ? { type, chapterTitle: match.title, chapterNumber: match.chapter_number } : null);
   }, [siblingChapters]);
 
+  const canMarkComplete = () => {
+    if (isLetterChapter) return true;
+    const page2HasContent =
+      content.trim().length > 0 ||
+      placedMemories.length > 0 ||
+      photoUrls.length > 0;
+    return page2HasContent;
+  };
+
+  const handleMarkComplete = () => {
+    if (!canMarkComplete()) {
+      toast({
+        title: 'Page 2 is empty',
+        description: 'Continue writing, add a memory, or add a photo before completing this chapter.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    save(true);
+  };
+
   const save = async (markComplete = false, statusOverride?: string) => {
     if (!chapterId) return;
     setSaving(true);
@@ -1451,7 +1472,7 @@ const ChapterEditor = () => {
                 <Check className="h-4 w-4" /> Unmark Complete
               </Button>
             ) : (
-              <Button size="lg" className="flex-1 gap-2" onClick={() => { save(true); }} disabled={saving}>
+              <Button size="lg" className="flex-1 gap-2" onClick={handleMarkComplete} disabled={saving}>
                 <CheckCircle className="h-4 w-4" /> Mark Complete
               </Button>
             )}
