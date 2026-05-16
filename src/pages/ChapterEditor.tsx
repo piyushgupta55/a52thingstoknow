@@ -186,8 +186,9 @@ const ChapterEditor = () => {
   // Per-chapter flag: has the author edited the wisdom text?
   const [hasEditedWisdom, setHasEditedWisdom] = useState(false);
 
-  // Track initial values for change detection
+  // Track initial values for change detection and last saved for revert
   const initialRef = useRef({ referenceText: '', content: '' });
+  const lastSavedRef = useRef({ referenceText: '', content: '' });
   const refTextareaRef = useRef<HTMLTextAreaElement>(null);
   const wisdomTextareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollPositionRef = useRef(0);
@@ -310,6 +311,7 @@ const ChapterEditor = () => {
           setReferenceText(chapterData.reference_text || '');
           setTemplate('letter' as ChapterTemplate);
           initialRef.current = { referenceText: chapterData.reference_text || '', content: chapterData.content || '' };
+          lastSavedRef.current = { referenceText: chapterData.reference_text || '', content: chapterData.content || '' };
         } else {
           const isFemale = bookData?.recipient_gender === 'Girl/Young Woman';
           const tplGender = isFemale ? 'female' : 'male';
@@ -336,6 +338,7 @@ const ChapterEditor = () => {
           }
 
           initialRef.current = { referenceText: chapterData.reference_text || rawRef || '', content: chapterData.content || '' };
+          lastSavedRef.current = { referenceText: chapterData.reference_text || rawRef || '', content: chapterData.content || '' };
         }
       }
       if (bookData) {
@@ -442,6 +445,8 @@ const ChapterEditor = () => {
       setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: content || null } : c));
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
+      // Update last saved snapshot for revert
+      lastSavedRef.current = { referenceText: referenceText || '', content: content || '' };
       toast({ title: markComplete ? 'Chapter marked complete!' : 'Draft saved!' });
       // After Mark Complete, advance to the next chapter that isn't complete yet
       if (markComplete) {
@@ -483,6 +488,27 @@ const ChapterEditor = () => {
     }
     setHasUnsavedChanges(true);
     toast({ title: 'Change applied', description: edit.summary });
+  }, [chapterId, toast]);
+
+  const handleRevertToSaved = useCallback(() => {
+    const saved = lastSavedRef.current;
+    setReferenceText(saved.referenceText);
+    setContent(saved.content);
+    setChapter(prev => prev ? { ...prev, content: saved.content || null, reference_text: saved.referenceText || null } : prev);
+    setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, content: saved.content || null, reference_text: saved.referenceText || null } : c));
+    setHasUnsavedChanges(false);
+    hasUnsavedRef.current = false;
+    requestAnimationFrame(() => {
+      if (refTextareaRef.current) {
+        refTextareaRef.current.style.height = 'auto';
+        refTextareaRef.current.style.height = refTextareaRef.current.scrollHeight + 'px';
+      }
+      if (wisdomTextareaRef.current) {
+        wisdomTextareaRef.current.style.height = 'auto';
+        wisdomTextareaRef.current.style.height = wisdomTextareaRef.current.scrollHeight + 'px';
+      }
+    });
+    toast({ title: 'Reverted to last saved' });
   }, [chapterId, toast]);
 
   // Warn on tab close / hard refresh
@@ -860,6 +886,7 @@ const ChapterEditor = () => {
       currentContent={content}
       currentReferenceText={referenceText}
       onApplyEdit={handleCompanionApplyEdit}
+      onRevert={handleRevertToSaved}
       variant="badge"
     />
   ) : null;

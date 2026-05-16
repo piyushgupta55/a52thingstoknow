@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Send, Loader2 } from 'lucide-react';
+import { X, Send, Loader2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCompanionChat, type CompanionEdit } from '@/hooks/useCompanionChat';
 import ReactMarkdown from 'react-markdown';
@@ -16,6 +16,7 @@ interface Props {
   currentContent?: string;
   currentReferenceText?: string;
   onApplyEdit?: (nextContent: string, edit: CompanionEdit) => Promise<void> | void;
+  onRevert?: () => void;
 }
 
 const CompanionBubble = ({
@@ -29,6 +30,7 @@ const CompanionBubble = ({
   currentContent,
   currentReferenceText,
   onApplyEdit,
+  onRevert,
 }: Props) => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -203,6 +205,16 @@ const CompanionBubble = ({
             </span>
           </div>
           <div className="flex items-center gap-1">
+            {onRevert && (
+              <button
+                onClick={onRevert}
+                className="hover:opacity-80 transition-opacity p-1 flex items-center gap-1 text-xs font-medium"
+                title="Revert to last saved"
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span>Revert</span>
+              </button>
+            )}
             <button onClick={() => { setOpen(false); onClose?.(); }} className="hover:opacity-70 transition-opacity p-1">
               <X className="h-4 w-4" />
             </button>
