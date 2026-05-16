@@ -311,6 +311,7 @@ const ChapterEditor = () => {
           setReferenceText(chapterData.reference_text || '');
           setTemplate('letter' as ChapterTemplate);
           initialRef.current = { referenceText: chapterData.reference_text || '', content: chapterData.content || '' };
+          lastSavedRef.current = { referenceText: chapterData.reference_text || '', content: chapterData.content || '' };
         } else {
           const isFemale = bookData?.recipient_gender === 'Girl/Young Woman';
           const tplGender = isFemale ? 'female' : 'male';
