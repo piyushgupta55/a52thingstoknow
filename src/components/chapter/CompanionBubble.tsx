@@ -122,6 +122,7 @@ const CompanionBubble = ({
     if (!input.trim() || isLoading) return;
     send(input);
     setInput('');
+    if (inputRef.current) inputRef.current.style.height = 'auto';
   };
 
   const handleSubmit = (e: React.FormEvent) => {
