@@ -1472,7 +1472,7 @@ const ChapterEditor = () => {
                 <Check className="h-4 w-4" /> Unmark Complete
               </Button>
             ) : (
-              <Button size="lg" className="flex-1 gap-2" onClick={() => { save(true); }} disabled={saving}>
+              <Button size="lg" className="flex-1 gap-2" onClick={handleMarkComplete} disabled={saving}>
                 <CheckCircle className="h-4 w-4" /> Mark Complete
               </Button>
             )}
