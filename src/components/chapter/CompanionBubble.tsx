@@ -32,7 +32,7 @@ const CompanionBubble = ({
 }: Props) => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const { messages, isLoading, send, clearMessages } = useCompanionChat(bookId, chapterId, {
+  const { messages, isLoading, send, clearMessages, applyPending, retryLast } = useCompanionChat(bookId, chapterId, {
     currentContent,
     currentReferenceText,
     onApplyEdit,
