@@ -303,14 +303,19 @@ const CompanionBubble = ({
           <textarea
             ref={inputRef}
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => {
+              setInput(e.target.value);
+              const ta = e.target;
+              ta.style.height = 'auto';
+              ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Tell me what's on your mind..."
             rows={1}
-            className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground overflow-y-auto"
             style={{
               fontFamily: 'var(--font-body)',
-              maxHeight: '80px',
+              maxHeight: '200px',
               color: 'hsl(var(--foreground))',
             }}
           />
