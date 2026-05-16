@@ -443,6 +443,8 @@ const ChapterEditor = () => {
       setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: content || null } : c));
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
+      // Update last saved snapshot for revert
+      lastSavedRef.current = { referenceText: referenceText || '', content: content || '' };
       toast({ title: markComplete ? 'Chapter marked complete!' : 'Draft saved!' });
       // After Mark Complete, advance to the next chapter that isn't complete yet
       if (markComplete) {
