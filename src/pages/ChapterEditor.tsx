@@ -418,6 +418,27 @@ const ChapterEditor = () => {
     setDuplicateWarning(match ? { type, chapterTitle: match.title, chapterNumber: match.chapter_number } : null);
   }, [siblingChapters]);
 
+  const canMarkComplete = () => {
+    if (isLetterChapter) return true;
+    const page2HasContent =
+      content.trim().length > 0 ||
+      placedMemories.length > 0 ||
+      photoUrls.length > 0;
+    return page2HasContent;
+  };
+
+  const handleMarkComplete = () => {
+    if (!canMarkComplete()) {
+      toast({
+        title: 'Page 2 is empty',
+        description: 'Continue writing, add a memory, or add a photo before completing this chapter.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    save(true);
+  };
+
   const save = async (markComplete = false, statusOverride?: string) => {
     if (!chapterId) return;
     setSaving(true);
