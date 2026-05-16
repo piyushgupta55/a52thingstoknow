@@ -186,8 +186,9 @@ const ChapterEditor = () => {
   // Per-chapter flag: has the author edited the wisdom text?
   const [hasEditedWisdom, setHasEditedWisdom] = useState(false);
 
-  // Track initial values for change detection
+  // Track initial values for change detection and last saved for revert
   const initialRef = useRef({ referenceText: '', content: '' });
+  const lastSavedRef = useRef({ referenceText: '', content: '' });
   const refTextareaRef = useRef<HTMLTextAreaElement>(null);
   const wisdomTextareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollPositionRef = useRef(0);
