@@ -242,6 +242,41 @@ const CompanionBubble = ({
                 {msg.role === 'assistant' ? (
                   <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1">
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    {msg.pendingEdit && (
+                      <>
+                        <div
+                          className="mt-2 rounded-lg border p-2 text-xs whitespace-pre-wrap"
+                          style={{
+                            background: 'hsl(var(--card))',
+                            borderColor: 'hsl(var(--border))',
+                            fontFamily: 'var(--font-body)',
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                          }}
+                        >
+                          {msg.pendingEdit.nextContent}
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={msg.pendingEdit.applied || isLoading}
+                            onClick={() => applyPending(i)}
+                          >
+                            {msg.pendingEdit.applied ? 'Added' : 'Add to chapter'}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isLoading}
+                            onClick={() => retryLast()}
+                          >
+                            Try again
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <p className="whitespace-pre-wrap">{msg.content}</p>
