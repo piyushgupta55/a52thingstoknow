@@ -32,7 +32,7 @@ const CompanionBubble = ({
 }: Props) => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const { messages, isLoading, send, clearMessages } = useCompanionChat(bookId, chapterId, {
+  const { messages, isLoading, send, clearMessages, applyPending, retryLast } = useCompanionChat(bookId, chapterId, {
     currentContent,
     currentReferenceText,
     onApplyEdit,
@@ -122,6 +122,7 @@ const CompanionBubble = ({
     if (!input.trim() || isLoading) return;
     send(input);
     setInput('');
+    if (inputRef.current) inputRef.current.style.height = 'auto';
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -242,6 +243,41 @@ const CompanionBubble = ({
                 {msg.role === 'assistant' ? (
                   <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1">
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    {msg.pendingEdit && (
+                      <>
+                        <div
+                          className="mt-2 rounded-lg border p-2 text-xs whitespace-pre-wrap"
+                          style={{
+                            background: 'hsl(var(--card))',
+                            borderColor: 'hsl(var(--border))',
+                            fontFamily: 'var(--font-body)',
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                          }}
+                        >
+                          {msg.pendingEdit.nextContent}
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={msg.pendingEdit.applied || isLoading}
+                            onClick={() => applyPending(i)}
+                          >
+                            {msg.pendingEdit.applied ? 'Added' : 'Add to chapter'}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={isLoading}
+                            onClick={() => retryLast()}
+                          >
+                            Try again
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -268,14 +304,19 @@ const CompanionBubble = ({
           <textarea
             ref={inputRef}
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => {
+              setInput(e.target.value);
+              const ta = e.target;
+              ta.style.height = 'auto';
+              ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Tell me what's on your mind..."
             rows={1}
-            className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground overflow-y-auto"
             style={{
               fontFamily: 'var(--font-body)',
-              maxHeight: '80px',
+              maxHeight: '200px',
               color: 'hsl(var(--foreground))',
             }}
           />

@@ -1,12 +1,21 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
-type Msg = { role: 'user' | 'assistant'; content: string };
-
 export interface CompanionEdit {
   summary: string;
   field: 'reference_text' | 'wisdom_content';
 }
+
+export interface PendingEdit extends CompanionEdit {
+  nextContent: string;
+  applied?: boolean;
+}
+
+type Msg = {
+  role: 'user' | 'assistant';
+  content: string;
+  pendingEdit?: PendingEdit;
+};
 
 interface UseCompanionChatOptions {
   currentContent?: string;
@@ -26,8 +35,6 @@ export function useCompanionChat(
   const abortRef = useRef<AbortController | null>(null);
   const { onApplyEdit, currentContent, currentReferenceText } = options;
 
-  // Keep latest values in refs so `send` always reads fresh content,
-  // even if the consumer recreates the options object on every render.
   const currentContentRef = useRef(currentContent);
   const currentReferenceTextRef = useRef(currentReferenceText);
   const onApplyEditRef = useRef(onApplyEdit);
@@ -35,31 +42,17 @@ export function useCompanionChat(
   currentReferenceTextRef.current = currentReferenceText;
   onApplyEditRef.current = onApplyEdit;
 
-  const send = useCallback(
-    async (input: string) => {
+  const sendInternal = useCallback(
+    async (trimmedInput: string, baseMessages: Msg[]) => {
+      if (!bookId) return;
       const liveContent = currentContentRef.current ?? '';
       const liveReferenceText = currentReferenceTextRef.current ?? '';
-      console.log('[companion-chat] sending', {
-        contentLen: liveContent.length,
-        refLen: liveReferenceText.length,
-        contentPreview: liveContent.slice(0, 80),
-      });
-      if (!bookId || !input.trim()) return;
-      const trimmedInput = input.trim();
-
-      const userMsg: Msg = { role: 'user', content: trimmedInput };
-      setMessages(prev => [...prev, userMsg]);
       setIsLoading(true);
 
       try {
         abortRef.current = new AbortController();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session?.access_token) {
-          throw new Error('Not authenticated');
-        }
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error('Not authenticated');
 
         const resp = await fetch(CHAT_URL, {
           method: 'POST',
@@ -69,7 +62,7 @@ export function useCompanionChat(
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
-            messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
+            messages: baseMessages.map(m => ({ role: m.role, content: m.content })),
             bookId,
             chapterId,
             currentContent: liveContent,
@@ -80,10 +73,7 @@ export function useCompanionChat(
 
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({ error: 'Something went wrong' }));
-          setMessages(prev => [
-            ...prev,
-            { role: 'assistant', content: err.error || "Something went wrong. Let's try again in a moment." },
-          ]);
+          setMessages(prev => [...prev, { role: 'assistant', content: err.error || "Something went wrong. Let's try again in a moment." }]);
           return;
         }
 
@@ -91,7 +81,7 @@ export function useCompanionChat(
 
         if (data.type === 'edit') {
           const field: CompanionEdit['field'] = data.field === 'reference_text' ? 'reference_text' : 'wisdom_content';
-          const summary: string = data.summary || 'Updated the chapter.';
+          const summary: string = data.summary || 'Here is a suggested revision.';
 
           let nextContent: string | undefined;
           if (data.action === 'full_replace' && typeof data.content === 'string') {
@@ -101,33 +91,76 @@ export function useCompanionChat(
             nextContent = source.replace(data.find, data.replace);
           }
 
-          if (nextContent !== undefined && onApplyEditRef.current) {
-            await onApplyEditRef.current(nextContent, { summary, field });
+          if (nextContent !== undefined) {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: summary,
+              pendingEdit: { summary, field, nextContent: nextContent! },
+            }]);
+            return;
           }
-          setMessages(prev => [...prev, { role: 'assistant', content: summary }]);
-          return;
         }
 
-        setMessages(prev => [
-          ...prev,
-          { role: 'assistant', content: data.text || "Tell me a bit more — what feels off?" },
-        ]);
+        setMessages(prev => [...prev, { role: 'assistant', content: data.text || "Tell me a bit more — what feels off?" }]);
       } catch (e: any) {
         if (e.name !== 'AbortError') {
           console.error('Companion chat error:', e);
-          setMessages(prev => [
-            ...prev,
-            { role: 'assistant', content: "Something went wrong on my end. Let's try that again." },
-          ]);
+          setMessages(prev => [...prev, { role: 'assistant', content: "Something went wrong on my end. Let's try that again." }]);
         }
       } finally {
         setIsLoading(false);
       }
     },
-    [bookId, chapterId, messages],
+    [bookId, chapterId],
   );
+
+  const send = useCallback(
+    async (input: string) => {
+      if (!input.trim()) return;
+      const trimmedInput = input.trim();
+      const userMsg: Msg = { role: 'user', content: trimmedInput };
+      let baseMessages: Msg[] = [];
+      setMessages(prev => {
+        baseMessages = [...prev, userMsg];
+        return baseMessages;
+      });
+      // small defer so state above is committed before send
+      await Promise.resolve();
+      await sendInternal(trimmedInput, baseMessages);
+    },
+    [sendInternal],
+  );
+
+  const retryLast = useCallback(async () => {
+    let baseMessages: Msg[] = [];
+    let lastUser: string | undefined;
+    setMessages(prev => {
+      // Drop trailing assistant messages back to last user message
+      const idx = [...prev].reverse().findIndex(m => m.role === 'user');
+      if (idx === -1) { baseMessages = prev; return prev; }
+      const cutAt = prev.length - idx; // keep through last user
+      const trimmed = prev.slice(0, cutAt);
+      lastUser = trimmed[trimmed.length - 1]?.content;
+      baseMessages = trimmed;
+      return trimmed;
+    });
+    await Promise.resolve();
+    if (lastUser) await sendInternal(lastUser, baseMessages);
+  }, [sendInternal]);
+
+  const applyPending = useCallback(async (index: number) => {
+    const msg = messages[index];
+    if (!msg?.pendingEdit || msg.pendingEdit.applied) return;
+    const edit = msg.pendingEdit;
+    if (onApplyEditRef.current) {
+      await onApplyEditRef.current(edit.nextContent, { summary: edit.summary, field: edit.field });
+    }
+    setMessages(prev => prev.map((m, i) => i === index && m.pendingEdit
+      ? { ...m, pendingEdit: { ...m.pendingEdit, applied: true } }
+      : m));
+  }, [messages]);
 
   const clearMessages = useCallback(() => setMessages([]), []);
 
-  return { messages, isLoading, send, clearMessages };
+  return { messages, isLoading, send, clearMessages, applyPending, retryLast };
 }
