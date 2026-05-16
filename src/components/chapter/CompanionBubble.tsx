@@ -208,11 +208,11 @@ const CompanionBubble = ({
             {onRevert && (
               <button
                 onClick={onRevert}
-                className="hover:opacity-70 transition-opacity p-1 flex items-center gap-1 text-xs"
+                className="hover:opacity-80 transition-opacity p-1 flex items-center gap-1 text-xs font-medium"
                 title="Revert to last saved"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Revert</span>
+                <RotateCcw className="h-4 w-4" />
+                <span>Revert</span>
               </button>
             )}
             <button onClick={() => { setOpen(false); onClose?.(); }} className="hover:opacity-70 transition-opacity p-1">
