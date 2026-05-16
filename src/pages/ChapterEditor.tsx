@@ -886,6 +886,7 @@ const ChapterEditor = () => {
       currentContent={content}
       currentReferenceText={referenceText}
       onApplyEdit={handleCompanionApplyEdit}
+      onRevert={handleRevertToSaved}
       variant="badge"
     />
   ) : null;
