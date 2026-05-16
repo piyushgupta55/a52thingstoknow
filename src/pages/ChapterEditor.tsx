@@ -490,6 +490,27 @@ const ChapterEditor = () => {
     toast({ title: 'Change applied', description: edit.summary });
   }, [chapterId, toast]);
 
+  const handleRevertToSaved = useCallback(() => {
+    const saved = lastSavedRef.current;
+    setReferenceText(saved.referenceText);
+    setContent(saved.content);
+    setChapter(prev => prev ? { ...prev, content: saved.content || null, reference_text: saved.referenceText || null } : prev);
+    setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, content: saved.content || null, reference_text: saved.referenceText || null } : c));
+    setHasUnsavedChanges(false);
+    hasUnsavedRef.current = false;
+    requestAnimationFrame(() => {
+      if (refTextareaRef.current) {
+        refTextareaRef.current.style.height = 'auto';
+        refTextareaRef.current.style.height = refTextareaRef.current.scrollHeight + 'px';
+      }
+      if (wisdomTextareaRef.current) {
+        wisdomTextareaRef.current.style.height = 'auto';
+        wisdomTextareaRef.current.style.height = wisdomTextareaRef.current.scrollHeight + 'px';
+      }
+    });
+    toast({ title: 'Reverted to last saved' });
+  }, [chapterId, toast]);
+
   // Warn on tab close / hard refresh
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
