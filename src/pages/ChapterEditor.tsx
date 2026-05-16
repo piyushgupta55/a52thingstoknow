@@ -338,6 +338,7 @@ const ChapterEditor = () => {
           }
 
           initialRef.current = { referenceText: chapterData.reference_text || rawRef || '', content: chapterData.content || '' };
+          lastSavedRef.current = { referenceText: chapterData.reference_text || rawRef || '', content: chapterData.content || '' };
         }
       }
       if (bookData) {
