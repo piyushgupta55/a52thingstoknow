@@ -153,6 +153,7 @@ const ChapterEditor = () => {
   const [referenceContent, setReferenceContent] = useState<string | null>(null);
   const [referenceText, setReferenceText] = useState('');
   const [recipientName, setRecipientName] = useState('');
+  const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
   const [recipientGender, setRecipientGender] = useState('');
   const [authorLabel, setAuthorLabel] = useState('');
   const [authorName, setAuthorName] = useState('');
@@ -349,6 +350,9 @@ const ChapterEditor = () => {
         const { data: profileData } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
         setAuthorName(profileData?.display_name || '');
       }
+      // Load ancestry status for the chapter dropdown
+      const { data: ancData } = await supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle();
+      setAncestryStatus(ancData?.status || 'not_started');
       if (memoriesData) {
         const counts: Record<string, number> = {};
         memoriesData.forEach((m: any) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
@@ -936,6 +940,16 @@ const ChapterEditor = () => {
               chapters={chaptersForNav}
               onNavigate={handleChapterNavigate}
               memoryCountsByChapter={memoryCountsByChapter}
+              ancestryStatus={ancestryStatus}
+              onNavigateAncestry={() => {
+                const target = `/book/${bookId}/ancestry`;
+                if (hasUnsavedChanges) {
+                  setPendingNavigation(target);
+                  setShowUnsavedDialog(true);
+                } else {
+                  navigate(target);
+                }
+              }}
             />
           </div>
 
