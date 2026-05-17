@@ -131,6 +131,8 @@ const HelpFaq = () => {
           <h1 className="font-heading text-3xl font-bold text-foreground">Help & FAQ</h1>
         </div>
 
+        <TutorialVideos heading="Video Tutorials" subheading="Watch short walkthroughs of the key parts of the platform." />
+
         <div className="space-y-8">
           {faqSections.map((section) => (
             <div key={section.title}>
