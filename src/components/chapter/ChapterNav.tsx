@@ -17,6 +17,8 @@ interface Props {
   chapters: ChapterInfo[];
   onNavigate: (chapterId: string) => void;
   memoryCountsByChapter?: Record<string, number>;
+  ancestryStatus?: string;
+  onNavigateAncestry?: () => void;
 }
 
 const StatusIndicator = ({ status }: { status: string }) => {
