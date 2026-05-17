@@ -74,6 +74,39 @@ export type Database = {
         }
         Relationships: []
       }
+      book_ancestry: {
+        Row: {
+          book_id: string
+          content: string | null
+          created_at: string
+          id: string
+          pdf_filename: string | null
+          pdf_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          pdf_filename?: string | null
+          pdf_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          pdf_filename?: string | null
+          pdf_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       books: {
         Row: {
           author_label: string | null
