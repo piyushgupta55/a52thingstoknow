@@ -940,6 +940,16 @@ const ChapterEditor = () => {
               chapters={chaptersForNav}
               onNavigate={handleChapterNavigate}
               memoryCountsByChapter={memoryCountsByChapter}
+              ancestryStatus={ancestryStatus}
+              onNavigateAncestry={() => {
+                const target = `/book/${bookId}/ancestry`;
+                if (hasUnsavedChanges) {
+                  setPendingNavigation(target);
+                  setShowUnsavedDialog(true);
+                } else {
+                  navigate(target);
+                }
+              }}
             />
           </div>
 
