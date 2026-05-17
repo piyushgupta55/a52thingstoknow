@@ -48,6 +48,7 @@ const BookDashboard = () => {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [photoTemplates, setPhotoTemplates] = useState<ChapterTemplate[]>([]);
   const [authorName, setAuthorName] = useState('');
+  const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
