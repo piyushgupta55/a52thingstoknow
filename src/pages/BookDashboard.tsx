@@ -8,6 +8,7 @@ import {
   BookOpen, PenLine, CheckCircle, Circle, Mail, MessageSquare, Sparkles,
   Users, LayoutGrid, Send, Inbox, Camera, Play
 } from 'lucide-react';
+import TutorialVideos from '@/components/TutorialVideos';
 import Navbar from '@/components/Navbar';
 
 interface Book {
