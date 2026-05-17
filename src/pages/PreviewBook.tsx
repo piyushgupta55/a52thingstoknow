@@ -91,15 +91,17 @@ const PreviewBook = () => {
     const load = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
-      const [{ data: chapData }, { data: tplData }, { data: memData }] = await Promise.all([
+      const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content_male, reference_content_female').eq('gender', tplGender),
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId).eq('status', 'approved'),
+        supabase.from('book_ancestry').select('content, pdf_url, pdf_filename').eq('book_id', bookId).maybeSingle(),
       ]);
       setBook(bookData);
       setChapters(chapData || []);
       setTemplates(tplData || []);
       setMemories(memData || []);
+      setAncestry(ancData || null);
       if (bookData) {
         const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
         setAuthorName(profile?.display_name || '');
