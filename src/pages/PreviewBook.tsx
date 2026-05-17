@@ -59,21 +59,26 @@ const PreviewBook = () => {
   const [templates, setTemplates] = useState<ChapterTemplate[]>([]);
   const [authorName, setAuthorName] = useState('');
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; pdf_filename: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
   const [showLeftPageFade, setShowLeftPageFade] = useState(false);
   const flowContainerRef = useRef<HTMLDivElement | null>(null);
 
-  type SpreadDef = { type: 'letter' } | { type: 'toc' } | { type: 'chapter'; chapter: Chapter };
+  type SpreadDef = { type: 'letter' } | { type: 'toc' } | { type: 'chapter'; chapter: Chapter } | { type: 'ancestry' };
 
   const visibleChapters = chapters
     .filter(c => c.chapter_number > 0 && (c.status === 'complete' || c.status === 'in_progress'))
     .sort((a, b) => a.chapter_number - b.chapter_number);
 
+  const ancestryText = ancestry?.content?.trim() || '';
+  const hasAncestry = ancestryText.length > 0 || !!ancestry?.pdf_url;
+
   const spreads: SpreadDef[] = [];
   spreads.push({ type: 'letter' });
   spreads.push({ type: 'toc' });
   visibleChapters.forEach(ch => spreads.push({ type: 'chapter', chapter: ch }));
+  if (hasAncestry) spreads.push({ type: 'ancestry' });
 
   const totalSpreads = spreads.length;
   const clampedSpread = Math.min(currentSpread, totalSpreads - 1);
