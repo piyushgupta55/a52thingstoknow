@@ -491,6 +491,7 @@ const PreviewBook = () => {
     if (!spread) return [null, null, undefined, false, null];
     if (spread.type === 'letter') return [...renderLetterSpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
     if (spread.type === 'toc') return [...renderTocSpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
+    if (spread.type === 'ancestry') return [...renderAncestrySpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
     return renderChapterSpread(spread.chapter, clampedSpread);
   };
 
