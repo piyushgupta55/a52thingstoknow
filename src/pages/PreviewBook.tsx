@@ -488,6 +488,59 @@ const PreviewBook = () => {
     return [null, null, rightBg, false, fullSpread];
   };
 
+  const renderAncestrySpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
+    const useText = ancestryText.length > 0;
+    const paragraphs = useText ? ancestryText.split(/\n\n+/).filter(Boolean) : [];
+
+    const left = (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-hidden flex flex-col items-center justify-center text-center px-4">
+          <p className="uppercase tracking-[0.25em] mb-2" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
+            A Final Page
+          </p>
+          <div className="w-8 mb-4" style={{ height: '1px', background: GOLD }} />
+          <h2 className="font-bold" style={{ fontFamily: SERIF, fontSize: '22px', color: '#2D3748', lineHeight: 1.2 }}>
+            Where You Come From
+          </h2>
+          <div className="w-8 mt-4" style={{ height: '1px', background: GOLD }} />
+          <p className="italic mt-6 px-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280', lineHeight: 1.7 }}>
+            The story of your family — where you come from, who came before you, and the thread that connects it all to you.
+          </p>
+        </div>
+        <PageNum num={leftPageNum} />
+      </div>
+    );
+
+    const right = (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-hidden">
+          {useText ? (
+            paragraphs.map((para, i) => (
+              <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em' }}>
+                {para}
+              </p>
+            ))
+          ) : ancestry?.pdf_url ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <p className="italic mb-3" style={{ fontFamily: SERIF, fontSize: '12px', color: '#6B7280' }}>
+                Family history attached as PDF
+              </p>
+              <p style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF' }}>
+                {ancestry.pdf_filename || 'Ancestry document'}
+              </p>
+              <p className="mt-4 text-xs italic" style={{ fontFamily: SERIF, color: '#B8B3A8' }}>
+                (The attached PDF will be printed in the final book.)
+              </p>
+            </div>
+          ) : null}
+        </div>
+        <PageNum num={rightPageNum} />
+      </div>
+    );
+
+    return [left, right, undefined];
+  };
+
   const getCurrentSpreadContent = (): [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null] => {
     const spread = spreads[clampedSpread];
     if (!spread) return [null, null, undefined, false, null];
