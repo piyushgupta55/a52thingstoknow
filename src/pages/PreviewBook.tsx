@@ -59,21 +59,26 @@ const PreviewBook = () => {
   const [templates, setTemplates] = useState<ChapterTemplate[]>([]);
   const [authorName, setAuthorName] = useState('');
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; pdf_filename: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
   const [showLeftPageFade, setShowLeftPageFade] = useState(false);
   const flowContainerRef = useRef<HTMLDivElement | null>(null);
 
-  type SpreadDef = { type: 'letter' } | { type: 'toc' } | { type: 'chapter'; chapter: Chapter };
+  type SpreadDef = { type: 'letter' } | { type: 'toc' } | { type: 'chapter'; chapter: Chapter } | { type: 'ancestry' };
 
   const visibleChapters = chapters
     .filter(c => c.chapter_number > 0 && (c.status === 'complete' || c.status === 'in_progress'))
     .sort((a, b) => a.chapter_number - b.chapter_number);
 
+  const ancestryText = ancestry?.content?.trim() || '';
+  const hasAncestry = ancestryText.length > 0 || !!ancestry?.pdf_url;
+
   const spreads: SpreadDef[] = [];
   spreads.push({ type: 'letter' });
   spreads.push({ type: 'toc' });
   visibleChapters.forEach(ch => spreads.push({ type: 'chapter', chapter: ch }));
+  if (hasAncestry) spreads.push({ type: 'ancestry' });
 
   const totalSpreads = spreads.length;
   const clampedSpread = Math.min(currentSpread, totalSpreads - 1);
@@ -86,15 +91,17 @@ const PreviewBook = () => {
     const load = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
-      const [{ data: chapData }, { data: tplData }, { data: memData }] = await Promise.all([
+      const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content_male, reference_content_female').eq('gender', tplGender),
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId).eq('status', 'approved'),
+        supabase.from('book_ancestry').select('content, pdf_url, pdf_filename').eq('book_id', bookId).maybeSingle(),
       ]);
       setBook(bookData);
       setChapters(chapData || []);
       setTemplates(tplData || []);
       setMemories(memData || []);
+      setAncestry(ancData || null);
       if (bookData) {
         const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
         setAuthorName(profile?.display_name || '');
@@ -307,6 +314,13 @@ const PreviewBook = () => {
               );
             })
           )}
+
+          {hasAncestry && (
+            <div className="flex items-baseline justify-between py-2 mt-2 pt-3" style={{ borderTop: '1px solid #E5E1D8' }}>
+              <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Where You Come From</span>
+              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>{(2 + visibleChapters.length) * 2 + 1}</span>
+            </div>
+          )}
         </div>
         <PageNum num={leftPageNum} />
       </div>
@@ -481,11 +495,65 @@ const PreviewBook = () => {
     return [null, null, rightBg, false, fullSpread];
   };
 
+  const renderAncestrySpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
+    const useText = ancestryText.length > 0;
+    const paragraphs = useText ? ancestryText.split(/\n\n+/).filter(Boolean) : [];
+
+    const left = (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-hidden flex flex-col items-center justify-center text-center px-4">
+          <p className="uppercase tracking-[0.25em] mb-2" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
+            A Final Page
+          </p>
+          <div className="w-8 mb-4" style={{ height: '1px', background: GOLD }} />
+          <h2 className="font-bold" style={{ fontFamily: SERIF, fontSize: '22px', color: '#2D3748', lineHeight: 1.2 }}>
+            Where You Come From
+          </h2>
+          <div className="w-8 mt-4" style={{ height: '1px', background: GOLD }} />
+          <p className="italic mt-6 px-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280', lineHeight: 1.7 }}>
+            The story of your family — where you come from, who came before you, and the thread that connects it all to you.
+          </p>
+        </div>
+        <PageNum num={leftPageNum} />
+      </div>
+    );
+
+    const right = (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-hidden">
+          {useText ? (
+            paragraphs.map((para, i) => (
+              <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em' }}>
+                {para}
+              </p>
+            ))
+          ) : ancestry?.pdf_url ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <p className="italic mb-3" style={{ fontFamily: SERIF, fontSize: '12px', color: '#6B7280' }}>
+                Family history attached as PDF
+              </p>
+              <p style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF' }}>
+                {ancestry.pdf_filename || 'Ancestry document'}
+              </p>
+              <p className="mt-4 text-xs italic" style={{ fontFamily: SERIF, color: '#B8B3A8' }}>
+                (The attached PDF will be printed in the final book.)
+              </p>
+            </div>
+          ) : null}
+        </div>
+        <PageNum num={rightPageNum} />
+      </div>
+    );
+
+    return [left, right, undefined];
+  };
+
   const getCurrentSpreadContent = (): [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null] => {
     const spread = spreads[clampedSpread];
     if (!spread) return [null, null, undefined, false, null];
     if (spread.type === 'letter') return [...renderLetterSpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
     if (spread.type === 'toc') return [...renderTocSpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
+    if (spread.type === 'ancestry') return [...renderAncestrySpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
     return renderChapterSpread(spread.chapter, clampedSpread);
   };
 

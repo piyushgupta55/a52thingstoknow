@@ -48,6 +48,7 @@ const BookDashboard = () => {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [photoTemplates, setPhotoTemplates] = useState<ChapterTemplate[]>([]);
   const [authorName, setAuthorName] = useState('');
+  const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,11 +56,13 @@ const BookDashboard = () => {
     const fetchData = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
-      const [{ data: chapData }, { data: memData }, { data: tplData }] = await Promise.all([
+      const [{ data: chapData }, { data: memData }, { data: tplData }, { data: ancData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('memories').select('*').eq('book_id', bookId),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter').eq('gender', tplGender),
+        supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle(),
       ]);
+      if (ancData?.status) setAncestryStatus(ancData.status);
       setBook(bookData);
       // Override stale chapter titles with authoritative gender-specific template titles
       const titleByNumber = new Map<number, string>((tplData || []).map((t: any) => [t.chapter_number as number, t.title as string]));
@@ -332,6 +335,27 @@ const BookDashboard = () => {
                       </button>
                     );
                   })}
+
+                {(() => {
+                  const isComplete = ancestryStatus === 'complete';
+                  const isInProgress = ancestryStatus === 'in_progress';
+                  return (
+                    <button
+                      onClick={() => navigate(`/book/${bookId}/ancestry`)}
+                      className={`flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors hover:bg-muted/50 mt-1 border-t border-border pt-3 ${
+                        isComplete ? 'text-foreground' : isInProgress ? 'text-foreground/70' : 'text-muted-foreground/40'
+                      }`}
+                    >
+                      <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
+                      <span className={`truncate ${isComplete ? 'font-medium' : ''}`}>Where You Come From</span>
+                      {isComplete && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
+                      {isInProgress && <PenLine className="h-3.5 w-3.5 text-accent ml-auto flex-shrink-0" />}
+                      {!isComplete && !isInProgress && (
+                        <span className="text-[0.65rem] italic text-muted-foreground/30 ml-auto flex-shrink-0">not started</span>
+                      )}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           </div>
