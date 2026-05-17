@@ -20,6 +20,7 @@ import PreviewBook from "./pages/PreviewBook";
 import MemoryManager from "./pages/MemoryManager";
 import MemoryInvite from "./pages/MemoryInvite";
 import HelpFaq from "./pages/HelpFaq";
+import AncestrySection from "./pages/AncestrySection";
 
 const queryClient = new QueryClient();
 
