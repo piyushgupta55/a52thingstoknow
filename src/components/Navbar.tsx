@@ -44,6 +44,7 @@ const Navbar = () => {
           {user ? (
             <>
               <Button variant="ghost" className="justify-start" onClick={() => { navigate('/dashboard'); setMobileOpen(false); }}>My Books</Button>
+              <Button variant="ghost" className="justify-start" onClick={() => { navigate('/help'); setMobileOpen(false); }}><HelpCircle className="h-4 w-4 mr-1.5" />Help</Button>
               <Button variant="outline" className="justify-start" onClick={() => { signOut(); navigate('/'); setMobileOpen(false); }}>Log Out</Button>
             </>
           ) : (
