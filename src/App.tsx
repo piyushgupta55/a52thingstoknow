@@ -21,6 +21,7 @@ import MemoryManager from "./pages/MemoryManager";
 import MemoryInvite from "./pages/MemoryInvite";
 import HelpFaq from "./pages/HelpFaq";
 import AncestrySection from "./pages/AncestrySection";
+import ChapterLibrary from "./pages/ChapterLibrary";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,8 @@ const App = () => (
             <Route path="/invite/:token" element={<MemoryInvite />} />
             <Route path="/help" element={<ProtectedRoute><HelpFaq /></ProtectedRoute>} />
             <Route path="/book/:bookId/ancestry" element={<ProtectedRoute><AncestrySection /></ProtectedRoute>} />
+            <Route path="/book/:bookId/library" element={<ProtectedRoute><ChapterLibrary /></ProtectedRoute>} />
+            <Route path="/library" element={<ProtectedRoute><ChapterLibrary /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/admin-setup" element={<ProtectedRoute><AdminSetup /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
