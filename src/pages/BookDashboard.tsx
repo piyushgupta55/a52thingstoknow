@@ -56,11 +56,13 @@ const BookDashboard = () => {
     const fetchData = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
-      const [{ data: chapData }, { data: memData }, { data: tplData }] = await Promise.all([
+      const [{ data: chapData }, { data: memData }, { data: tplData }, { data: ancData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('memories').select('*').eq('book_id', bookId),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter').eq('gender', tplGender),
+        supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle(),
       ]);
+      if (ancData?.status) setAncestryStatus(ancData.status);
       setBook(bookData);
       // Override stale chapter titles with authoritative gender-specific template titles
       const titleByNumber = new Map<number, string>((tplData || []).map((t: any) => [t.chapter_number as number, t.title as string]));
