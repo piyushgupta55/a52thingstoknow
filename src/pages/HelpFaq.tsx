@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, HelpCircle } from 'lucide-react';
+import TutorialVideos from '@/components/TutorialVideos';
 
 const faqSections = [
   {
