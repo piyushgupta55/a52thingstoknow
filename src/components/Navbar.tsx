@@ -22,6 +22,7 @@ const Navbar = () => {
           {user ? (
             <>
               <Button variant="ghost" onClick={() => navigate('/dashboard')}>My Books</Button>
+              <Button variant="ghost" onClick={() => navigate('/help')}><HelpCircle className="h-4 w-4 mr-1.5" />Help</Button>
               <Button variant="outline" onClick={() => { signOut(); navigate('/'); }}>Log Out</Button>
             </>
           ) : (
