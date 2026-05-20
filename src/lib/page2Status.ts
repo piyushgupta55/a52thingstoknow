@@ -40,12 +40,15 @@ export const computeChapterTotalWords = (chapter: {
   reference_text?: string | null;
   chapter_template?: string | null;
 }, memoryCount = 0): number => {
-  const refWords = wordCount(chapter.reference_text);
-  const contentWords = wordCount(chapter.content);
-  // Pure content accounting (matches the editor's "words available" math):
-  // paragraph breaks are layout, not content. Real placed memories still
-  // carry their 40-word conservative buffer.
-  return refWords + contentWords + memoryCount * 40;
+  const refText = chapter.reference_text || '';
+  const contentText = chapter.content || '';
+  const refWords = wordCount(refText);
+  const contentWords = wordCount(contentText);
+  // Per client spec: paragraph break = 3 words, memory slot = 40 words.
+  const paragraphBreaks =
+    (refText.match(/\n\n+/g) || []).length +
+    (contentText.match(/\n\n+/g) || []).length;
+  return refWords + contentWords + paragraphBreaks * 3 + memoryCount * 40;
 };
 
 export const getPage2Status = (

@@ -223,30 +223,22 @@ const ChapterEditor = () => {
   const page2AuthorWords = isLetterChapter
     ? editorWordCount
     : Math.max(0, editorWordCount - PAGE_1_WORD_LIMIT);
-  const showMemoryPlaceholder = !isLetterChapter && page2AuthorWords < 150;
+  // The "want to add a memory?" hint should stay visible as long as there
+  // is actually room for a memory on page 2 (≥40 words remaining) and
+  // none has been placed yet. Earlier this was gated on page-2 author
+  // words < 150, which made the hint vanish the instant the author
+  // crossed page-2's halfway point even though plenty of room remained.
+  const _page2BudgetTop = Math.max(0, budget - PAGE_1_WORD_LIMIT);
+  const _placedMemoryCount = placedMemories?.length ?? 0;
+  const _page2WordsTop = page2AuthorWords + _placedMemoryCount * 40;
+  const page2RemainingTop = _page2BudgetTop - _page2WordsTop;
+  const showMemoryPlaceholder =
+    !isLetterChapter && _placedMemoryCount === 0 && page2RemainingTop >= 40;
   const isComplete = chapter?.status === 'complete';
 
-  // Split reference text at paragraph boundary — used only for preview/print
-  const splitForPreview = (text: string) => {
-    const paragraphs = text.split(/\n\n/);
-    const totalWords = countWords(text);
-    const target = Math.floor(totalWords / 2);
-
-    let count = 0;
-    let splitIndex = 0;
-    for (let i = 0; i < paragraphs.length; i++) {
-      count += countWords(paragraphs[i]);
-      if (count >= target) {
-        splitIndex = i + 1;
-        break;
-      }
-    }
-
-    return {
-      page1: paragraphs.slice(0, splitIndex).join('\n\n'),
-      page2: paragraphs.slice(splitIndex).join('\n\n')
-    };
-  };
+  // Editor + preview share a strict word-boundary split (computed further
+  // down via splitRefByWordLimit) — page 1 holds up to 150 words, overflow
+  // auto-flows to page 2.
 
   // Unified word count — all derived from the single editor buffer so the
   // numbers never shuffle as the author types across the page boundary.
@@ -707,11 +699,12 @@ const ChapterEditor = () => {
 
   const handlePlaceSuggestion = (memoryId: string) => {
     // Overflow check: would adding this memory push the chapter past budget?
-    // Use the same components as the displayed totalWords so the warning
-    // matches what the author sees in the word counter — pure content
-    // words plus the 40-word buffer per real placed memory.
+    // Mirrors the page-2 status formula below — per client spec: paragraph
+    // break = 3 words, memory slot = 40 words.
     const projectedMemoryCount = placedMemories.length + 1;
-    const projected = editorWordCount + projectedMemoryCount * 40;
+    const totalParagraphBreaks = (mergedText.match(/\n\n+/g) || []).length;
+    const projected =
+      editorWordCount + totalParagraphBreaks * 3 + projectedMemoryCount * 40;
     if (projected > budget) {
       setOverflowConfirm({ memoryId });
       return;
@@ -916,6 +909,44 @@ const ChapterEditor = () => {
     };
   };
 
+  // Sentence-aware page-1/page-2 split. We first cap at the word limit,
+  // then snap page 1 back to the last sentence-ending punctuation (. ! ?)
+  // so page 1 never ends mid-sentence. We INCLUDE the trailing whitespace
+  // after the period in page 1: otherwise the next character the author
+  // types lands directly after the period ("there." + "T" → "there.T")
+  // and the period stops being recognised as a sentence end, causing the
+  // snap to jump backward on every keystroke. If the limit lands inside a
+  // single long opening sentence with no period before it, we fall back
+  // to the word boundary (page 1 with 0 words is worse).
+  const splitAtSentenceBoundary = (text: string, wordLimit: number) => {
+    if (!text) return { page1: '', page2: '' };
+    const wordSplit = splitRefByWordLimit(text, wordLimit);
+    if (!wordSplit.page2) return wordSplit; // everything fits — no split needed
+
+    const pageOneEnd = wordSplit.page1.length;
+    // Match . ! ? optionally followed by a closing quote/bracket, then
+    // a whitespace or end-of-string. Walk through every match in `text`
+    // and remember the latest one that lands at or before pageOneEnd.
+    const sentenceEndRe = /[.!?]["')\]]?(?=\s|$)/g;
+    let lastEnd = -1;
+    let m: RegExpExecArray | null;
+    while ((m = sentenceEndRe.exec(text)) !== null) {
+      const endPos = m.index + m[0].length;
+      if (endPos > pageOneEnd) break;
+      lastEnd = endPos;
+    }
+    if (lastEnd < 0) return wordSplit;
+
+    // Extend through the whitespace that follows the period so page 1
+    // visibly ends with "...there. " (the space is part of page 1).
+    const ws = /^\s+/.exec(text.slice(lastEnd));
+    const seam = lastEnd + (ws ? ws[0].length : 0);
+    return {
+      page1: text.slice(0, seam),
+      page2: text.slice(seam),
+    };
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-[hsl(var(--devotional-bg))]">
       <Navbar />
@@ -932,15 +963,19 @@ const ChapterEditor = () => {
 
   // Page-1 / page-2 are derived from the single buffer at render time. The
   // split is persisted to state only on save; deriving it here keeps preview
-  // live and byte-identical to the old behaviour (same split function).
-  const editSplit = isLetterChapter
+  // live. We use a paragraph-aware split for PREVIEW so page 1 never ends
+  // mid-sentence (the client's explicit requirement). The editor's
+  // word-budget math still uses the strict 150-word limit elsewhere — only
+  // the visual page break snaps to a paragraph boundary.
+  // Page-1/page-2 split: word-capped AT 150 (or 75 for photo) AND snapped
+  // back to the last sentence-ending punctuation so page 1 never ends
+  // mid-sentence. Editor + preview share the same split so the author
+  // sees the exact same break in both views.
+  const previewPages = isLetterChapter
     ? { page1: referenceText, page2: content }
-    : splitRefByWordLimit(mergedText, PAGE_1_WORD_LIMIT);
-  const previewRefText = editSplit.page1;
-  const previewContent = editSplit.page2;
-
-  // Preview split — only computed for preview/print rendering
-  const previewSplit = previewMode ? splitForPreview(previewRefText) : { page1: previewRefText, page2: '' };
+    : splitAtSentenceBoundary(mergedText, PAGE_1_WORD_LIMIT);
+  const previewRefText = previewPages.page1;
+  const previewContent = previewPages.page2;
 
 
   const handleCompanionRequestEdit = () => {
@@ -1109,16 +1144,20 @@ const ChapterEditor = () => {
               <DevotionalVerse text={bibleVerseText} reference={bibleVerseRef} onTextChange={() => {}} onRefChange={() => {}} onFindAlternatives={() => {}} editing={false} onToggleEdit={() => {}} previewMode />
               <DevotionalQuote text={quoteText} attribution={quoteAttribution} onTextChange={() => {}} onAttrChange={() => {}} onFindAlternatives={() => {}} editing={false} onToggleEdit={() => {}} previewMode />
               {previewRefText && (
-                <div className="my-8">{renderParagraphs(previewSplit.page1, true, false, 'reference')}</div>
+                // Drop cap renders ONLY here — on the very first paragraph
+                // of the chapter. The 'reference' variant is the one true
+                // chapter-body style; we use it on page 2 as well so the
+                // font never changes between pages (per client spec).
+                <div className="my-8">{renderParagraphs(previewRefText, true, false, 'reference')}</div>
               )}
-              {placedMemories.length > 0 && !previewSplit.page2 && (
+              {placedMemories.length > 0 && !previewContent && (
                 <>
                   {placedMemories.map(m => (
                     <PlacedMemory key={m.id} text={m.memory_text} fromName={m.contributor_name} />
                   ))}
                 </>
               )}
-              {showMemoryPlaceholder && placedMemories.length === 0 && !previewSplit.page2 && <MemoryPlaceholder recipientName={recipientName} realistic />}
+              {showMemoryPlaceholder && placedMemories.length === 0 && !previewContent && <MemoryPlaceholder recipientName={recipientName} realistic />}
             </PageCanvas>
 
             <div style={{ height: '32px' }} />
@@ -1126,10 +1165,13 @@ const ChapterEditor = () => {
             {/* ═══ PREVIEW PAGE 2 ═══ */}
             <PageCanvas previewMode pageNumber={2}>
               {template === 'photo_second' && renderPhotoZone('vertical')}
-              {previewSplit.page2 && (
-                <div className="mb-6">{renderParagraphs(previewSplit.page2, false, true, 'reference')}</div>
+              {previewContent && (
+                // Drop cap on page 2's first paragraph as well — every
+                // page opens with the gold initial, matching page 1's W.
+                // Same 'reference' style throughout so the font is
+                // consistent across both pages.
+                <div className="min-h-[300px]">{renderParagraphs(previewContent, true, false, 'reference')}</div>
               )}
-              {previewContent && <div className="min-h-[300px]">{renderParagraphs(previewContent, true, false)}</div>}
               {placedMemories.length > 0 && (
                 <>
                   {placedMemories.map(m => (
@@ -1243,151 +1285,205 @@ const ChapterEditor = () => {
 
             {template === 'photo_second' && renderPhotoZone('vertical')}
 
-            {/* ─── Single continuous chapter textarea ─── */}
+            {/* ─── Two-textarea editor: Page 1 above, divider, Page 2 below ─── */}
             {(() => {
-              // The author edits ONE buffer (mergedText). It is never split
-              // while typing — the page-1/page-2 split happens only on save.
-              // Word counts below are pure functions of mergedText, so they
-              // can't shuffle as the caret crosses the page boundary.
-              const handleEditorChange = (newVal: string) => {
-                if (newVal.length > MAX_CONTENT_LENGTH) return;
-                setMergedText(newVal);
+              // mergedText is still the single source of truth for word
+              // counting + save. The editor renders TWO textareas: page 1
+              // is capped at the word limit AND snapped to the last
+              // sentence boundary, so it never ends mid-sentence. Any
+              // text past that boundary flows to the page 2 textarea
+              // below the divider.
+              const { page1: editPage1, page2: editPage2 } =
+                splitAtSentenceBoundary(mergedText, PAGE_1_WORD_LIMIT);
+
+              // Recombine the two textarea values back into mergedText.
+              // The split function leaves a whitespace token at the seam
+              // (usually a space — the one that separated the boundary
+              // words). We preserve ANY whitespace at the seam; only when
+              // there is literally none do we insert a single space.
+              // Inserting "\n\n" here is wrong — it would turn each
+              // overflowing character into its own paragraph as the user
+              // typed past the page-1 boundary.
+              const joinPages = (p1: string, p2: string) => {
+                if (!p1) return p2;
+                if (!p2) return p1;
+                const hasSep = /\s$/.test(p1) || /^\s/.test(p2);
+                return hasSep ? p1 + p2 : p1 + ' ' + p2;
+              };
+
+              const applyMerged = (next: string) => {
+                if (next.length > MAX_CONTENT_LENGTH) return;
+                setMergedText(next);
                 setHasUnsavedChanges(true);
                 if (!hasEditedWisdom) setHasEditedWisdom(true);
               };
 
               const totalChapterWords = countWords(mergedText);
               const showPageBreak = totalChapterWords > PAGE_1_WORD_LIMIT;
-
-              // Live page-2 over-budget check (mirrors the status bar formula
-              // below). Pure content-word accounting: 1 typed word = 1 budget
-              // point. Paragraph breaks and the empty memory placeholder are
-              // layout hints — they do NOT cost words. Only real placed
-              // memories cost the conservative 40-word buffer.
               const _page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
+              // Client spec: paragraph break = 3 words, memory slot = 40 words.
+              const _paragraphBreaks = (mergedText.match(/\n\n+/g) || []).length;
               const _memoryWordCost = (placedMemories?.length ?? 0) * 40;
               const _page2Words =
                 Math.max(0, totalChapterWords - PAGE_1_WORD_LIMIT) +
+                _paragraphBreaks * 3 +
                 _memoryWordCost;
               const isPage2Over = _page2Words > _page2Budget;
 
-              // Compute split point in mergedText so overflow words can be highlighted.
-              // Allowed text words = page 1 limit + (page 2 budget minus memory cost).
-              const _allowedPage2TextWords = Math.max(0, _page2Budget - _memoryWordCost);
-              const _allowedTextWords = PAGE_1_WORD_LIMIT + _allowedPage2TextWords;
-              let _splitIdx = mergedText.length;
-              if (isPage2Over) {
-                const tokenRe = /\s+|\S+/g;
-                let wordCount = 0;
-                let m: RegExpExecArray | null;
-                while ((m = tokenRe.exec(mergedText)) !== null) {
-                  if (!/^\s+$/.test(m[0])) {
-                    // Em-dash compounds count as multiple words — stay in
-                    // lockstep with the displayed counter.
-                    const inner = countWords(m[0]);
-                    if (wordCount + inner > _allowedTextWords) {
-                      _splitIdx = m.index;
-                      break;
-                    }
-                    wordCount += inner;
-                  }
-                }
-              }
-              const _normalText = mergedText.slice(0, _splitIdx);
-              const _overflowText = mergedText.slice(_splitIdx);
+              const cardBase: React.CSSProperties = {
+                background: '#FDFAF4',
+                margin: '0 -8px',
+                padding: '12px 8px 12px 19px',
+              };
+              const textareaClassName =
+                'relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25';
+              const textareaStyle: React.CSSProperties = {
+                fontFamily: 'var(--font-devotional)',
+                overflow: 'hidden',
+              };
 
               return (
                 <>
+                  {/* ── Page 1 textarea ── */}
                   <div className="my-8 relative">
                     <div
                       className="transition-all duration-200 rounded-sm"
-                      style={{
-                        border: isPage2Over ? '2px solid #EF4444' : undefined,
-                        borderLeft: isPage2Over ? '2px solid #EF4444' : '3px solid #C9A84C',
-                        background: '#FDFAF4',
-                        margin: '0 -8px',
-                        padding: '12px 8px 12px 19px',
-                      }}
+                      style={{ ...cardBase, borderLeft: '3px solid #C9A84C' }}
                     >
-                      <div className="relative">
-                        {isPage2Over && (
-                          <div
-                            aria-hidden="true"
-                            className="absolute inset-0 pointer-events-none text-[14px] italic leading-[1.75] px-0"
-                            style={{
-                              fontFamily: 'var(--font-devotional)',
-                              whiteSpace: 'pre-wrap',
-                              wordWrap: 'break-word',
-                              overflowWrap: 'break-word',
-                              color: 'transparent',
-                            }}
-                          >
-                            {_normalText}
-                            <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.28)', borderRadius: '2px' }}>
-                              {_overflowText}
-                            </span>
-                            {'\u200b'}
-                          </div>
-                        )}
-                        <textarea
-                          ref={wisdomTextareaRef}
-                          value={mergedText}
-                          rows={4}
-                          onFocus={e => {
-                            e.target.setAttribute('data-no-scroll', 'true');
-                            const scrollY = window.scrollY;
+                      <textarea
+                        ref={refTextareaRef}
+                        value={editPage1}
+                        rows={4}
+                        placeholder="Begin your chapter here..."
+                        onChange={e => {
+                          const ta = e.target;
+                          const newP1 = ta.value;
+                          const caretInP1 = ta.selectionStart;
+                          const merged = joinPages(newP1, editPage2);
+                          applyMerged(merged);
+                          autoResize(ta);
+                          // If the new split moves some of the typed text
+                          // from page 1 to page 2, follow the cursor over
+                          // to the page-2 textarea — otherwise each new
+                          // character keeps getting bounced out of page 1
+                          // and the user has no idea where their typing
+                          // is going.
+                          const after = splitAtSentenceBoundary(merged, PAGE_1_WORD_LIMIT);
+                          if (caretInP1 > after.page1.length) {
+                            const cursorInP2 = caretInP1 - after.page1.length;
                             requestAnimationFrame(() => {
-                              window.scrollTo({ top: scrollY });
+                              const dest = wisdomTextareaRef.current;
+                              if (!dest) return;
+                              dest.focus();
+                              dest.selectionStart = dest.selectionEnd =
+                                Math.max(0, Math.min(cursorInP2, dest.value.length));
+                              autoResize(dest);
                             });
-                          }}
-                          onChange={e => {
-                            handleEditorChange(e.target.value);
-                            // Resize without ever scrolling the page (fixes the
-                            // "jumps back up" near the bottom of the text).
-                            autoResize(e.target);
-                          }}
-                          onPaste={e => {
-                            // Dedicated paste handler: update mergedText (and
-                            // therefore the word count + page-2 status)
-                            // synchronously, then restore caret and size.
-                            e.preventDefault();
-                            // Normalize Windows CRLF to LF so text.length
-                            // matches what the textarea actually stores —
-                            // otherwise the caret overshoots by one position
-                            // per line break (lands several chars too far).
-                            const text = e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n');
-                            const ta = e.target as HTMLTextAreaElement;
-                            const start = ta.selectionStart;
-                            const end = ta.selectionEnd;
-                            const newVal = mergedText.slice(0, start) + text + mergedText.slice(end);
-                            if (newVal.length > MAX_CONTENT_LENGTH) return;
-                            handleEditorChange(newVal);
-                            const caret = start + text.length;
+                          }
+                        }}
+                        onPaste={e => {
+                          e.preventDefault();
+                          const text = e.clipboardData
+                            .getData('text/plain')
+                            .replace(/\r\n?/g, '\n');
+                          const ta = e.target as HTMLTextAreaElement;
+                          const start = ta.selectionStart;
+                          const end = ta.selectionEnd;
+                          const newP1 =
+                            editPage1.slice(0, start) + text + editPage1.slice(end);
+                          const merged = joinPages(newP1, editPage2);
+                          if (merged.length > MAX_CONTENT_LENGTH) return;
+                          applyMerged(merged);
+                          const caret = start + text.length;
+                          // Mirror the onChange overflow handling so a paste
+                          // that lands past the boundary also focuses page 2.
+                          const after = splitAtSentenceBoundary(merged, PAGE_1_WORD_LIMIT);
+                          if (caret > after.page1.length) {
+                            const cursorInP2 = caret - after.page1.length;
+                            requestAnimationFrame(() => {
+                              const dest = wisdomTextareaRef.current;
+                              if (!dest) return;
+                              dest.focus();
+                              dest.selectionStart = dest.selectionEnd =
+                                Math.max(0, Math.min(cursorInP2, dest.value.length));
+                              autoResize(dest);
+                            });
+                          } else {
                             requestAnimationFrame(() => {
                               ta.selectionStart = ta.selectionEnd = caret;
                               autoResize(ta);
                             });
-                          }}
-                          className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25"
-                          style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
-                        />
-                      </div>
+                          }
+                        }}
+                        className={textareaClassName}
+                        style={textareaStyle}
+                      />
                     </div>
                   </div>
 
-                  {showPageBreak && (
+                  {/* Page 2 divider — always rendered so layout space is
+                      reserved (no jump when crossing 150 words). The label
+                      brightens once page-2 actually has content. */}
+                  <div
+                    className="mt-2 mb-6 flex items-center gap-3 select-none transition-opacity duration-200"
+                    aria-hidden="true"
+                    style={{
+                      fontFamily: 'var(--font-body)',
+                      opacity: showPageBreak ? 1 : 0.4,
+                    }}
+                  >
+                    <div className="flex-1 h-px bg-muted-foreground/20" />
+                    <span className="text-[0.65rem] uppercase tracking-[0.22em] text-muted-foreground/55">
+                      <span className="text-[#C9A84C] mr-1.5">✦</span>Page 2
+                    </span>
+                    <div className="flex-1 h-px bg-muted-foreground/20" />
+                  </div>
+
+                  {/* ── Page 2 textarea ── */}
+                  <div className="my-8 relative">
                     <div
-                      className="mt-2 mb-6 flex items-center gap-3 select-none"
-                      aria-hidden="true"
-                      style={{ fontFamily: 'var(--font-body)' }}
+                      className="transition-all duration-200 rounded-sm"
+                      style={{
+                        ...cardBase,
+                        border: isPage2Over ? '2px solid #EF4444' : undefined,
+                        borderLeft: isPage2Over
+                          ? '2px solid #EF4444'
+                          : '3px solid #C9A84C',
+                      }}
                     >
-                      <div className="flex-1 h-px bg-muted-foreground/20" />
-                      <span className="text-[0.65rem] uppercase tracking-[0.22em] text-muted-foreground/55">
-                        <span className="text-[#C9A84C] mr-1.5">✦</span>Page 2
-                      </span>
-                      <div className="flex-1 h-px bg-muted-foreground/20" />
+                      <textarea
+                        ref={wisdomTextareaRef}
+                        value={editPage2}
+                        rows={4}
+                        placeholder="Page 2 continues here..."
+                        onChange={e => {
+                          applyMerged(joinPages(editPage1, e.target.value));
+                          autoResize(e.target);
+                        }}
+                        onPaste={e => {
+                          e.preventDefault();
+                          const text = e.clipboardData
+                            .getData('text/plain')
+                            .replace(/\r\n?/g, '\n');
+                          const ta = e.target as HTMLTextAreaElement;
+                          const start = ta.selectionStart;
+                          const end = ta.selectionEnd;
+                          const newP2 =
+                            editPage2.slice(0, start) + text + editPage2.slice(end);
+                          const merged = joinPages(editPage1, newP2);
+                          if (merged.length > MAX_CONTENT_LENGTH) return;
+                          applyMerged(merged);
+                          const caret = start + text.length;
+                          requestAnimationFrame(() => {
+                            ta.selectionStart = ta.selectionEnd = caret;
+                            autoResize(ta);
+                          });
+                        }}
+                        className={textareaClassName}
+                        style={textareaStyle}
+                      />
                     </div>
-                  )}
+                  </div>
                 </>
               );
             })()}
@@ -1408,9 +1504,11 @@ const ChapterEditor = () => {
               const page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
               const rawText = mergedText;
               const combinedWords = countWords(rawText);
+              const paragraphBreaks = (rawText.match(/\n\n+/g) || []).length;
               const memoryWordCost = (placedMemories?.length ?? 0) * 40;
               const page2Words =
                 Math.max(0, combinedWords - PAGE_1_WORD_LIMIT) +
+                paragraphBreaks * 3 +
                 memoryWordCost;
               const page2Remaining = page2Budget - page2Words;
               if (page2Remaining < 0) {
@@ -1456,15 +1554,15 @@ const ChapterEditor = () => {
                 const page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
                 // Read from the unified state buffer — never the DOM ref —
                 // so this number is a stable function of what was typed.
-                // Pure content-word math: 1 typed word = 1 budget point.
-                // Paragraph breaks and the empty placeholder don't cost
-                // anything; only real placed memories carry their 40-word
-                // conservative buffer.
+                // Per client spec: paragraph break = 3 words, memory slot
+                // = 40 words. The empty placeholder hint is still free.
                 const rawText = mergedText;
                 const combinedWords = countWords(rawText);
+                const paragraphBreaks = (rawText.match(/\n\n+/g) || []).length;
                 const memoryWordCost = (placedMemories?.length ?? 0) * 40;
                 const page2Words =
                   Math.max(0, combinedWords - PAGE_1_WORD_LIMIT) +
+                  paragraphBreaks * 3 +
                   memoryWordCost;
                 const remaining = page2Budget - page2Words;
                 const isOver = remaining < 0;
