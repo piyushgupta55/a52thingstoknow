@@ -825,10 +825,7 @@ const ChapterEditor = () => {
   //   **text**           → bold
   //   ~~text~~           → strikethrough
   //   `text`             → inline code
-  //   *text* / _text_    → italic (or upright, when the surrounding
-  //                        body is already italic — typographic
-  //                        convention: emphasis in italic-set text is
-  //                        shown upright so it stands out)
+  //   *text* / _text_    → italic
   // Order in the alternation matters: the longest markers first so a
   // shorter one (e.g. single `*`) does not eat half of `**bold**`. The
   // inner runs forbid the marker char itself so a stray "*" in normal
@@ -842,17 +839,11 @@ const ChapterEditor = () => {
     let last = 0;
     let m: RegExpExecArray | null;
     let k = 0;
-    // Make *italic* emphasis unmistakable in BOTH contexts:
-    //  • In an italic body (chapter reference style), font-style alone is
-    //    not enough — italic-in-italic looks identical in script-style
-    //    fonts. We flip to upright AND bump weight/colour so the word
-    //    clearly stands out from the surrounding italic gray.
-    //  • In a non-italic body, plain italic styling suffices.
-    const emStyle: React.CSSProperties = inItalicBody
-      ? {
-          fontStyle: 'italic',
-        }
-      : { fontStyle: 'italic' };
+    // The chapter body is now upright, so *italic* / _italic_ markdown
+    // renders as plain italic text — visibly different from the
+    // surrounding upright body.
+    const emStyle: React.CSSProperties = { fontStyle: 'italic' };
+    void inItalicBody; // variant kept on the signature for future use
     while ((m = re.exec(line)) !== null) {
       if (m.index > last) parts.push(line.slice(last, m.index));
       if (m[1] !== undefined) {
@@ -909,7 +900,7 @@ const ChapterEditor = () => {
       return (
         <p
           key={i}
-          className={`${isRef ? 'text-[14px] italic leading-[1.75] text-foreground/55' : 'text-[15px] leading-[1.8] text-foreground/80'} ${
+          className={`${isRef ? 'text-[14px] leading-[1.75] text-foreground/55' : 'text-[15px] leading-[1.8] text-foreground/80'} ${
             i === 0 && withDropCap && !suppressDropCap ? 'drop-cap' : ''
           }`}
           style={{
@@ -1421,7 +1412,7 @@ const ChapterEditor = () => {
                 padding: '12px 8px 12px 19px',
               };
               const textareaClassName =
-                'relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25';
+                'relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25';
               const textareaStyle: React.CSSProperties = {
                 fontFamily: 'var(--font-devotional)',
                 overflow: 'hidden',
