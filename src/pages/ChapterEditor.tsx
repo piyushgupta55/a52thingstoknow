@@ -819,6 +819,88 @@ const ChapterEditor = () => {
     return { text, newValue, cursorPos: start + text.length };
   };
 
+  // Render one line of chapter text. Supports a small inline markdown
+  // subset PLUS the <mark> HTML tag:
+  //   <mark>text</mark>  → yellow-highlight span
+  //   **text**           → bold
+  //   ~~text~~           → strikethrough
+  //   `text`             → inline code
+  //   *text* / _text_    → italic (or upright, when the surrounding
+  //                        body is already italic — typographic
+  //                        convention: emphasis in italic-set text is
+  //                        shown upright so it stands out)
+  // Order in the alternation matters: the longest markers first so a
+  // shorter one (e.g. single `*`) does not eat half of `**bold**`. The
+  // inner runs forbid the marker char itself so a stray "*" in normal
+  // prose ("rate this 4 * star") never accidentally starts a span.
+  const renderInline = (line: string, variant: 'body' | 'reference' = 'body'): React.ReactNode => {
+    if (!line) return null;
+    const inItalicBody = variant === 'reference';
+    const re =
+      /<mark[^>]*>([\s\S]*?)<\/mark>|\*\*([^*\n]+?)\*\*|~~([^~\n]+?)~~|`([^`\n]+?)`|\*([^*\n]+?)\*|_([^_\n]+?)_/g;
+    const parts: React.ReactNode[] = [];
+    let last = 0;
+    let m: RegExpExecArray | null;
+    let k = 0;
+    // Make *italic* emphasis unmistakable in BOTH contexts:
+    //  • In an italic body (chapter reference style), font-style alone is
+    //    not enough — italic-in-italic looks identical in script-style
+    //    fonts. We flip to upright AND bump weight/colour so the word
+    //    clearly stands out from the surrounding italic gray.
+    //  • In a non-italic body, plain italic styling suffices.
+    const emStyle: React.CSSProperties = inItalicBody
+      ? {
+          fontStyle: 'italic',
+        }
+      : { fontStyle: 'italic' };
+    while ((m = re.exec(line)) !== null) {
+      if (m.index > last) parts.push(line.slice(last, m.index));
+      if (m[1] !== undefined) {
+        // <mark>
+        parts.push(
+          <mark
+            key={`mk${k++}`}
+            style={{
+              backgroundColor: '#FEF3C7',
+              color: 'inherit',
+              padding: '0 2px',
+              borderRadius: '2px',
+            }}
+          >
+            {m[1]}
+          </mark>,
+        );
+      } else if (m[2] !== undefined) {
+        parts.push(<strong key={`b${k++}`}>{m[2]}</strong>);
+      } else if (m[3] !== undefined) {
+        parts.push(<s key={`s${k++}`}>{m[3]}</s>);
+      } else if (m[4] !== undefined) {
+        parts.push(
+          <code
+            key={`c${k++}`}
+            style={{
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              fontSize: '0.92em',
+              background: 'rgba(0,0,0,0.05)',
+              padding: '0 4px',
+              borderRadius: '2px',
+            }}
+          >
+            {m[4]}
+          </code>,
+        );
+      } else if (m[5] !== undefined) {
+        parts.push(<em key={`i${k++}`} style={emStyle}>{m[5]}</em>);
+      } else if (m[6] !== undefined) {
+        parts.push(<em key={`u${k++}`} style={emStyle}>{m[6]}</em>);
+      }
+      last = m.index + m[0].length;
+    }
+    if (last < line.length) parts.push(line.slice(last));
+    if (parts.length === 0) return line;
+    return parts.length === 1 ? parts[0] : parts;
+  };
+
   const renderParagraphs = (text: string, withDropCap: boolean, suppressDropCap: boolean, variant: 'body' | 'reference' = 'body') => {
     const paragraphs = text.split(/\n\n+/).filter(Boolean);
     const isRef = variant === 'reference';
@@ -835,11 +917,14 @@ const ChapterEditor = () => {
             marginBottom: i < paragraphs.length - 1 ? '1.4em' : 0,
           }}
         >
-          {lines.map((line, idx) => (
-            <span key={idx} className="block">
-              {line || '\u00A0'}
-            </span>
-          ))}
+          {lines.map((line, idx) => {
+            const nodes = renderInline(line, variant);
+            return (
+              <span key={idx} className="block">
+                {nodes ?? '\u00A0'}
+              </span>
+            );
+          })}
         </p>
       );
     });
@@ -1565,16 +1650,27 @@ const ChapterEditor = () => {
                   paragraphBreaks * 3 +
                   memoryWordCost;
                 const remaining = page2Budget - page2Words;
-                const isOver = remaining < 0;
-                const color = isOver ? '#EF4444' : '#16A34A';
+
                 let label: string;
-                if (isOver) {
-                  const over = Math.abs(remaining);
-                  label = `Page 2 · ${over} word${over === 1 ? '' : 's'} over`;
-                } else if (remaining === 0) {
-                  label = 'Page 2 · Full';
+                let color: string;
+                if (combinedWords < PAGE_1_WORD_LIMIT) {
+                  // Still filling page 1 — show progress so the counter
+                  // moves with every keystroke on short chapters that
+                  // never reach page 2.
+                  label = `Page 1 · ${combinedWords} / ${PAGE_1_WORD_LIMIT} words`;
+                  const ratio = combinedWords / PAGE_1_WORD_LIMIT;
+                  color = ratio >= 0.9 ? '#D97706' : '#16A34A';
                 } else {
-                  label = `Page 2 · ${remaining} word${remaining === 1 ? '' : 's'} available`;
+                  const isOver = remaining < 0;
+                  color = isOver ? '#EF4444' : '#16A34A';
+                  if (isOver) {
+                    const over = Math.abs(remaining);
+                    label = `Page 2 · ${over} word${over === 1 ? '' : 's'} over`;
+                  } else if (remaining === 0) {
+                    label = 'Page 2 · Full';
+                  } else {
+                    label = `Page 2 · ${remaining} word${remaining === 1 ? '' : 's'} available`;
+                  }
                 }
                 return (
                   <span className="font-medium" style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color }}>
