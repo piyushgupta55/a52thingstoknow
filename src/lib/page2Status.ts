@@ -20,21 +20,32 @@ export interface Page2StatusInfo {
   totalWords: number;
 }
 
-const wordCount = (s: string | null | undefined): number =>
-  s ? s.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length : 0;
+// Word/KDP-style word counter: em-dashes (—) and en-dashes (–) split words
+// (so "character—and" counts as 2). Hyphens still join ("rock-solid" = 1).
+// Single source of truth — used everywhere words are counted or limited.
+export const countWords = (s: string | null | undefined): number => {
+  if (!s) return 0;
+  return s
+    .replace(/[—–]/g, ' ')
+    .replace(/\n/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+};
+
+const wordCount = countWords;
 
 export const computeChapterTotalWords = (chapter: {
   content?: string | null;
   reference_text?: string | null;
   chapter_template?: string | null;
 }, memoryCount = 0): number => {
-  const refText = chapter.reference_text || '';
-  const contentText = chapter.content || '';
-  const refWords = wordCount(refText);
-  const contentWords = wordCount(contentText);
-  const paragraphBreaks = (refText.match(/\n\n/g) || []).length;
-  // Each placed memory ~ 40 words of layout space (matches editor heuristic)
-  return refWords + contentWords + paragraphBreaks * 3 + memoryCount * 40;
+  const refWords = wordCount(chapter.reference_text);
+  const contentWords = wordCount(chapter.content);
+  // Pure content accounting (matches the editor's "words available" math):
+  // paragraph breaks are layout, not content. Real placed memories still
+  // carry their 40-word conservative buffer.
+  return refWords + contentWords + memoryCount * 40;
 };
 
 export const getPage2Status = (

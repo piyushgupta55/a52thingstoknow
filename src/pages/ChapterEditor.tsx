@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
@@ -13,7 +13,7 @@ import TemplateSelector, { type ChapterTemplate } from '@/components/chapter/Tem
 import MemoryPlaceholder from '@/components/chapter/MemoryPlaceholder';
 import PlacedMemory from '@/components/chapter/PlacedMemory';
 import MemorySuggestion from '@/components/chapter/MemorySuggestion';
-import { getPage2Status } from '@/lib/page2Status';
+import { countWords } from '@/lib/page2Status';
 import ChapterNav from '@/components/chapter/ChapterNav';
 import ContentSearchPanel from '@/components/chapter/ContentSearchPanel';
 import PageCanvas from '@/components/chapter/PageCanvas';
@@ -117,6 +117,18 @@ const validatePhoto = (file: File, variant: 'horizontal' | 'vertical'): Promise<
   });
 };
 
+// Reconstruct the single editing buffer from a saved reference/content split.
+// Mirrors the previous inline `combined` logic so existing DB rows load
+// byte-identically into the unified editor.
+const mergeRefAndContent = (referenceText: string, content: string) => {
+  const needsSpace =
+    referenceText.length > 0 &&
+    content.length > 0 &&
+    !/\s$/.test(referenceText) &&
+    !/^\s/.test(content);
+  return referenceText + (needsSpace ? ' ' : '') + content;
+};
+
 const getChapterIndicatorStatus = (ch: { status: string }) => {
   if (ch.status === 'complete') return 'complete';
   if (ch.status === 'in_progress') return 'in_progress';
@@ -137,6 +149,9 @@ const ChapterEditor = () => {
   const [quoteText, setQuoteText] = useState('');
   const [quoteAttribution, setQuoteAttribution] = useState('');
   const [content, setContent] = useState('');
+  // Single source of truth for the merged chapter editor + ALL word-count
+  // display. referenceText/content are derived from this only on save.
+  const [mergedText, setMergedText] = useState('');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [template, setTemplate] = useState<ChapterTemplate>('all_words');
   const [uploading, setUploading] = useState(false);
@@ -197,19 +212,30 @@ const ChapterEditor = () => {
   const isPhotoTemplate = template === 'photo_top' || template === 'photo_second';
   const isLetterChapter = chapter?.chapter_number === 0;
   const budget = WORD_BUDGETS[template] || WORD_BUDGETS.all_words;
-  const showMemoryPlaceholder = !isLetterChapter && content.trim().split(/\s+/).filter(Boolean).length < 150;
+  // Page-1 word boundary: classic chapters 150, photo templates 75
+  // (photo chapters give half of page 1 to the image).
+  const PAGE_1_WORD_LIMIT = isPhotoTemplate ? 75 : 150;
+  // Letter chapters use their own `content`-bound textarea; every other
+  // chapter edits the single unified `mergedText` buffer.
+  const editorText = isLetterChapter ? content : mergedText;
+  const editorWordCount = countWords(editorText);
+  // Author text that lands on page 2 = everything past the page-1 limit.
+  const page2AuthorWords = isLetterChapter
+    ? editorWordCount
+    : Math.max(0, editorWordCount - PAGE_1_WORD_LIMIT);
+  const showMemoryPlaceholder = !isLetterChapter && page2AuthorWords < 150;
   const isComplete = chapter?.status === 'complete';
 
   // Split reference text at paragraph boundary — used only for preview/print
   const splitForPreview = (text: string) => {
     const paragraphs = text.split(/\n\n/);
-    const totalWords = text.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    const totalWords = countWords(text);
     const target = Math.floor(totalWords / 2);
 
     let count = 0;
     let splitIndex = 0;
     for (let i = 0; i < paragraphs.length; i++) {
-      count += paragraphs[i].trim().split(/\s+/).filter(Boolean).length;
+      count += countWords(paragraphs[i]);
       if (count >= target) {
         splitIndex = i + 1;
         break;
@@ -222,18 +248,17 @@ const ChapterEditor = () => {
     };
   };
 
-  // Unified word count
-  const refWords = referenceText.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
-  const contentWords = content.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
-  const paragraphBreaks = (referenceText.match(/\n\n/g) || []).length;
-  // Show the empty placeholder slot only when there are no real placed memories
-  const memorySlots = showMemoryPlaceholder && (placedMemories?.length ?? 0) === 0 ? 1 : 0;
-  // Use actual word counts from memory text for display accuracy.
-  // The 40-word flat estimate is kept only for the overflow guard (conservative buffer).
+  // Unified word count — all derived from the single editor buffer so the
+  // numbers never shuffle as the author types across the page boundary.
+  // The status counter is labelled "words available", so 1 typed word must
+  // equal 1 budget point. We do NOT charge layout heuristics (paragraph
+  // breaks, the empty memory placeholder) against this count; only real
+  // placed memories still cost their conservative 40-word buffer below.
+  const contentWords = countWords(content);
   const placedMemoryWords = (placedMemories ?? []).reduce((sum, m) => {
-    return sum + (m.memory_text || '').trim().split(/\s+/).filter(Boolean).length;
+    return sum + countWords(m.memory_text);
   }, 0);
-  const totalWords = refWords + contentWords + (paragraphBreaks * 3) + (memorySlots * 40) + placedMemoryWords;
+  const totalWords = editorWordCount + placedMemoryWords;
 
   const enterPreview = () => {
     setPreviewMode(true);
@@ -247,18 +272,29 @@ const ChapterEditor = () => {
   const exitPreview = () => {
     setPreviewMode(false);
     setPrintNotice(false);
-  // Auto-size textareas when entering edit mode
-    setTimeout(() => {
-      if (refTextareaRef.current) {
-        refTextareaRef.current.style.height = 'auto';
-        refTextareaRef.current.style.height = refTextareaRef.current.scrollHeight + 'px';
-      }
-      if (wisdomTextareaRef.current) {
-        wisdomTextareaRef.current.style.height = 'auto';
-        wisdomTextareaRef.current.style.height = wisdomTextareaRef.current.scrollHeight + 'px';
-      }
-    }, 50);
+    // The layout effect below resizes the textareas as soon as edit mode
+    // is mounted — no timeout guesswork.
   };
+
+  // Grow a textarea to fit its content without ever scrolling the window.
+  // Resetting height to 'auto' then reading scrollHeight can nudge the page;
+  // we snapshot scrollY and restore it so the caret never jumps out of view.
+  const autoResize = useCallback((el?: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    const scrollY = window.scrollY;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+    if (window.scrollY !== scrollY) window.scrollTo({ top: scrollY });
+  }, []);
+
+  // Reliable auto-resize on mount / when the editor becomes visible / when
+  // the buffer changes. useLayoutEffect runs after the textarea is in the
+  // DOM but before paint, so the chapter opens already sized — no empty gap.
+  useLayoutEffect(() => {
+    if (loading || previewMode) return;
+    autoResize(wisdomTextareaRef.current);
+    autoResize(refTextareaRef.current);
+  }, [loading, previewMode, mergedText, content, autoResize]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -310,6 +346,8 @@ const ChapterEditor = () => {
           setIsDesignatedPhotoChapter(false);
           setReferenceContent(null);
           setReferenceText(chapterData.reference_text || '');
+          // Letter editor binds to `content`; keep mergedText coherent.
+          setMergedText(chapterData.content || '');
           setTemplate('letter' as ChapterTemplate);
           initialRef.current = { referenceText: chapterData.reference_text || '', content: chapterData.content || '' };
           lastSavedRef.current = { referenceText: chapterData.reference_text || '', content: chapterData.content || '' };
@@ -327,16 +365,19 @@ const ChapterEditor = () => {
           setReferenceContent(rawRef || null);
 
           // Prefer saved reference_text; fall back to template
-          if (chapterData.reference_text) {
-            setReferenceText(chapterData.reference_text);
-          } else if (rawRef) {
-            const cleaned = replaceTokens(rawRef, {
-              recipientName: bookData?.recipient_name || 'your child',
-              recipientGender: bookData?.recipient_gender || '',
-              authorLabel: bookData?.author_label,
-            });
-            setReferenceText(cleaned);
-          }
+          const refVal = chapterData.reference_text
+            ? chapterData.reference_text
+            : (rawRef
+                ? replaceTokens(rawRef, {
+                    recipientName: bookData?.recipient_name || 'your child',
+                    recipientGender: bookData?.recipient_gender || '',
+                    authorLabel: bookData?.author_label,
+                  })
+                : '');
+          const contentVal = chapterData.content || '';
+          setReferenceText(refVal);
+          // Seed the unified editor buffer from the saved split.
+          setMergedText(mergeRefAndContent(refVal, contentVal));
 
           initialRef.current = { referenceText: chapterData.reference_text || rawRef || '', content: chapterData.content || '' };
           lastSavedRef.current = { referenceText: chapterData.reference_text || rawRef || '', content: chapterData.content || '' };
@@ -382,17 +423,9 @@ const ChapterEditor = () => {
       setLoading(false);
       const thisHasContent = ((chapterData?.content || '') as string).trim().length > 0;
       setPreviewMode(!thisHasContent);
-
-      // After data is fully loaded, auto-resize the merged wisdom textarea
-      // so it fits its content with no empty gap on first edit.
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          if (wisdomTextareaRef.current) {
-            wisdomTextareaRef.current.style.height = 'auto';
-            wisdomTextareaRef.current.style.height = wisdomTextareaRef.current.scrollHeight + 'px';
-          }
-        }, 100);
-      });
+      // The merged textarea is sized by the useLayoutEffect below, which
+      // fires reliably once the editor is mounted and visible — no fragile
+      // setTimeout needed.
     };
     load();
   }, [chapterId, bookId]);
@@ -448,13 +481,25 @@ const ChapterEditor = () => {
     setSaving(true);
     const savedAt = new Date().toISOString();
     const newStatus = statusOverride || (markComplete ? 'complete' : chapter?.status === 'complete' ? 'complete' : 'in_progress');
+
+    // The split into page-1 (reference_text) / page-2 (content) happens
+    // here, ONLY on save — never while the author is typing. Letter
+    // chapters edit `content` directly and aren't split.
+    let refToSave = referenceText;
+    let contentToSave = content;
+    if (!isLetterChapter) {
+      const { page1, page2 } = splitRefByWordLimit(mergedText, PAGE_1_WORD_LIMIT);
+      refToSave = page1;
+      contentToSave = page2;
+    }
+
     const { error } = await supabase.from('chapters').update({
       bible_verse_text: bibleVerseText || null,
       bible_verse_reference: bibleVerseRef || null,
       quote_text: quoteText || null,
       quote_attribution: quoteAttribution || null,
-      content: content || null,
-      reference_text: referenceText || null,
+      content: contentToSave || null,
+      reference_text: refToSave || null,
       photo_urls: photoUrls,
       chapter_template: template,
       verse_id: verseId,
@@ -466,12 +511,16 @@ const ChapterEditor = () => {
     if (error) {
       toast({ title: 'Error saving', description: error.message, variant: 'destructive' });
     } else {
+      // Sync the derived split into state so preview/revert reflect what
+      // was persisted.
+      setReferenceText(refToSave);
+      setContent(contentToSave);
       setChapter(prev => prev ? { ...prev, status: newStatus } : prev);
-      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: content || null } : c));
+      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: contentToSave || null } : c));
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
       // Update last saved snapshot for revert
-      lastSavedRef.current = { referenceText: referenceText || '', content: content || '' };
+      lastSavedRef.current = { referenceText: refToSave || '', content: contentToSave || '' };
       toast({ title: markComplete ? 'Chapter marked complete!' : 'Draft saved!' });
       // After Mark Complete, advance to the next chapter that isn't complete yet
       if (markComplete) {
@@ -494,47 +543,33 @@ const ChapterEditor = () => {
   const handleCompanionApplyEdit = useCallback((nextContent: string, edit: CompanionEdit) => {
     if (edit.field === 'reference_text') {
       setReferenceText(nextContent);
-      requestAnimationFrame(() => {
-        if (refTextareaRef.current) {
-          refTextareaRef.current.style.height = 'auto';
-          refTextareaRef.current.style.height = refTextareaRef.current.scrollHeight + 'px';
-        }
-      });
+      // Keep the unified editor buffer coherent with the new split half.
+      if (!isLetterChapter) setMergedText(mergeRefAndContent(nextContent, content));
     } else {
       setContent(nextContent);
       setChapter(prev => prev ? { ...prev, content: nextContent } : prev);
       setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, content: nextContent } : c));
-      requestAnimationFrame(() => {
-        if (wisdomTextareaRef.current) {
-          wisdomTextareaRef.current.style.height = 'auto';
-          wisdomTextareaRef.current.style.height = wisdomTextareaRef.current.scrollHeight + 'px';
-        }
-      });
+      setMergedText(isLetterChapter ? nextContent : mergeRefAndContent(referenceText, nextContent));
     }
     setHasUnsavedChanges(true);
+    // The layout effect resizes the textareas when mergedText/content change.
     toast({ title: 'Change applied', description: edit.summary });
-  }, [chapterId, toast]);
+  }, [chapterId, toast, isLetterChapter, content, referenceText]);
 
   const handleRevertToSaved = useCallback(() => {
     const saved = lastSavedRef.current;
     setReferenceText(saved.referenceText);
     setContent(saved.content);
+    setMergedText(
+      isLetterChapter ? saved.content : mergeRefAndContent(saved.referenceText, saved.content),
+    );
     setChapter(prev => prev ? { ...prev, content: saved.content || null, reference_text: saved.referenceText || null } : prev);
     setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, content: saved.content || null, reference_text: saved.referenceText || null } : c));
     setHasUnsavedChanges(false);
     hasUnsavedRef.current = false;
-    requestAnimationFrame(() => {
-      if (refTextareaRef.current) {
-        refTextareaRef.current.style.height = 'auto';
-        refTextareaRef.current.style.height = refTextareaRef.current.scrollHeight + 'px';
-      }
-      if (wisdomTextareaRef.current) {
-        wisdomTextareaRef.current.style.height = 'auto';
-        wisdomTextareaRef.current.style.height = wisdomTextareaRef.current.scrollHeight + 'px';
-      }
-    });
+    // The layout effect resizes the textareas when mergedText/content change.
     toast({ title: 'Reverted to last saved' });
-  }, [chapterId, toast]);
+  }, [chapterId, toast, isLetterChapter]);
 
   // Warn on tab close / hard refresh
   useEffect(() => {
@@ -673,11 +708,10 @@ const ChapterEditor = () => {
   const handlePlaceSuggestion = (memoryId: string) => {
     // Overflow check: would adding this memory push the chapter past budget?
     // Use the same components as the displayed totalWords so the warning
-    // matches what the author sees in the word counter.
+    // matches what the author sees in the word counter — pure content
+    // words plus the 40-word buffer per real placed memory.
     const projectedMemoryCount = placedMemories.length + 1;
-    // After placement the empty placeholder slot disappears, so don't count it.
-    const projected =
-      refWords + contentWords + paragraphBreaks * 3 + projectedMemoryCount * 40;
+    const projected = editorWordCount + projectedMemoryCount * 40;
     if (projected > budget) {
       setOverflowConfirm({ memoryId });
       return;
@@ -860,13 +894,20 @@ const ChapterEditor = () => {
   const splitRefByWordLimit = (text: string, wordLimit: number) => {
     if (!text) return { page1: '', page2: '' };
     // Tokenize while preserving whitespace so we can re-join exactly.
+    // Each non-whitespace token may contain MULTIPLE words when it
+    // contains em-dashes ("character—and" → 2 words), so we count via the
+    // shared countWords helper rather than treating it as 1.
     const tokens = text.split(/(\s+)/);
     let words = 0;
     let splitAt = tokens.length;
     for (let i = 0; i < tokens.length; i++) {
-      if (tokens[i] && !/^\s+$/.test(tokens[i])) {
-        words++;
-        if (words > wordLimit) { splitAt = i; break; }
+      const tok = tokens[i];
+      if (tok && !/^\s+$/.test(tok)) {
+        const inner = countWords(tok);
+        // Split at the whitespace boundary BEFORE this token if including
+        // its words would exceed the limit — never slice through a token.
+        if (words + inner > wordLimit) { splitAt = i; break; }
+        words += inner;
       }
     }
     return {
@@ -889,8 +930,17 @@ const ChapterEditor = () => {
     </div>
   );
 
+  // Page-1 / page-2 are derived from the single buffer at render time. The
+  // split is persisted to state only on save; deriving it here keeps preview
+  // live and byte-identical to the old behaviour (same split function).
+  const editSplit = isLetterChapter
+    ? { page1: referenceText, page2: content }
+    : splitRefByWordLimit(mergedText, PAGE_1_WORD_LIMIT);
+  const previewRefText = editSplit.page1;
+  const previewContent = editSplit.page2;
+
   // Preview split — only computed for preview/print rendering
-  const previewSplit = previewMode ? splitForPreview(referenceText) : { page1: referenceText, page2: '' };
+  const previewSplit = previewMode ? splitForPreview(previewRefText) : { page1: previewRefText, page2: '' };
 
 
   const handleCompanionRequestEdit = () => {
@@ -1039,8 +1089,8 @@ const ChapterEditor = () => {
                   {chapter.title}
                 </h1>
                 <div className="mb-6" />
-                {(content?.trim() || referenceText) && (
-                  <div className="my-8">{renderParagraphs(content?.trim() ? content : referenceText, false, true, 'reference')}</div>
+                {(previewContent?.trim() || previewRefText) && (
+                  <div className="my-8">{renderParagraphs(previewContent?.trim() ? previewContent : previewRefText, false, true, 'reference')}</div>
                 )}
               </PageCanvas>
             </>
@@ -1058,7 +1108,7 @@ const ChapterEditor = () => {
               {template === 'photo_top' && renderPhotoZone('horizontal')}
               <DevotionalVerse text={bibleVerseText} reference={bibleVerseRef} onTextChange={() => {}} onRefChange={() => {}} onFindAlternatives={() => {}} editing={false} onToggleEdit={() => {}} previewMode />
               <DevotionalQuote text={quoteText} attribution={quoteAttribution} onTextChange={() => {}} onAttrChange={() => {}} onFindAlternatives={() => {}} editing={false} onToggleEdit={() => {}} previewMode />
-              {referenceText && (
+              {previewRefText && (
                 <div className="my-8">{renderParagraphs(previewSplit.page1, true, false, 'reference')}</div>
               )}
               {placedMemories.length > 0 && !previewSplit.page2 && (
@@ -1079,7 +1129,7 @@ const ChapterEditor = () => {
               {previewSplit.page2 && (
                 <div className="mb-6">{renderParagraphs(previewSplit.page2, false, true, 'reference')}</div>
               )}
-              {content && <div className="min-h-[300px]">{renderParagraphs(content, true, false)}</div>}
+              {previewContent && <div className="min-h-[300px]">{renderParagraphs(previewContent, true, false)}</div>}
               {placedMemories.length > 0 && (
                 <>
                   {placedMemories.map(m => (
@@ -1108,35 +1158,36 @@ const ChapterEditor = () => {
                   ref={wisdomTextareaRef}
                   placeholder=""
                   value={content}
-                  onInput={e => {
-                    const ta = e.target as HTMLTextAreaElement;
+                  onChange={e => {
+                    const ta = e.target;
                     if (ta.value.length <= MAX_CONTENT_LENGTH) {
                       setContent(ta.value);
                       setHasUnsavedChanges(true);
                     }
-                    ta.style.height = 'auto';
-                    ta.style.height = ta.scrollHeight + 'px';
+                    autoResize(ta);
                   }}
                   onPaste={e => {
                     e.preventDefault();
-                    const text = e.clipboardData.getData('text/plain');
+                    // Normalize Windows CRLF to LF so text.length matches what
+                    // the textarea actually stores — otherwise the caret
+                    // overshoots by one position per line break.
+                    const text = e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n');
                     const ta = e.target as HTMLTextAreaElement;
                     const start = ta.selectionStart;
                     const end = ta.selectionEnd;
                     const newVal = content.slice(0, start) + text + content.slice(end);
-                    if (newVal.length <= MAX_CONTENT_LENGTH) {
-                      setContent(newVal);
-                      setHasUnsavedChanges(true);
-                    }
+                    if (newVal.length > MAX_CONTENT_LENGTH) return;
+                    setContent(newVal);
+                    setHasUnsavedChanges(true);
+                    const caret = start + text.length;
                     requestAnimationFrame(() => {
-                      ta.selectionStart = ta.selectionEnd = start + text.length;
-                      ta.style.height = 'auto';
-                      ta.style.height = ta.scrollHeight + 'px';
+                      ta.selectionStart = ta.selectionEnd = caret;
+                      autoResize(ta);
                     });
                   }}
                   rows={6}
                   className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
-                  style={{ fontFamily: 'var(--font-devotional)', minHeight: '200px', overflow: 'hidden' }}
+                  style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
                 />
               </div>
             </div>
@@ -1194,81 +1245,56 @@ const ChapterEditor = () => {
 
             {/* ─── Single continuous chapter textarea ─── */}
             {(() => {
-              // Join without an artificial paragraph break — splitAtWordLimit
-              // preserves the boundary whitespace token in `ref`, so plain
-              // concatenation reconstructs the original text. Insert a single
-              // space only when neither side has a boundary whitespace
-              // (can happen after loading legacy DB rows).
-              const needsSpace =
-                referenceText.length > 0 &&
-                content.length > 0 &&
-                !/\s$/.test(referenceText) &&
-                !/^\s/.test(content);
-              const combined = referenceText + (needsSpace ? ' ' : '') + content;
-
-              // Page 1 word boundary — classic 150, photo templates 75
-              const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
-              const PAGE_1_WORD_LIMIT = isPhotoTpl ? 75 : 150;
-
-              const splitAtWordLimit = (text: string, limit: number) => {
-                const tokens = text.split(/(\s+)/);
-                let words = 0;
-                let splitAt = tokens.length;
-                for (let i = 0; i < tokens.length; i++) {
-                  if (tokens[i] && !/^\s+$/.test(tokens[i])) {
-                    words++;
-                    if (words > limit) { splitAt = i; break; }
-                  }
-                }
-                return {
-                  ref: tokens.slice(0, splitAt).join(''),
-                  rest: tokens.slice(splitAt).join('').replace(/^\s+/, ''),
-                };
-              };
-
-              const applyCombined = (newVal: string) => {
-                const { ref, rest } = splitAtWordLimit(newVal, PAGE_1_WORD_LIMIT);
-                setReferenceText(ref);
-                setContent(rest);
+              // The author edits ONE buffer (mergedText). It is never split
+              // while typing — the page-1/page-2 split happens only on save.
+              // Word counts below are pure functions of mergedText, so they
+              // can't shuffle as the caret crosses the page boundary.
+              const handleEditorChange = (newVal: string) => {
+                if (newVal.length > MAX_CONTENT_LENGTH) return;
+                setMergedText(newVal);
                 setHasUnsavedChanges(true);
                 if (!hasEditedWisdom) setHasEditedWisdom(true);
               };
 
-              const totalChapterWords = combined.replace(/\n/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+              const totalChapterWords = countWords(mergedText);
               const showPageBreak = totalChapterWords > PAGE_1_WORD_LIMIT;
 
-              // Live page-2 over-budget check (mirrors the status bar formula below)
+              // Live page-2 over-budget check (mirrors the status bar formula
+              // below). Pure content-word accounting: 1 typed word = 1 budget
+              // point. Paragraph breaks and the empty memory placeholder are
+              // layout hints — they do NOT cost words. Only real placed
+              // memories cost the conservative 40-word buffer.
               const _page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
-              const _paragraphBreaks = (combined.match(/\n\n/g) || []).length;
-              const _emptySlotCount = showMemoryPlaceholder ? 1 : 0;
-              const _memoryWordCost = (_emptySlotCount + (placedMemories?.length ?? 0)) * 40;
+              const _memoryWordCost = (placedMemories?.length ?? 0) * 40;
               const _page2Words =
                 Math.max(0, totalChapterWords - PAGE_1_WORD_LIMIT) +
-                _paragraphBreaks * 3 +
                 _memoryWordCost;
               const isPage2Over = _page2Words > _page2Budget;
 
-              // Compute split point in `combined` so that overflow words can be highlighted.
-              // Allowed text words = page 1 limit + (page 2 budget minus paragraph-break and memory costs).
-              const _allowedPage2TextWords = Math.max(0, _page2Budget - _paragraphBreaks * 3 - _memoryWordCost);
+              // Compute split point in mergedText so overflow words can be highlighted.
+              // Allowed text words = page 1 limit + (page 2 budget minus memory cost).
+              const _allowedPage2TextWords = Math.max(0, _page2Budget - _memoryWordCost);
               const _allowedTextWords = PAGE_1_WORD_LIMIT + _allowedPage2TextWords;
-              let _splitIdx = combined.length;
+              let _splitIdx = mergedText.length;
               if (isPage2Over) {
                 const tokenRe = /\s+|\S+/g;
                 let wordCount = 0;
                 let m: RegExpExecArray | null;
-                while ((m = tokenRe.exec(combined)) !== null) {
+                while ((m = tokenRe.exec(mergedText)) !== null) {
                   if (!/^\s+$/.test(m[0])) {
-                    wordCount++;
-                    if (wordCount > _allowedTextWords) {
+                    // Em-dash compounds count as multiple words — stay in
+                    // lockstep with the displayed counter.
+                    const inner = countWords(m[0]);
+                    if (wordCount + inner > _allowedTextWords) {
                       _splitIdx = m.index;
                       break;
                     }
+                    wordCount += inner;
                   }
                 }
               }
-              const _normalText = combined.slice(0, _splitIdx);
-              const _overflowText = combined.slice(_splitIdx);
+              const _normalText = mergedText.slice(0, _splitIdx);
+              const _overflowText = mergedText.slice(_splitIdx);
 
               return (
                 <>
@@ -1294,7 +1320,6 @@ const ChapterEditor = () => {
                               wordWrap: 'break-word',
                               overflowWrap: 'break-word',
                               color: 'transparent',
-                              minHeight: '300px',
                             }}
                           >
                             {_normalText}
@@ -1306,7 +1331,8 @@ const ChapterEditor = () => {
                         )}
                         <textarea
                           ref={wisdomTextareaRef}
-                          value={combined}
+                          value={mergedText}
+                          rows={4}
                           onFocus={e => {
                             e.target.setAttribute('data-no-scroll', 'true');
                             const scrollY = window.scrollY;
@@ -1315,35 +1341,35 @@ const ChapterEditor = () => {
                             });
                           }}
                           onChange={e => {
-                            if (e.target.value.length <= MAX_CONTENT_LENGTH) {
-                              applyCombined(e.target.value);
-                            }
-                            const ta = e.target;
-                            const prevScroll = window.scrollY;
-                            ta.style.height = 'auto';
-                            ta.style.height = ta.scrollHeight + 'px';
-                            if (window.scrollY !== prevScroll) {
-                              window.scrollTo({ top: prevScroll });
-                            }
+                            handleEditorChange(e.target.value);
+                            // Resize without ever scrolling the page (fixes the
+                            // "jumps back up" near the bottom of the text).
+                            autoResize(e.target);
                           }}
                           onPaste={e => {
+                            // Dedicated paste handler: update mergedText (and
+                            // therefore the word count + page-2 status)
+                            // synchronously, then restore caret and size.
                             e.preventDefault();
-                            const text = e.clipboardData.getData('text/plain');
+                            // Normalize Windows CRLF to LF so text.length
+                            // matches what the textarea actually stores —
+                            // otherwise the caret overshoots by one position
+                            // per line break (lands several chars too far).
+                            const text = e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n');
                             const ta = e.target as HTMLTextAreaElement;
                             const start = ta.selectionStart;
                             const end = ta.selectionEnd;
-                            const newVal = combined.slice(0, start) + text + combined.slice(end);
-                            if (newVal.length <= MAX_CONTENT_LENGTH) {
-                              applyCombined(newVal);
-                            }
+                            const newVal = mergedText.slice(0, start) + text + mergedText.slice(end);
+                            if (newVal.length > MAX_CONTENT_LENGTH) return;
+                            handleEditorChange(newVal);
+                            const caret = start + text.length;
                             requestAnimationFrame(() => {
-                              ta.selectionStart = ta.selectionEnd = start + text.length;
-                              ta.style.height = 'auto';
-                              ta.style.height = ta.scrollHeight + 'px';
+                              ta.selectionStart = ta.selectionEnd = caret;
+                              autoResize(ta);
                             });
                           }}
                           className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[14px] italic leading-[1.75] text-foreground/55 placeholder:text-muted-foreground/25"
-                          style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden', minHeight: '300px' }}
+                          style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
                         />
                       </div>
                     </div>
@@ -1379,16 +1405,12 @@ const ChapterEditor = () => {
               </>
             )}
             {(() => {
-              const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
-              const PAGE_1_LIMIT = isPhotoTpl ? 75 : 150;
-              const page2Budget = Math.max(0, budget - PAGE_1_LIMIT);
-              const rawText = referenceText + ' ' + content;
-              const combinedWords = rawText.trim().split(/\s+/).filter(Boolean).length;
-              const allParagraphBreaks = (rawText.match(/\n\n/g) || []).length;
+              const page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
+              const rawText = mergedText;
+              const combinedWords = countWords(rawText);
               const memoryWordCost = (placedMemories?.length ?? 0) * 40;
               const page2Words =
-                Math.max(0, combinedWords - PAGE_1_LIMIT) +
-                allParagraphBreaks * 3 +
+                Math.max(0, combinedWords - PAGE_1_WORD_LIMIT) +
                 memoryWordCost;
               const page2Remaining = page2Budget - page2Words;
               if (page2Remaining < 0) {
@@ -1431,18 +1453,18 @@ const ChapterEditor = () => {
             {/* Page 2 status — single simple line */}
             <div className="text-center mt-8 pt-4 border-t border-[hsl(var(--devotional-border))]">
               {(() => {
-                const isPhotoTpl = template === 'photo_top' || template === 'photo_second';
-                const PAGE_1_LIMIT = isPhotoTpl ? 75 : 150;
-                const page2Budget = Math.max(0, budget - PAGE_1_LIMIT);
-                const rawText = wisdomTextareaRef.current?.value ?? (referenceText + ' ' + content);
-                const combinedWords = rawText.trim().split(/\s+/).filter(Boolean).length;
-                const allParagraphBreaks = (rawText.match(/\n\n/g) || []).length;
-                // Each placed memory costs 40 words; the empty placeholder slot (if shown) also costs 40.
-                const emptySlotCount = showMemoryPlaceholder ? 1 : 0;
-                const memoryWordCost = (emptySlotCount + (placedMemories?.length ?? 0)) * 40;
+                const page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
+                // Read from the unified state buffer — never the DOM ref —
+                // so this number is a stable function of what was typed.
+                // Pure content-word math: 1 typed word = 1 budget point.
+                // Paragraph breaks and the empty placeholder don't cost
+                // anything; only real placed memories carry their 40-word
+                // conservative buffer.
+                const rawText = mergedText;
+                const combinedWords = countWords(rawText);
+                const memoryWordCost = (placedMemories?.length ?? 0) * 40;
                 const page2Words =
-                  Math.max(0, combinedWords - PAGE_1_LIMIT) +
-                  allParagraphBreaks * 3 +
+                  Math.max(0, combinedWords - PAGE_1_WORD_LIMIT) +
                   memoryWordCost;
                 const remaining = page2Budget - page2Words;
                 const isOver = remaining < 0;

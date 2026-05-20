@@ -7,12 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import { ArrowLeft, FileUp, X, Save, FileText } from 'lucide-react';
+import { countWords } from '@/lib/page2Status';
 
 const MAX_WORDS = 300;
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
-
-const countWords = (s: string) =>
-  s.trim().length === 0 ? 0 : s.trim().split(/\s+/).length;
 
 const AncestrySection = () => {
   const { bookId } = useParams<{ bookId: string }>();
