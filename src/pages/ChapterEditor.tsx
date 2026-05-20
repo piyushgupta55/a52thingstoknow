@@ -1166,11 +1166,11 @@ const ChapterEditor = () => {
             <PageCanvas previewMode pageNumber={2}>
               {template === 'photo_second' && renderPhotoZone('vertical')}
               {previewContent && (
-                // Drop cap on page 2's first paragraph as well — every
-                // page opens with the gold initial, matching page 1's W.
-                // Same 'reference' style throughout so the font is
-                // consistent across both pages.
-                <div className="min-h-[300px]">{renderParagraphs(previewContent, true, false, 'reference')}</div>
+                // Per client spec (definitive): the gold drop cap appears
+                // ONLY on the very first word of the chapter (page 1).
+                // Never on page 2, never mid-sentence. Same 'reference'
+                // style as page 1 so the body font is identical.
+                <div className="min-h-[300px]">{renderParagraphs(previewContent, false, true, 'reference')}</div>
               )}
               {placedMemories.length > 0 && (
                 <>
