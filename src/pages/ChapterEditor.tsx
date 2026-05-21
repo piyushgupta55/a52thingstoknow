@@ -1539,6 +1539,15 @@ const ChapterEditor = () => {
                 fontFamily: 'var(--font-devotional)',
                 overflow: 'hidden',
               };
+              // The wrapper provides the visible padding; the textarea sits
+              // inside it naturally. The backdrop overlays the *entire*
+              // wrapper with `absolute inset-0`, so it needs the same
+              // padding applied inside so highlight rects line up with the
+              // textarea's text instead of drifting into blank margins.
+              const backdropStyle: React.CSSProperties = {
+                ...textareaStyle,
+                padding: cardBase.padding,
+              };
 
               return (
                 <>
