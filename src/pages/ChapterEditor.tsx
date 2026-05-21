@@ -1219,8 +1219,62 @@ const ChapterEditor = () => {
       {/* Content area */}
       <div className="py-8 px-4">
 
-        {/* Book Review issues are rendered as inline highlights in the
-            textareas below — no banner needed. */}
+        {/* Book Review Fix-It checklist — author ticks off issues as they
+            edit. Dismissible. Re-scan happens automatically on save+return. */}
+        {!reviewBannerDismissed && reviewIssues.length > 0 && (
+          <div className="mx-auto max-w-[600px] mb-4">
+            <div className="bg-accent/10 border border-accent/30 rounded-sm p-4">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground" style={{ fontFamily: 'var(--font-body)' }}>
+                      Book Review found {reviewIssues.length} issue{reviewIssues.length === 1 ? '' : 's'} in this chapter
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
+                      Tick each one as you fix it. We'll re-check when you save and return.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReviewBannerDismissed(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground flex-shrink-0"
+                  aria-label="Dismiss"
+                >
+                  ✕
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {reviewIssues.map(iss => {
+                  const checked = !!checkedIssueIds[iss.id];
+                  const label = ISSUE_LABEL[iss.type] || 'Issue';
+                  const detail = (iss.snippet || iss.message || '').trim();
+                  return (
+                    <li key={iss.id} className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={e =>
+                          setCheckedIssueIds(prev => ({ ...prev, [iss.id]: e.target.checked }))
+                        }
+                        className="mt-1 h-4 w-4 rounded border-accent/40 accent-[hsl(var(--accent))] cursor-pointer flex-shrink-0"
+                      />
+                      <span
+                        className={`text-sm ${checked ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                        style={{ fontFamily: 'var(--font-body)' }}
+                      >
+                        <span className="font-medium">{label}:</span>{' '}
+                        <span className="italic">{detail}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        )}
+
 
 
 
