@@ -1668,7 +1668,7 @@ const ChapterEditor = () => {
                         text={editPage2}
                         issues={reviewIssues}
                         className={textareaClassName}
-                        style={textareaStyle}
+                        style={backdropStyle}
                       />
                       <textarea
                         ref={wisdomTextareaRef}
