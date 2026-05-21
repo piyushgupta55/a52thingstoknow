@@ -28,20 +28,53 @@ const TYPE_LABEL: Record<Issue['type'], string> = {
   empty_page_2: 'Empty Page 2',
 };
 
+const cacheKey = (bookId: string) => `bookReview:${bookId}`;
+const dismissedKey = (bookId: string) => `bookReview:dismissed:${bookId}`;
+
 const BookReview = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode'); // 'order' | null
+  const forceRescan = searchParams.get('rescan') === '1';
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [chaptersScanned, setChaptersScanned] = useState(0);
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = sessionStorage.getItem(dismissedKey(window.location.pathname.split('/')[2] || ''));
+      return new Set<string>(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  });
+
+  // Persist dismissed
+  useEffect(() => {
+    if (!bookId) return;
+    try {
+      sessionStorage.setItem(dismissedKey(bookId), JSON.stringify(Array.from(dismissed)));
+    } catch {}
+  }, [bookId, dismissed]);
 
   useEffect(() => {
     if (!bookId) return;
+
+    // Try to use cached results so returning from the editor doesn't trigger a re-scan.
+    if (!forceRescan) {
+      try {
+        const raw = sessionStorage.getItem(cacheKey(bookId));
+        if (raw) {
+          const cached = JSON.parse(raw);
+          setIssues(cached.issues || []);
+          setChaptersScanned(cached.chaptersScanned || 0);
+          setLoading(false);
+          return;
+        }
+      } catch {}
+    }
+
     const run = async () => {
       setLoading(true);
       setError(null);
@@ -60,8 +93,13 @@ const BookReview = () => {
         });
         const data = await resp.json();
         if (!resp.ok) throw new Error(data?.error || 'Review failed');
-        setIssues(data.issues || []);
-        setChaptersScanned(data.chaptersScanned || 0);
+        const nextIssues: Issue[] = data.issues || [];
+        const scanned = data.chaptersScanned || 0;
+        setIssues(nextIssues);
+        setChaptersScanned(scanned);
+        try {
+          sessionStorage.setItem(cacheKey(bookId), JSON.stringify({ issues: nextIssues, chaptersScanned: scanned }));
+        } catch {}
       } catch (e: any) {
         setError(e.message || 'Something went wrong');
       } finally {
@@ -69,7 +107,7 @@ const BookReview = () => {
       }
     };
     run();
-  }, [bookId]);
+  }, [bookId, forceRescan]);
 
   const visibleIssues = useMemo(
     () => issues.filter(i => !dismissed.has(i.id)),
@@ -107,13 +145,35 @@ const BookReview = () => {
           >
             ← Back to dashboard
           </button>
-          <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            Review My Book
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            We scan every completed chapter for typos, name mismatches, cut-off sentences, spacing issues, and empty pages.
-          </p>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+                <Sparkles className="h-6 w-6 text-primary" />
+                Review My Book
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                We scan every completed chapter for typos, name mismatches, cut-off sentences, spacing issues, and empty pages.
+              </p>
+            </div>
+            {!loading && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!bookId) return;
+                  try { sessionStorage.removeItem(cacheKey(bookId)); } catch {}
+                  setDismissed(new Set());
+                  try { sessionStorage.removeItem(dismissedKey(bookId)); } catch {}
+                  const params = new URLSearchParams(searchParams);
+                  params.set('rescan', String(Date.now()));
+                  navigate(`/book/${bookId}/review?${params.toString()}`, { replace: true });
+                  window.location.reload();
+                }}
+              >
+                Re-scan
+              </Button>
+            )}
+          </div>
         </div>
 
         {loading && (
@@ -206,7 +266,7 @@ const BookReview = () => {
                           <div className="flex gap-2 mt-3">
                             <Button
                               size="sm"
-                              onClick={() => navigate(`/book/${bookId}/chapter/${issue.chapter_id}`)}
+                              onClick={() => navigate(`/book/${bookId}/chapter/${issue.chapter_id}?returnTo=${encodeURIComponent(`/book/${bookId}/review${mode ? `?mode=${mode}` : ''}`)}`)}
                             >
                               Fix It <ArrowRight className="h-3.5 w-3.5 ml-1" />
                             </Button>

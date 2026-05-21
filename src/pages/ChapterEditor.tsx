@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
@@ -138,6 +138,8 @@ const getChapterIndicatorStatus = (ch: { status: string }) => {
 const ChapterEditor = () => {
   const { bookId, chapterId } = useParams<{ bookId: string; chapterId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const { toast } = useToast();
 
   const [chapter, setChapter] = useState<ChapterData | null>(null);
@@ -514,8 +516,11 @@ const ChapterEditor = () => {
       // Update last saved snapshot for revert
       lastSavedRef.current = { referenceText: refToSave || '', content: contentToSave || '' };
       toast({ title: markComplete ? 'Chapter marked complete!' : 'Draft saved!' });
-      // After Mark Complete, advance to the next chapter that isn't complete yet
-      if (markComplete) {
+      // If we came from another page (e.g. Book Review), return there after save.
+      if (returnTo) {
+        navigate(returnTo);
+      } else if (markComplete) {
+        // After Mark Complete, advance to the next chapter that isn't complete yet
         const nextIncomplete = allChapters
           .filter(c => c.id !== chapterId && c.chapter_number > (chapter?.chapter_number ?? 0))
           .sort((a, b) => a.chapter_number - b.chapter_number)
