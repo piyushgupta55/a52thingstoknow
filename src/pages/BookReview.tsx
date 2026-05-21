@@ -14,13 +14,14 @@ interface Issue {
   chapter_id: string;
   chapter_number: number;
   chapter_title: string;
-  type: 'typo' | 'name_mismatch' | 'cut_off' | 'double_space' | 'empty_page_2';
+  type: 'typo' | 'name_mismatch' | 'cut_off' | 'double_space' | 'empty_page_2' | 'missing_punctuation';
   snippet: string;
   message: string;
 }
 
 const TYPE_LABEL: Record<Issue['type'], string> = {
   typo: 'Typo',
+  missing_punctuation: 'Missing punctuation',
   name_mismatch: 'Name mismatch',
   cut_off: 'Cut-off sentence',
   double_space: 'Extra spacing',
