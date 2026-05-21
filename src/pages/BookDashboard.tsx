@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
   BookOpen, PenLine, CheckCircle, Circle, Mail, MessageSquare, Sparkles,
-  Users, LayoutGrid, Send, Inbox, Camera, Play, Library
+  Users, LayoutGrid, Send, Inbox, Camera, Play, Library, ShoppingCart
 } from 'lucide-react';
 import TutorialVideos from '@/components/TutorialVideos';
 import Navbar from '@/components/Navbar';
