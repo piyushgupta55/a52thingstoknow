@@ -154,7 +154,9 @@ const ChapterEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
-  const [reviewIssues, setReviewIssues] = useState<Array<{ id: string; type: string; snippet: string; message: string }>>([]);
+  const [reviewIssues, setReviewIssues] = useState<ReviewIssue[]>([]);
+  const [checkedIssueIds, setCheckedIssueIds] = useState<Record<string, boolean>>({});
+  const [reviewBannerDismissed, setReviewBannerDismissed] = useState(false);
   const { toast } = useToast();
 
   const [chapter, setChapter] = useState<ChapterData | null>(null);
