@@ -244,7 +244,7 @@ const BookReview = () => {
                           <div className="flex gap-2 mt-3">
                             <Button
                               size="sm"
-                              onClick={() => navigate(`/book/${bookId}/chapter/${issue.chapter_id}`)}
+                              onClick={() => navigate(`/book/${bookId}/chapter/${issue.chapter_id}?returnTo=${encodeURIComponent(`/book/${bookId}/review${mode ? `?mode=${mode}` : ''}`)}`)}
                             >
                               Fix It <ArrowRight className="h-3.5 w-3.5 ml-1" />
                             </Button>
