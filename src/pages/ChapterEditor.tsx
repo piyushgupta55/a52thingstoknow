@@ -138,6 +138,8 @@ const getChapterIndicatorStatus = (ch: { status: string }) => {
 const ChapterEditor = () => {
   const { bookId, chapterId } = useParams<{ bookId: string; chapterId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const { toast } = useToast();
 
   const [chapter, setChapter] = useState<ChapterData | null>(null);
