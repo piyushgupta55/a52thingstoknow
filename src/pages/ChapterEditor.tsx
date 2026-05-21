@@ -299,6 +299,25 @@ const ChapterEditor = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // When arriving from Book Review's "Fix It", load all flagged issues for
+  // this chapter so we can highlight them, and drop straight into edit mode.
+  useEffect(() => {
+    if (!chapterId) return;
+    try {
+      const raw = sessionStorage.getItem(`bookReview:chapterIssues:${chapterId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setReviewIssues(parsed);
+          setPreviewMode(false);
+          return;
+        }
+      }
+    } catch {}
+    setReviewIssues([]);
+  }, [chapterId]);
+
+
   useEffect(() => {
     if (!chapterId || !bookId) return;
     setLoading(true);
