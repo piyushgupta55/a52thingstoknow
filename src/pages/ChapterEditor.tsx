@@ -1392,7 +1392,7 @@ const ChapterEditor = () => {
                   text={content}
                   issues={reviewIssues}
                   className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8]"
-                  style={{ fontFamily: 'var(--font-devotional)' }}
+                  style={{ fontFamily: 'var(--font-devotional)', padding: '12px 8px 12px 19px' }}
                 />
                 <textarea
                   ref={wisdomTextareaRef}
