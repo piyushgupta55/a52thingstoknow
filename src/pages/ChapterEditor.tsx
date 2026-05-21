@@ -1319,12 +1319,6 @@ const ChapterEditor = () => {
 
             <div className="my-8 relative">
               <div className="transition-all duration-200 rounded-sm inline-block w-full relative" style={{ borderLeft: '3px solid #C9A84C', background: '#FDFAF4', margin: '0 -8px', padding: '12px 8px 12px 19px' }}>
-                <IssueHighlightBackdrop
-                  text={content}
-                  issues={reviewIssues}
-                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8]"
-                  style={{ fontFamily: 'var(--font-devotional)', padding: '12px 8px 12px 19px' }}
-                />
                 <textarea
                   ref={wisdomTextareaRef}
                   placeholder=""
