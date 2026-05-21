@@ -140,12 +140,12 @@ const getChapterIndicatorStatus = (ch: { status: string }) => {
 // were flagged. The author fixes the text directly; once the snippet no
 // longer matches, the highlight disappears.
 const ISSUE_COLOR: Record<string, string> = {
-  typo: 'rgba(239,68,68,0.30)',           // red
-  missing_punctuation: 'rgba(249,115,22,0.32)', // orange
-  name_mismatch: 'rgba(234,179,8,0.40)',  // yellow
-  cut_off: 'rgba(59,130,246,0.30)',       // blue
-  double_space: 'rgba(156,163,175,0.30)', // gray
-  empty_page_2: 'rgba(156,163,175,0.30)',
+  typo: 'rgba(239,68,68,0.22)',           // red
+  missing_punctuation: 'rgba(249,115,22,0.22)', // orange
+  name_mismatch: 'rgba(234,179,8,0.30)',  // yellow
+  cut_off: 'rgba(59,130,246,0.22)',       // blue
+  double_space: 'rgba(156,163,175,0.22)', // gray
+  empty_page_2: 'rgba(156,163,175,0.22)',
 };
 
 interface ReviewIssue { id: string; type: string; snippet: string; message: string }
@@ -162,6 +162,10 @@ const IssueHighlightBackdrop = ({
   style: React.CSSProperties;
 }) => {
   if (!issues || issues.length === 0) return null;
+  // Don't render an overlay when the textarea is empty — otherwise stray
+  // snippets that happen to match the empty string (or whitespace) could
+  // paint highlights into blank space.
+  if (!text || !text.trim()) return null;
   const ranges: Array<{ start: number; end: number; type: string }> = [];
   for (const iss of issues) {
     const snip = (iss.snippet || '').trim();
@@ -186,10 +190,15 @@ const IssueHighlightBackdrop = ({
       <mark
         key={i}
         style={{
-          backgroundColor: ISSUE_COLOR[r.type] || 'rgba(234,179,8,0.35)',
+          backgroundColor: ISSUE_COLOR[r.type] || 'rgba(234,179,8,0.25)',
+          // Override the UA default `mark { color: black }` so the
+          // duplicated text in the backdrop stays invisible — only the
+          // textarea on top renders the actual readable text.
           color: 'transparent',
           borderRadius: 2,
           padding: 0,
+          boxDecorationBreak: 'clone',
+          WebkitBoxDecorationBreak: 'clone',
         }}
       >
         {text.slice(r.start, r.end)}
@@ -201,7 +210,7 @@ const IssueHighlightBackdrop = ({
   return (
     <div
       aria-hidden
-      className={className + ' absolute inset-0 pointer-events-none whitespace-pre-wrap break-words'}
+      className={className + ' absolute inset-0 pointer-events-none whitespace-pre-wrap break-words overflow-hidden'}
       style={{ ...style, color: 'transparent' }}
     >
       {parts}
@@ -1383,7 +1392,7 @@ const ChapterEditor = () => {
                   text={content}
                   issues={reviewIssues}
                   className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8]"
-                  style={{ fontFamily: 'var(--font-devotional)' }}
+                  style={{ fontFamily: 'var(--font-devotional)', padding: '12px 8px 12px 19px' }}
                 />
                 <textarea
                   ref={wisdomTextareaRef}
@@ -1530,6 +1539,15 @@ const ChapterEditor = () => {
                 fontFamily: 'var(--font-devotional)',
                 overflow: 'hidden',
               };
+              // The wrapper provides the visible padding; the textarea sits
+              // inside it naturally. The backdrop overlays the *entire*
+              // wrapper with `absolute inset-0`, so it needs the same
+              // padding applied inside so highlight rects line up with the
+              // textarea's text instead of drifting into blank margins.
+              const backdropStyle: React.CSSProperties = {
+                ...textareaStyle,
+                padding: cardBase.padding,
+              };
 
               return (
                 <>
@@ -1543,7 +1561,7 @@ const ChapterEditor = () => {
                         text={editPage1}
                         issues={reviewIssues}
                         className={textareaClassName}
-                        style={textareaStyle}
+                        style={backdropStyle}
                       />
                       <textarea
                         ref={refTextareaRef}
@@ -1650,7 +1668,7 @@ const ChapterEditor = () => {
                         text={editPage2}
                         issues={reviewIssues}
                         className={textareaClassName}
-                        style={textareaStyle}
+                        style={backdropStyle}
                       />
                       <textarea
                         ref={wisdomTextareaRef}
