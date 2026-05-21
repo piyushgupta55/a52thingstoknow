@@ -135,89 +135,18 @@ const getChapterIndicatorStatus = (ch: { status: string }) => {
   return 'not_started';
 };
 
-// Color per Book Review issue type — used to tint inline highlights
-// behind the editor textareas so the author can see exactly which words
-// were flagged. The author fixes the text directly; once the snippet no
-// longer matches, the highlight disappears.
-const ISSUE_COLOR: Record<string, string> = {
-  typo: 'rgba(239,68,68,0.22)',           // red
-  missing_punctuation: 'rgba(249,115,22,0.22)', // orange
-  name_mismatch: 'rgba(234,179,8,0.30)',  // yellow
-  cut_off: 'rgba(59,130,246,0.22)',       // blue
-  double_space: 'rgba(156,163,175,0.22)', // gray
-  empty_page_2: 'rgba(156,163,175,0.22)',
+// Short human label per Book Review issue type — used in the Fix It
+// checklist banner shown at the top of the editor.
+const ISSUE_LABEL: Record<string, string> = {
+  typo: 'Typo',
+  missing_punctuation: 'Missing punctuation',
+  name_mismatch: 'Name',
+  cut_off: 'Cut-off sentence',
+  double_space: 'Extra spacing',
+  empty_page_2: 'Empty Page 2',
 };
 
 interface ReviewIssue { id: string; type: string; snippet: string; message: string }
-
-const IssueHighlightBackdrop = ({
-  text,
-  issues,
-  className,
-  style,
-}: {
-  text: string;
-  issues: ReviewIssue[];
-  className: string;
-  style: React.CSSProperties;
-}) => {
-  if (!issues || issues.length === 0) return null;
-  // Don't render an overlay when the textarea is empty — otherwise stray
-  // snippets that happen to match the empty string (or whitespace) could
-  // paint highlights into blank space.
-  if (!text || !text.trim()) return null;
-  const ranges: Array<{ start: number; end: number; type: string }> = [];
-  for (const iss of issues) {
-    const snip = (iss.snippet || '').trim();
-    if (!snip || snip.length < 2) continue;
-    const idx = text.indexOf(snip);
-    if (idx >= 0) ranges.push({ start: idx, end: idx + snip.length, type: iss.type });
-  }
-  if (ranges.length === 0) return null;
-  ranges.sort((a, b) => a.start - b.start);
-  const merged: typeof ranges = [];
-  for (const r of ranges) {
-    const last = merged[merged.length - 1];
-    if (last && r.start < last.end) {
-      last.end = Math.max(last.end, r.end);
-    } else merged.push({ ...r });
-  }
-  const parts: React.ReactNode[] = [];
-  let cur = 0;
-  merged.forEach((r, i) => {
-    if (r.start > cur) parts.push(text.slice(cur, r.start));
-    parts.push(
-      <mark
-        key={i}
-        style={{
-          backgroundColor: ISSUE_COLOR[r.type] || 'rgba(234,179,8,0.25)',
-          // Override the UA default `mark { color: black }` so the
-          // duplicated text in the backdrop stays invisible — only the
-          // textarea on top renders the actual readable text.
-          color: 'transparent',
-          borderRadius: 2,
-          padding: 0,
-          boxDecorationBreak: 'clone',
-          WebkitBoxDecorationBreak: 'clone',
-        }}
-      >
-        {text.slice(r.start, r.end)}
-      </mark>
-    );
-    cur = r.end;
-  });
-  if (cur < text.length) parts.push(text.slice(cur));
-  return (
-    <div
-      aria-hidden
-      className={className + ' absolute inset-0 pointer-events-none whitespace-pre-wrap break-words overflow-hidden'}
-      style={{ ...style, color: 'transparent' }}
-    >
-      {parts}
-      {'\u200B'}
-    </div>
-  );
-};
 
 const ChapterEditor = () => {
 
