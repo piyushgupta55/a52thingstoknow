@@ -1482,12 +1482,6 @@ const ChapterEditor = () => {
                       className="transition-all duration-200 rounded-sm relative"
                       style={{ ...cardBase, borderLeft: '3px solid #C9A84C' }}
                     >
-                      <IssueHighlightBackdrop
-                        text={editPage1}
-                        issues={reviewIssues}
-                        className={textareaClassName}
-                        style={backdropStyle}
-                      />
                       <textarea
                         ref={refTextareaRef}
                         value={editPage1}
