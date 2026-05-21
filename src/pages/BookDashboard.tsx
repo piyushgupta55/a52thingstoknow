@@ -249,6 +249,14 @@ const BookDashboard = () => {
                 <Library className="h-4 w-4 text-primary" />
                 Chapter Library
               </Button>
+              <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate(`/book/${bookId}/review`)}>
+                <Sparkles className="h-4 w-4 text-primary" />
+                Review My Book
+              </Button>
+              <Button className="w-full justify-start gap-3 h-12" onClick={() => navigate(`/book/${bookId}/review?mode=order`)}>
+                <ShoppingCart className="h-4 w-4" />
+                Order Book
+              </Button>
             </div>
           </div>
 
