@@ -13,7 +13,7 @@ type Issue = {
   chapter_id: string;
   chapter_number: number;
   chapter_title: string;
-  type: "typo" | "name_mismatch" | "cut_off" | "double_space" | "empty_page_2";
+  type: "typo" | "name_mismatch" | "cut_off" | "double_space" | "empty_page_2" | "missing_punctuation";
   snippet: string;
   message: string;
 };
@@ -106,6 +106,32 @@ serve(async (req) => {
           snippet: snip,
           message: "Extra spacing detected.",
         });
+      }
+
+      // Missing ending punctuation (paragraph-level)
+      const paragraphs = combined.split(/\n+/).map((p) => p.trim()).filter(Boolean);
+      const punctSeen = new Set<string>();
+      for (const para of paragraphs) {
+        // Skip short lines (likely headings/titles) — fewer than 5 words
+        if (wordCount(para) < 5) continue;
+        // Strip trailing closing quotes/brackets to find the real terminal char
+        const stripped = para.replace(/[)\]"'”’»]+$/u, "");
+        const last = stripped.slice(-1);
+        if (!/[.!?…]/.test(last)) {
+          const snip = para.slice(-140);
+          if (punctSeen.has(snip)) continue;
+          punctSeen.add(snip);
+          issues.push({
+            id: mkId(),
+            chapter_id: ch.id,
+            chapter_number: ch.chapter_number,
+            chapter_title: ch.title,
+            type: "missing_punctuation",
+            snippet: snip,
+            message: "This sentence appears to be missing ending punctuation (period, question mark, or exclamation point).",
+          });
+          if (punctSeen.size >= 5) break;
+        }
       }
     }
 
