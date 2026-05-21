@@ -145,7 +145,11 @@ export function useCompanionChat(
       return trimmed;
     });
     await Promise.resolve();
-    if (lastUser) await sendInternal(lastUser, baseMessages);
+    if (lastUser) {
+      const retryPrompt = `${lastUser}\n\n[Retry instruction: The author was not satisfied with the previous suggestion. Please try a completely different approach — do not repeat or lightly tweak the prior suggestion. Use a different angle, structure, or wording.]`;
+      const retryMessages = baseMessages.slice(0, -1).concat({ role: 'user', content: retryPrompt });
+      await sendInternal(retryPrompt, retryMessages);
+    }
   }, [sendInternal]);
 
   const applyPending = useCallback(async (index: number) => {
