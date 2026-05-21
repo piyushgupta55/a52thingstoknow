@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Sparkles, AlertCircle, CheckCircle2, ArrowRight, X, Loader2, BookOpen, ShoppingCart,
+  Sparkles, AlertCircle, CheckCircle2, ArrowRight, Loader2, BookOpen, ShoppingCart,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 
@@ -29,39 +29,57 @@ const TYPE_LABEL: Record<Issue['type'], string> = {
 };
 
 const cacheKey = (bookId: string) => `bookReview:${bookId}`;
-const dismissedKey = (bookId: string) => `bookReview:dismissed:${bookId}`;
+const chapterIssuesKey = (chapterId: string) => `bookReview:chapterIssues:${chapterId}`;
+
+const callReview = async (bookId: string, chapterId?: string) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Not authenticated');
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/book-review`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify({ bookId, ...(chapterId ? { chapterId } : {}) }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data?.error || 'Review failed');
+  return data as { chaptersScanned: number; issues: Issue[] };
+};
 
 const BookReview = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get('mode'); // 'order' | null
-  const forceRescan = searchParams.get('rescan') === '1';
+  const forceRescan = searchParams.get('rescan') !== null && searchParams.get('rescan') !== '';
+  const rescanChapter = searchParams.get('rescanChapter');
 
   const [loading, setLoading] = useState(true);
+  const [rescanning, setRescanning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [chaptersScanned, setChaptersScanned] = useState(0);
-  const [dismissed, setDismissed] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
-    try {
-      const raw = sessionStorage.getItem(dismissedKey(window.location.pathname.split('/')[2] || ''));
-      return new Set<string>(raw ? JSON.parse(raw) : []);
-    } catch { return new Set(); }
-  });
 
-  // Persist dismissed
+  // Persist current issues so we can return to the same report after Fix It.
   useEffect(() => {
-    if (!bookId) return;
+    if (!bookId || loading) return;
     try {
-      sessionStorage.setItem(dismissedKey(bookId), JSON.stringify(Array.from(dismissed)));
+      sessionStorage.setItem(
+        cacheKey(bookId),
+        JSON.stringify({ issues, chaptersScanned }),
+      );
     } catch {}
-  }, [bookId, dismissed]);
+  }, [bookId, issues, chaptersScanned, loading]);
 
+  // Initial load: cache first, otherwise full scan.
   useEffect(() => {
     if (!bookId) return;
+    // Targeted re-scan path runs in its own effect; don't load here.
+    if (rescanChapter) return;
 
-    // Try to use cached results so returning from the editor doesn't trigger a re-scan.
     if (!forceRescan) {
       try {
         const raw = sessionStorage.getItem(cacheKey(bookId));
@@ -79,27 +97,9 @@ const BookReview = () => {
       setLoading(true);
       setError(null);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) throw new Error('Not authenticated');
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/book-review`;
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ bookId }),
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data?.error || 'Review failed');
-        const nextIssues: Issue[] = data.issues || [];
-        const scanned = data.chaptersScanned || 0;
-        setIssues(nextIssues);
-        setChaptersScanned(scanned);
-        try {
-          sessionStorage.setItem(cacheKey(bookId), JSON.stringify({ issues: nextIssues, chaptersScanned: scanned }));
-        } catch {}
+        const data = await callReview(bookId);
+        setIssues(data.issues || []);
+        setChaptersScanned(data.chaptersScanned || 0);
       } catch (e: any) {
         setError(e.message || 'Something went wrong');
       } finally {
@@ -107,16 +107,48 @@ const BookReview = () => {
       }
     };
     run();
-  }, [bookId, forceRescan]);
+  }, [bookId, forceRescan, rescanChapter]);
 
-  const visibleIssues = useMemo(
-    () => issues.filter(i => !dismissed.has(i.id)),
-    [issues, dismissed],
-  );
+  // Targeted re-scan after returning from Fix It on a specific chapter.
+  useEffect(() => {
+    if (!bookId || !rescanChapter) return;
+
+    // Seed from cache so the rest of the report stays visible while we scan.
+    try {
+      const raw = sessionStorage.getItem(cacheKey(bookId));
+      if (raw) {
+        const cached = JSON.parse(raw);
+        setIssues(cached.issues || []);
+        setChaptersScanned(cached.chaptersScanned || 0);
+      }
+    } catch {}
+    setLoading(false);
+    setRescanning(rescanChapter);
+
+    (async () => {
+      try {
+        const data = await callReview(bookId, rescanChapter);
+        const fresh = data.issues || [];
+        setIssues(prev => {
+          const others = prev.filter(i => i.chapter_id !== rescanChapter);
+          return [...others, ...fresh].sort((a, b) => a.chapter_number - b.chapter_number);
+        });
+      } catch (e: any) {
+        setError(e.message || 'Re-scan failed');
+      } finally {
+        setRescanning(null);
+        // Clean up so leaving and returning doesn't re-trigger.
+        try { sessionStorage.removeItem(chapterIssuesKey(rescanChapter)); } catch {}
+        const next = new URLSearchParams(searchParams);
+        next.delete('rescanChapter');
+        setSearchParams(next, { replace: true });
+      }
+    })();
+  }, [bookId, rescanChapter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const grouped = useMemo(() => {
     const map = new Map<string, { chapter_id: string; chapter_number: number; chapter_title: string; items: Issue[] }>();
-    for (const i of visibleIssues) {
+    for (const i of issues) {
       const key = i.chapter_id;
       if (!map.has(key)) {
         map.set(key, { chapter_id: i.chapter_id, chapter_number: i.chapter_number, chapter_title: i.chapter_title, items: [] });
@@ -124,13 +156,24 @@ const BookReview = () => {
       map.get(key)!.items.push(i);
     }
     return Array.from(map.values()).sort((a, b) => a.chapter_number - b.chapter_number);
-  }, [visibleIssues]);
+  }, [issues]);
 
-  const issueCount = visibleIssues.length;
+  const issueCount = issues.length;
   const chaptersWithIssues = grouped.length;
 
+  const handleFixIt = (group: { chapter_id: string; items: Issue[] }) => {
+    // Stash every issue for this chapter so the editor can highlight them all.
+    try {
+      sessionStorage.setItem(
+        chapterIssuesKey(group.chapter_id),
+        JSON.stringify(group.items),
+      );
+    } catch {}
+    const returnTo = `/book/${bookId}/review?rescanChapter=${group.chapter_id}${mode ? `&mode=${mode}` : ''}`;
+    navigate(`/book/${bookId}/chapter/${group.chapter_id}?returnTo=${encodeURIComponent(returnTo)}`);
+  };
+
   const handleOrder = () => {
-    // Placeholder — order flow not yet implemented.
     alert('Order flow coming soon.');
   };
 
@@ -162,15 +205,14 @@ const BookReview = () => {
                 onClick={() => {
                   if (!bookId) return;
                   try { sessionStorage.removeItem(cacheKey(bookId)); } catch {}
-                  setDismissed(new Set());
-                  try { sessionStorage.removeItem(dismissedKey(bookId)); } catch {}
                   const params = new URLSearchParams(searchParams);
                   params.set('rescan', String(Date.now()));
+                  params.delete('rescanChapter');
                   navigate(`/book/${bookId}/review?${params.toString()}`, { replace: true });
                   window.location.reload();
                 }}
               >
-                Re-scan
+                Re-scan All
               </Button>
             )}
           </div>
@@ -232,7 +274,7 @@ const BookReview = () => {
                         {issueCount} issue{issueCount === 1 ? '' : 's'} found across {chaptersWithIssues} chapter{chaptersWithIssues === 1 ? '' : 's'}
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Scanned {chaptersScanned} completed chapter{chaptersScanned === 1 ? '' : 's'}. Tap "Fix It" to jump to the chapter, or "Ignore" to dismiss.
+                        Scanned {chaptersScanned} completed chapter{chaptersScanned === 1 ? '' : 's'}. Tap "Fix It" to open the chapter with every flag highlighted — we'll re-check it automatically when you return.
                       </p>
                     </div>
                   </div>
@@ -242,16 +284,25 @@ const BookReview = () => {
 
             {/* Issues grouped by chapter */}
             <div className="space-y-4">
-              {grouped.map(group => (
-                <Card key={group.chapter_id}>
+              {grouped.map(group => {
+                const isRescanning = rescanning === group.chapter_id;
+                return (
+                <Card key={group.chapter_id} className={isRescanning ? 'opacity-60' : ''}>
                   <CardContent className="py-5">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                       <h3 className="font-heading text-lg font-semibold text-foreground">
                         {group.chapter_number > 0 ? `Chapter ${group.chapter_number}: ` : ''}{group.chapter_title}
                       </h3>
-                      <Badge variant="secondary">{group.items.length} issue{group.items.length === 1 ? '' : 's'}</Badge>
+                      <div className="flex items-center gap-2">
+                        {isRescanning && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" /> Re-checking…
+                          </span>
+                        )}
+                        <Badge variant="secondary">{group.items.length} issue{group.items.length === 1 ? '' : 's'}</Badge>
+                      </div>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-3 mb-4">
                       {group.items.map(issue => (
                         <div key={issue.id} className="border border-border rounded-lg p-4 bg-muted/30">
                           <div className="flex items-start justify-between gap-3 mb-2">
@@ -263,27 +314,19 @@ const BookReview = () => {
                               "{issue.snippet}"
                             </p>
                           )}
-                          <div className="flex gap-2 mt-3">
-                            <Button
-                              size="sm"
-                              onClick={() => navigate(`/book/${bookId}/chapter/${issue.chapter_id}?returnTo=${encodeURIComponent(`/book/${bookId}/review${mode ? `?mode=${mode}` : ''}`)}`)}
-                            >
-                              Fix It <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setDismissed(prev => new Set(prev).add(issue.id))}
-                            >
-                              <X className="h-3.5 w-3.5 mr-1" /> Ignore
-                            </Button>
-                          </div>
                         </div>
                       ))}
                     </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleFixIt(group)}
+                      disabled={isRescanning}
+                    >
+                      Fix It <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
                   </CardContent>
                 </Card>
-              ))}
+              );})}
             </div>
 
             {/* Order mode footer */}
