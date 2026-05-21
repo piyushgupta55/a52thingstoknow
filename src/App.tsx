@@ -22,6 +22,7 @@ import MemoryInvite from "./pages/MemoryInvite";
 import HelpFaq from "./pages/HelpFaq";
 import AncestrySection from "./pages/AncestrySection";
 import ChapterLibrary from "./pages/ChapterLibrary";
+import BookReview from "./pages/BookReview";
 
 const queryClient = new QueryClient();
 
