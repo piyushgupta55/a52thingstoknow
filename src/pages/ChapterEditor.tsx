@@ -516,8 +516,11 @@ const ChapterEditor = () => {
       // Update last saved snapshot for revert
       lastSavedRef.current = { referenceText: refToSave || '', content: contentToSave || '' };
       toast({ title: markComplete ? 'Chapter marked complete!' : 'Draft saved!' });
-      // After Mark Complete, advance to the next chapter that isn't complete yet
-      if (markComplete) {
+      // If we came from another page (e.g. Book Review), return there after save.
+      if (returnTo) {
+        navigate(returnTo);
+      } else if (markComplete) {
+        // After Mark Complete, advance to the next chapter that isn't complete yet
         const nextIncomplete = allChapters
           .filter(c => c.id !== chapterId && c.chapter_number > (chapter?.chapter_number ?? 0))
           .sort((a, b) => a.chapter_number - b.chapter_number)
