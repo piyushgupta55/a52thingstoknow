@@ -28,20 +28,53 @@ const TYPE_LABEL: Record<Issue['type'], string> = {
   empty_page_2: 'Empty Page 2',
 };
 
+const cacheKey = (bookId: string) => `bookReview:${bookId}`;
+const dismissedKey = (bookId: string) => `bookReview:dismissed:${bookId}`;
+
 const BookReview = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode'); // 'order' | null
+  const forceRescan = searchParams.get('rescan') === '1';
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [chaptersScanned, setChaptersScanned] = useState(0);
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = sessionStorage.getItem(dismissedKey(window.location.pathname.split('/')[2] || ''));
+      return new Set<string>(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  });
+
+  // Persist dismissed
+  useEffect(() => {
+    if (!bookId) return;
+    try {
+      sessionStorage.setItem(dismissedKey(bookId), JSON.stringify(Array.from(dismissed)));
+    } catch {}
+  }, [bookId, dismissed]);
 
   useEffect(() => {
     if (!bookId) return;
+
+    // Try to use cached results so returning from the editor doesn't trigger a re-scan.
+    if (!forceRescan) {
+      try {
+        const raw = sessionStorage.getItem(cacheKey(bookId));
+        if (raw) {
+          const cached = JSON.parse(raw);
+          setIssues(cached.issues || []);
+          setChaptersScanned(cached.chaptersScanned || 0);
+          setLoading(false);
+          return;
+        }
+      } catch {}
+    }
+
     const run = async () => {
       setLoading(true);
       setError(null);
@@ -60,8 +93,13 @@ const BookReview = () => {
         });
         const data = await resp.json();
         if (!resp.ok) throw new Error(data?.error || 'Review failed');
-        setIssues(data.issues || []);
-        setChaptersScanned(data.chaptersScanned || 0);
+        const nextIssues: Issue[] = data.issues || [];
+        const scanned = data.chaptersScanned || 0;
+        setIssues(nextIssues);
+        setChaptersScanned(scanned);
+        try {
+          sessionStorage.setItem(cacheKey(bookId), JSON.stringify({ issues: nextIssues, chaptersScanned: scanned }));
+        } catch {}
       } catch (e: any) {
         setError(e.message || 'Something went wrong');
       } finally {
@@ -69,7 +107,7 @@ const BookReview = () => {
       }
     };
     run();
-  }, [bookId]);
+  }, [bookId, forceRescan]);
 
   const visibleIssues = useMemo(
     () => issues.filter(i => !dismissed.has(i.id)),
