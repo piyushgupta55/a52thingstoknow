@@ -135,89 +135,18 @@ const getChapterIndicatorStatus = (ch: { status: string }) => {
   return 'not_started';
 };
 
-// Color per Book Review issue type — used to tint inline highlights
-// behind the editor textareas so the author can see exactly which words
-// were flagged. The author fixes the text directly; once the snippet no
-// longer matches, the highlight disappears.
-const ISSUE_COLOR: Record<string, string> = {
-  typo: 'rgba(239,68,68,0.22)',           // red
-  missing_punctuation: 'rgba(249,115,22,0.22)', // orange
-  name_mismatch: 'rgba(234,179,8,0.30)',  // yellow
-  cut_off: 'rgba(59,130,246,0.22)',       // blue
-  double_space: 'rgba(156,163,175,0.22)', // gray
-  empty_page_2: 'rgba(156,163,175,0.22)',
+// Short human label per Book Review issue type — used in the Fix It
+// checklist banner shown at the top of the editor.
+const ISSUE_LABEL: Record<string, string> = {
+  typo: 'Typo',
+  missing_punctuation: 'Missing punctuation',
+  name_mismatch: 'Name',
+  cut_off: 'Cut-off sentence',
+  double_space: 'Extra spacing',
+  empty_page_2: 'Empty Page 2',
 };
 
 interface ReviewIssue { id: string; type: string; snippet: string; message: string }
-
-const IssueHighlightBackdrop = ({
-  text,
-  issues,
-  className,
-  style,
-}: {
-  text: string;
-  issues: ReviewIssue[];
-  className: string;
-  style: React.CSSProperties;
-}) => {
-  if (!issues || issues.length === 0) return null;
-  // Don't render an overlay when the textarea is empty — otherwise stray
-  // snippets that happen to match the empty string (or whitespace) could
-  // paint highlights into blank space.
-  if (!text || !text.trim()) return null;
-  const ranges: Array<{ start: number; end: number; type: string }> = [];
-  for (const iss of issues) {
-    const snip = (iss.snippet || '').trim();
-    if (!snip || snip.length < 2) continue;
-    const idx = text.indexOf(snip);
-    if (idx >= 0) ranges.push({ start: idx, end: idx + snip.length, type: iss.type });
-  }
-  if (ranges.length === 0) return null;
-  ranges.sort((a, b) => a.start - b.start);
-  const merged: typeof ranges = [];
-  for (const r of ranges) {
-    const last = merged[merged.length - 1];
-    if (last && r.start < last.end) {
-      last.end = Math.max(last.end, r.end);
-    } else merged.push({ ...r });
-  }
-  const parts: React.ReactNode[] = [];
-  let cur = 0;
-  merged.forEach((r, i) => {
-    if (r.start > cur) parts.push(text.slice(cur, r.start));
-    parts.push(
-      <mark
-        key={i}
-        style={{
-          backgroundColor: ISSUE_COLOR[r.type] || 'rgba(234,179,8,0.25)',
-          // Override the UA default `mark { color: black }` so the
-          // duplicated text in the backdrop stays invisible — only the
-          // textarea on top renders the actual readable text.
-          color: 'transparent',
-          borderRadius: 2,
-          padding: 0,
-          boxDecorationBreak: 'clone',
-          WebkitBoxDecorationBreak: 'clone',
-        }}
-      >
-        {text.slice(r.start, r.end)}
-      </mark>
-    );
-    cur = r.end;
-  });
-  if (cur < text.length) parts.push(text.slice(cur));
-  return (
-    <div
-      aria-hidden
-      className={className + ' absolute inset-0 pointer-events-none whitespace-pre-wrap break-words overflow-hidden'}
-      style={{ ...style, color: 'transparent' }}
-    >
-      {parts}
-      {'\u200B'}
-    </div>
-  );
-};
 
 const ChapterEditor = () => {
 
@@ -225,7 +154,9 @@ const ChapterEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
-  const [reviewIssues, setReviewIssues] = useState<Array<{ id: string; type: string; snippet: string; message: string }>>([]);
+  const [reviewIssues, setReviewIssues] = useState<ReviewIssue[]>([]);
+  const [checkedIssueIds, setCheckedIssueIds] = useState<Record<string, boolean>>({});
+  const [reviewBannerDismissed, setReviewBannerDismissed] = useState(false);
   const { toast } = useToast();
 
   const [chapter, setChapter] = useState<ChapterData | null>(null);
@@ -385,9 +316,11 @@ const ChapterEditor = () => {
   }, []);
 
   // When arriving from Book Review's "Fix It", load all flagged issues for
-  // this chapter so we can highlight them, and drop straight into edit mode.
+  // this chapter and show them in a dismissible checklist banner at the top.
   useEffect(() => {
     if (!chapterId) return;
+    setCheckedIssueIds({});
+    setReviewBannerDismissed(false);
     try {
       const raw = sessionStorage.getItem(`bookReview:chapterIssues:${chapterId}`);
       if (raw) {
@@ -1286,8 +1219,62 @@ const ChapterEditor = () => {
       {/* Content area */}
       <div className="py-8 px-4">
 
-        {/* Book Review issues are rendered as inline highlights in the
-            textareas below — no banner needed. */}
+        {/* Book Review Fix-It checklist — author ticks off issues as they
+            edit. Dismissible. Re-scan happens automatically on save+return. */}
+        {!reviewBannerDismissed && reviewIssues.length > 0 && (
+          <div className="mx-auto max-w-[600px] mb-4">
+            <div className="bg-accent/10 border border-accent/30 rounded-sm p-4">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground" style={{ fontFamily: 'var(--font-body)' }}>
+                      Book Review found {reviewIssues.length} issue{reviewIssues.length === 1 ? '' : 's'} in this chapter
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
+                      Tick each one as you fix it. We'll re-check when you save and return.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReviewBannerDismissed(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground flex-shrink-0"
+                  aria-label="Dismiss"
+                >
+                  ✕
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {reviewIssues.map(iss => {
+                  const checked = !!checkedIssueIds[iss.id];
+                  const label = ISSUE_LABEL[iss.type] || 'Issue';
+                  const detail = (iss.snippet || iss.message || '').trim();
+                  return (
+                    <li key={iss.id} className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={e =>
+                          setCheckedIssueIds(prev => ({ ...prev, [iss.id]: e.target.checked }))
+                        }
+                        className="mt-1 h-4 w-4 rounded border-accent/40 accent-[hsl(var(--accent))] cursor-pointer flex-shrink-0"
+                      />
+                      <span
+                        className={`text-sm ${checked ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                        style={{ fontFamily: 'var(--font-body)' }}
+                      >
+                        <span className="font-medium">{label}:</span>{' '}
+                        <span className="italic">{detail}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        )}
+
 
 
 
@@ -1388,12 +1375,6 @@ const ChapterEditor = () => {
 
             <div className="my-8 relative">
               <div className="transition-all duration-200 rounded-sm inline-block w-full relative" style={{ borderLeft: '3px solid #C9A84C', background: '#FDFAF4', margin: '0 -8px', padding: '12px 8px 12px 19px' }}>
-                <IssueHighlightBackdrop
-                  text={content}
-                  issues={reviewIssues}
-                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8]"
-                  style={{ fontFamily: 'var(--font-devotional)', padding: '12px 8px 12px 19px' }}
-                />
                 <textarea
                   ref={wisdomTextareaRef}
                   placeholder=""
@@ -1539,15 +1520,6 @@ const ChapterEditor = () => {
                 fontFamily: 'var(--font-devotional)',
                 overflow: 'hidden',
               };
-              // The wrapper provides the visible padding; the textarea sits
-              // inside it naturally. The backdrop overlays the *entire*
-              // wrapper with `absolute inset-0`, so it needs the same
-              // padding applied inside so highlight rects line up with the
-              // textarea's text instead of drifting into blank margins.
-              const backdropStyle: React.CSSProperties = {
-                ...textareaStyle,
-                padding: cardBase.padding,
-              };
 
               return (
                 <>
@@ -1557,12 +1529,6 @@ const ChapterEditor = () => {
                       className="transition-all duration-200 rounded-sm relative"
                       style={{ ...cardBase, borderLeft: '3px solid #C9A84C' }}
                     >
-                      <IssueHighlightBackdrop
-                        text={editPage1}
-                        issues={reviewIssues}
-                        className={textareaClassName}
-                        style={backdropStyle}
-                      />
                       <textarea
                         ref={refTextareaRef}
                         value={editPage1}
@@ -1664,12 +1630,6 @@ const ChapterEditor = () => {
                           : '3px solid #C9A84C',
                       }}
                     >
-                      <IssueHighlightBackdrop
-                        text={editPage2}
-                        issues={reviewIssues}
-                        className={textareaClassName}
-                        style={backdropStyle}
-                      />
                       <textarea
                         ref={wisdomTextareaRef}
                         value={editPage2}
