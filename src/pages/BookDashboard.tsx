@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
   BookOpen, PenLine, CheckCircle, Circle, Mail, MessageSquare, Sparkles,
-  Users, LayoutGrid, Send, Inbox, Camera, Play, Library
+  Users, LayoutGrid, Send, Inbox, Camera, Play, Library, ShoppingCart
 } from 'lucide-react';
 import TutorialVideos from '@/components/TutorialVideos';
 import Navbar from '@/components/Navbar';
@@ -248,6 +248,14 @@ const BookDashboard = () => {
               <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate(`/book/${bookId}/library`)}>
                 <Library className="h-4 w-4 text-primary" />
                 Chapter Library
+              </Button>
+              <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate(`/book/${bookId}/review`)}>
+                <Sparkles className="h-4 w-4 text-primary" />
+                Review My Book
+              </Button>
+              <Button className="w-full justify-start gap-3 h-12" onClick={() => navigate(`/book/${bookId}/review?mode=order`)}>
+                <ShoppingCart className="h-4 w-4" />
+                Order Book
               </Button>
             </div>
           </div>
