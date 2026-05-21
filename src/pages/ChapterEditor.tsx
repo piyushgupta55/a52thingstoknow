@@ -1583,12 +1583,6 @@ const ChapterEditor = () => {
                           : '3px solid #C9A84C',
                       }}
                     >
-                      <IssueHighlightBackdrop
-                        text={editPage2}
-                        issues={reviewIssues}
-                        className={textareaClassName}
-                        style={backdropStyle}
-                      />
                       <textarea
                         ref={wisdomTextareaRef}
                         value={editPage2}
