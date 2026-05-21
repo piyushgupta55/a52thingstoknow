@@ -1201,39 +1201,10 @@ const ChapterEditor = () => {
       {/* Content area */}
       <div className="py-8 px-4">
 
-        {/* Book Review issues — every flag for this chapter, shown together */}
-        {reviewIssues.length > 0 && !previewMode && (
-          <div className="mx-auto max-w-[600px] mb-4">
-            <div className="bg-accent/10 border border-accent/30 rounded-sm p-4">
-              <div className="flex items-start gap-2 mb-3">
-                <AlertTriangle className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-foreground" style={{ fontFamily: 'var(--font-body)' }}>
-                    {reviewIssues.length} flag{reviewIssues.length === 1 ? '' : 's'} from Book Review
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
-                    Fix everything below — we'll re-check this chapter automatically when you save.
-                  </p>
-                </div>
-              </div>
-              <ul className="space-y-2 pl-1">
-                {reviewIssues.map(iss => (
-                  <li key={iss.id} className="text-xs text-foreground/80" style={{ fontFamily: 'var(--font-body)' }}>
-                    <span className="inline-block uppercase tracking-wider text-[0.6rem] text-accent font-semibold mr-2">
-                      {iss.type.replace(/_/g, ' ')}
-                    </span>
-                    <span>{iss.message}</span>
-                    {iss.snippet && (
-                      <span className="block mt-1 italic text-muted-foreground border-l-2 border-accent/30 pl-2">
-                        "{iss.snippet}"
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
+        {/* Book Review issues are rendered as inline highlights in the
+            textareas below — no banner needed. */}
+
+
 
 
         {/* Duplicate warning */}
