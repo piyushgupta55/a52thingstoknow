@@ -140,6 +140,7 @@ const ChapterEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
+  const [reviewIssues, setReviewIssues] = useState<Array<{ id: string; type: string; snippet: string; message: string }>>([]);
   const { toast } = useToast();
 
   const [chapter, setChapter] = useState<ChapterData | null>(null);
