@@ -32,7 +32,7 @@ serve(async (req) => {
       });
     }
 
-    const { bookId } = await req.json();
+    const { bookId, chapterId } = await req.json();
     if (!bookId) {
       return new Response(JSON.stringify({ error: "bookId required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -57,12 +57,22 @@ serve(async (req) => {
       });
     }
 
-    const { data: chapters } = await supabase
+    // When chapterId is provided we re-scan only that one chapter (regardless
+    // of its current status — the author may have just saved it). Otherwise
+    // scan all completed chapters.
+    let chaptersQuery = supabase
       .from("chapters")
-      .select("id, chapter_number, title, content, reference_text, chapter_template")
+      .select("id, chapter_number, title, content, reference_text, chapter_template, status")
       .eq("book_id", bookId)
-      .eq("status", "complete")
       .order("chapter_number");
+
+    if (chapterId) {
+      chaptersQuery = chaptersQuery.eq("id", chapterId);
+    } else {
+      chaptersQuery = chaptersQuery.eq("status", "complete");
+    }
+
+    const { data: chapters } = await chaptersQuery;
 
     const recipientName = (book.recipient_name || "").trim();
     const issues: Issue[] = [];
