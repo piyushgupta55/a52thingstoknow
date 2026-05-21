@@ -490,7 +490,7 @@ const ChapterEditor = () => {
   const canMarkComplete = () => {
     if (isLetterChapter) return true;
     const page2HasContent =
-      content.trim().length > 0 ||
+      page2AuthorWords > 0 ||
       placedMemories.length > 0 ||
       photoUrls.length > 0;
     return page2HasContent;
