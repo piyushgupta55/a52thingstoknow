@@ -316,9 +316,11 @@ const ChapterEditor = () => {
   }, []);
 
   // When arriving from Book Review's "Fix It", load all flagged issues for
-  // this chapter so we can highlight them, and drop straight into edit mode.
+  // this chapter and show them in a dismissible checklist banner at the top.
   useEffect(() => {
     if (!chapterId) return;
+    setCheckedIssueIds({});
+    setReviewBannerDismissed(false);
     try {
       const raw = sessionStorage.getItem(`bookReview:chapterIssues:${chapterId}`);
       if (raw) {
