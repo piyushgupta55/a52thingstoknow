@@ -13,7 +13,7 @@ type Issue = {
   chapter_id: string;
   chapter_number: number;
   chapter_title: string;
-  type: "typo" | "name_mismatch" | "cut_off" | "double_space" | "empty_page_2";
+  type: "typo" | "name_mismatch" | "cut_off" | "double_space" | "empty_page_2" | "missing_punctuation";
   snippet: string;
   message: string;
 };
