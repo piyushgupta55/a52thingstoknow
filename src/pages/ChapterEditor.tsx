@@ -1520,8 +1520,6 @@ const ChapterEditor = () => {
                 fontFamily: 'var(--font-devotional)',
                 overflow: 'hidden',
               };
-              // The wrapper provides the visible padding; the textarea sits
-              // inside it naturally. The backdrop overlays the *entire*
 
               return (
                 <>
