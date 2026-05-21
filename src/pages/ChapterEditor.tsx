@@ -135,7 +135,83 @@ const getChapterIndicatorStatus = (ch: { status: string }) => {
   return 'not_started';
 };
 
+// Color per Book Review issue type — used to tint inline highlights
+// behind the editor textareas so the author can see exactly which words
+// were flagged. The author fixes the text directly; once the snippet no
+// longer matches, the highlight disappears.
+const ISSUE_COLOR: Record<string, string> = {
+  typo: 'rgba(239,68,68,0.30)',           // red
+  missing_punctuation: 'rgba(249,115,22,0.32)', // orange
+  name_mismatch: 'rgba(234,179,8,0.40)',  // yellow
+  cut_off: 'rgba(59,130,246,0.30)',       // blue
+  double_space: 'rgba(156,163,175,0.30)', // gray
+  empty_page_2: 'rgba(156,163,175,0.30)',
+};
+
+interface ReviewIssue { id: string; type: string; snippet: string; message: string }
+
+const IssueHighlightBackdrop = ({
+  text,
+  issues,
+  className,
+  style,
+}: {
+  text: string;
+  issues: ReviewIssue[];
+  className: string;
+  style: React.CSSProperties;
+}) => {
+  if (!issues || issues.length === 0) return null;
+  const ranges: Array<{ start: number; end: number; type: string }> = [];
+  for (const iss of issues) {
+    const snip = (iss.snippet || '').trim();
+    if (!snip || snip.length < 2) continue;
+    const idx = text.indexOf(snip);
+    if (idx >= 0) ranges.push({ start: idx, end: idx + snip.length, type: iss.type });
+  }
+  if (ranges.length === 0) return null;
+  ranges.sort((a, b) => a.start - b.start);
+  const merged: typeof ranges = [];
+  for (const r of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && r.start < last.end) {
+      last.end = Math.max(last.end, r.end);
+    } else merged.push({ ...r });
+  }
+  const parts: React.ReactNode[] = [];
+  let cur = 0;
+  merged.forEach((r, i) => {
+    if (r.start > cur) parts.push(text.slice(cur, r.start));
+    parts.push(
+      <mark
+        key={i}
+        style={{
+          backgroundColor: ISSUE_COLOR[r.type] || 'rgba(234,179,8,0.35)',
+          color: 'transparent',
+          borderRadius: 2,
+          padding: 0,
+        }}
+      >
+        {text.slice(r.start, r.end)}
+      </mark>
+    );
+    cur = r.end;
+  });
+  if (cur < text.length) parts.push(text.slice(cur));
+  return (
+    <div
+      aria-hidden
+      className={className + ' absolute inset-0 pointer-events-none whitespace-pre-wrap break-words'}
+      style={{ ...style, color: 'transparent' }}
+    >
+      {parts}
+      {'\u200B'}
+    </div>
+  );
+};
+
 const ChapterEditor = () => {
+
   const { bookId, chapterId } = useParams<{ bookId: string; chapterId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1201,39 +1277,10 @@ const ChapterEditor = () => {
       {/* Content area */}
       <div className="py-8 px-4">
 
-        {/* Book Review issues — every flag for this chapter, shown together */}
-        {reviewIssues.length > 0 && !previewMode && (
-          <div className="mx-auto max-w-[600px] mb-4">
-            <div className="bg-accent/10 border border-accent/30 rounded-sm p-4">
-              <div className="flex items-start gap-2 mb-3">
-                <AlertTriangle className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-foreground" style={{ fontFamily: 'var(--font-body)' }}>
-                    {reviewIssues.length} flag{reviewIssues.length === 1 ? '' : 's'} from Book Review
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: 'var(--font-body)' }}>
-                    Fix everything below — we'll re-check this chapter automatically when you save.
-                  </p>
-                </div>
-              </div>
-              <ul className="space-y-2 pl-1">
-                {reviewIssues.map(iss => (
-                  <li key={iss.id} className="text-xs text-foreground/80" style={{ fontFamily: 'var(--font-body)' }}>
-                    <span className="inline-block uppercase tracking-wider text-[0.6rem] text-accent font-semibold mr-2">
-                      {iss.type.replace(/_/g, ' ')}
-                    </span>
-                    <span>{iss.message}</span>
-                    {iss.snippet && (
-                      <span className="block mt-1 italic text-muted-foreground border-l-2 border-accent/30 pl-2">
-                        "{iss.snippet}"
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
+        {/* Book Review issues are rendered as inline highlights in the
+            textareas below — no banner needed. */}
+
+
 
 
         {/* Duplicate warning */}
@@ -1331,7 +1378,13 @@ const ChapterEditor = () => {
             <div className="mb-6" />
 
             <div className="my-8 relative">
-              <div className="transition-all duration-200 rounded-sm inline-block w-full" style={{ borderLeft: '3px solid #C9A84C', background: '#FDFAF4', margin: '0 -8px', padding: '12px 8px 12px 19px' }}>
+              <div className="transition-all duration-200 rounded-sm inline-block w-full relative" style={{ borderLeft: '3px solid #C9A84C', background: '#FDFAF4', margin: '0 -8px', padding: '12px 8px 12px 19px' }}>
+                <IssueHighlightBackdrop
+                  text={content}
+                  issues={reviewIssues}
+                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8]"
+                  style={{ fontFamily: 'var(--font-devotional)' }}
+                />
                 <textarea
                   ref={wisdomTextareaRef}
                   placeholder=""
@@ -1364,7 +1417,7 @@ const ChapterEditor = () => {
                     });
                   }}
                   rows={6}
-                  className="w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
+                  className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
                   style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
                 />
               </div>
@@ -1483,9 +1536,15 @@ const ChapterEditor = () => {
                   {/* ── Page 1 textarea ── */}
                   <div className="my-8 relative">
                     <div
-                      className="transition-all duration-200 rounded-sm"
+                      className="transition-all duration-200 rounded-sm relative"
                       style={{ ...cardBase, borderLeft: '3px solid #C9A84C' }}
                     >
+                      <IssueHighlightBackdrop
+                        text={editPage1}
+                        issues={reviewIssues}
+                        className={textareaClassName}
+                        style={textareaStyle}
+                      />
                       <textarea
                         ref={refTextareaRef}
                         value={editPage1}
@@ -1578,7 +1637,7 @@ const ChapterEditor = () => {
                   {/* ── Page 2 textarea ── */}
                   <div className="my-8 relative">
                     <div
-                      className="transition-all duration-200 rounded-sm"
+                      className="transition-all duration-200 rounded-sm relative"
                       style={{
                         ...cardBase,
                         border: isPage2Over ? '2px solid #EF4444' : undefined,
@@ -1587,6 +1646,12 @@ const ChapterEditor = () => {
                           : '3px solid #C9A84C',
                       }}
                     >
+                      <IssueHighlightBackdrop
+                        text={editPage2}
+                        issues={reviewIssues}
+                        className={textareaClassName}
+                        style={textareaStyle}
+                      />
                       <textarea
                         ref={wisdomTextareaRef}
                         value={editPage2}
