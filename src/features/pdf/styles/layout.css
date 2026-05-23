@@ -1,0 +1,372 @@
+/* Visual hierarchy and chapter spacing */
+
+.title-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.title-page h1 {
+  font-size: 28pt;
+  margin-bottom: 0.5em;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+}
+
+.title-page h3 {
+  font-size: 14pt;
+  font-style: italic;
+  color: #333;
+}
+
+/* Chapter Title Page (Page 1) */
+.chapter-title-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.chapter-title-page h2 {
+  font-size: 24pt;
+  margin-bottom: 1.5em;
+  width: 100%;
+  line-height: 1.3;
+}
+
+.chapter-photo {
+  width: 100%;
+  height: 4.5in;
+  object-fit: cover; /* Rigid scaling rule for both portrait and landscape */
+  object-position: center;
+  border-radius: 2px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Premium framing */
+  margin-bottom: 1em;
+}
+
+.chapter-photo.vertical-photo {
+  width: 3.0in;
+  height: 3.8in;
+  object-fit: cover;
+  margin: 0 auto 1.5em auto;
+  display: block;
+}
+
+/* Chapter Content Page (Page 2) */
+.vertical-photo-top {
+  width: 100%;
+  max-width: 4in;
+  height: auto;
+  object-fit: cover;
+  margin: 0 auto 1.5em auto;
+  display: block;
+}
+
+.chapter-content-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Safest for long overflowing content */
+  align-items: center; 
+  padding-top: 1.2in; /* Natural book drop */
+}
+
+.chapter-content-page .wisdom-text {
+  width: 100%;
+  max-width: 28em; /* Strict typography measure for printed readability */
+  font-size: 11pt;
+  line-height: 1.8;
+  text-align: justify;
+  margin: 0 auto;
+}
+
+.chapter-content-page .memories-section {
+  margin-top: 3em; /* Natural spacing during layout splitting calculation */
+  padding-top: 2.5em;
+  border-top: none;
+  width: 100%;
+  max-width: 28em; /* Match wisdom text */
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+}
+
+.layout-final .chapter-content-page .memories-section {
+  margin-top: auto; /* Push memories to the bottom once layout is final */
+  margin-bottom: 1em; /* Prevent touching the bottom margin */
+}
+
+.chapter-content-page.sparse-page {
+  justify-content: center !important;
+  padding-top: 0.625in !important;
+}
+
+.layout-final .chapter-content-page.sparse-page .memories-section {
+  margin-top: 2em !important;
+}
+
+.memory-item {
+  font-size: 10pt;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  background-color: #fdfbf7; /* Warm handwriting background */
+  border: 1px solid #eee;
+  padding: 1.5em;
+  border-radius: 4px;
+  position: relative;
+}
+
+.memory-star {
+  color: var(--gold);
+  font-size: 1.2em;
+  position: absolute;
+  top: 1em;
+  right: 1em;
+}
+
+.memory-text {
+  /* Natural flow */
+  margin-right: 1.5em; /* Avoid star */
+  font-family: 'Caveat', cursive;
+  font-size: 16pt;
+  color: #222;
+  margin-bottom: 0.5em;
+}
+
+.memory-contributor {
+  display: block;
+  text-align: right;
+  font-weight: bold;
+  font-style: normal;
+  font-family: 'Lora', serif; /* Ensure Lora for attribution */
+  color: #555;
+  margin-top: 0.5em;
+}
+
+/* Edge case handlers */
+.long-title {
+  font-size: 16pt !important;
+}
+
+/* Pagination */
+.page-number {
+  position: absolute !important;
+  bottom: 0.35in !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  font-family: 'Lora', serif;
+  font-size: 9pt;
+  color: #666;
+  margin: 0 !important;
+  padding: 0 10px !important;
+  z-index: 100 !important;
+  background-color: white;
+}
+
+/* Table of Contents */
+.toc-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding-top: 1in;
+}
+
+.toc-title {
+  text-align: center;
+  font-size: 20pt;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 2em;
+}
+
+.toc-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1em;
+  font-size: 12pt;
+  line-height: 1.5;
+}
+
+.toc-chapter-title {
+  background-color: white;
+  padding-right: 0.5em;
+  z-index: 1;
+}
+
+.toc-leader {
+  flex-grow: 1;
+  border-bottom: 2px dotted #ccc;
+  position: relative;
+  top: -0.3em;
+  margin: 0 0.5em;
+}
+
+.toc-page-number {
+  background-color: white;
+  padding-left: 0.5em;
+  z-index: 1;
+}
+
+/* Chapter 0 / Intro Styles */
+.intro-page {
+  background: linear-gradient(135deg, #fafafa, #f0f0f0);
+  padding-top: 1.2in !important;
+  position: relative;
+  overflow: hidden;
+}
+.intro-page::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHZpZXdCb3g9IjAgMCAxMiAxMiIgZmlsbD0iI0VFRUVEIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxjaXJjbGUgY3g9IjYiIGN5PSI2IiByPSI1IiBzdHJva2U9IiNFNmUiIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIvPgogIDxnIGZpbGw9IiNFNmUiIGZpbGwtb3BhY2l0eT0iMC4yIj4KICAgIDxjaXJjbGUgY3g9IjMiIGN5PSIzIiByPSI0IiB0cmFuc2Zvcm09InJvdGF0ZSgtMTUgNiA2KSIvPgogICAgPGNpcmNsZSBjeD0iOSIgc3Ryb2tlPSJub25lIiBmaWxsPSIjRUVFZSIgLz4KICA8L2c+Cjwvc3ZnPg==');
+  opacity: 0.05;
+  pointer-events: none;
+}
+.quote-wrapper {
+  margin: 2.5em 0;
+  padding-left: 1.5em;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  border-left: 3px solid var(--gold);
+  color: #333;
+}
+.chapter-quote {
+  font-style: italic;
+  font-size: 13pt;
+  margin: 0;
+  line-height: 1.6;
+  color: #222;
+}
+.chapter-quote > *:first-child {
+  margin-top: 0;
+}
+.chapter-quote > *:last-child {
+  margin-bottom: 0;
+}
+.chapter-quote .attribution {
+  display: block;
+  margin-top: 1em;
+  font-size: 10pt;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-style: normal;
+}
+.bible-verse {
+  font-family: 'Lora', serif;
+  font-size: 11pt;
+  color: #555;
+}
+
+.intro-header {
+  text-align: center;
+  margin-bottom: 2.5em;
+  width: 100%;
+}
+
+.intro-title {
+  font-family: 'Lora', serif;
+  font-size: 26pt;
+  font-weight: normal;
+  color: #111;
+  margin: 0.4em 0;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.intro-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+  margin-top: 1.25em;
+}
+
+.intro-separator .line {
+  height: 1px;
+  background-color: var(--gold);
+  width: 60px;
+}
+
+.intro-separator .diamond {
+  color: var(--gold);
+  font-size: 10pt;
+  line-height: 1;
+}
+
+.intro-label {
+  text-align: center;
+  font-size: 10pt;
+  color: #888;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 0.5em;
+}
+
+.chapter-header {
+  text-align: center;
+  margin-bottom: 2.5em;
+  width: 100%;
+}
+
+.chapter-title {
+  font-family: 'Lora', serif;
+  font-size: 22pt;
+  font-weight: normal;
+  color: #111;
+  margin: 0.4em 0;
+}
+
+.chapter-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+  margin-top: 1em;
+}
+
+.chapter-separator .line {
+  height: 1px;
+  background-color: var(--gold);
+  width: 40px;
+}
+
+.chapter-separator .diamond {
+  color: var(--gold);
+  font-size: 8pt;
+  line-height: 1;
+}
+
+.letter-signature {
+  margin-top: 3em;
+  text-align: right;
+  font-family: 'Caveat', cursive;
+  font-size: 24pt;
+  color: var(--gold);
+  padding-right: 2em;
+}
+
+/* Phase 7: Widow/Orphan Control */
+.wisdom-text.rebalance-tight {
+  line-height: 1.45; /* Slight tightening from 1.5/1.8 */
+  letter-spacing: -0.015em;
+  transition: all 0.3s ease; /* For smooth layout debugging if needed */
+}
+
+/* Phase 7: Dynamic Whitespace Reclaiming for short chapter openers */
+.chapter-content-page.short-text-page {
+  justify-content: center !important;
+  padding-top: 0 !important;
+}
+
+.chapter-content-page.short-text-page .chapter-photo {
+  max-height: 3.5in; /* Shrink photo to reclaim space and feel more elegant */
+  margin-bottom: 2em;
+}

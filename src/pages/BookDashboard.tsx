@@ -6,8 +6,10 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
   BookOpen, PenLine, CheckCircle, Circle, Mail, MessageSquare, Sparkles,
-  Users, LayoutGrid, Send, Inbox, Camera, Play, Library, ShoppingCart
+  Users, LayoutGrid, Send, Inbox, Camera, Play, Library, ShoppingCart, Download
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { saveAs } from 'file-saver';
 import TutorialVideos from '@/components/TutorialVideos';
 import Navbar from '@/components/Navbar';
 
@@ -28,6 +30,10 @@ interface Chapter {
   chapter_template: string;
   photo_urls: string[];
   is_photo_chapter: boolean;
+  quote_text: string | null;
+  quote_attribution: string | null;
+  bible_verse_text: string | null;
+  bible_verse_reference: string | null;
 }
 
 interface ChapterTemplate {
@@ -39,6 +45,8 @@ interface Memory {
   id: string;
   chapter_id: string | null;
   status: string;
+  contributor_name: string;
+  memory_text: string;
 }
 
 const BookDashboard = () => {
@@ -51,6 +59,66 @@ const BookDashboard = () => {
   const [authorName, setAuthorName] = useState('');
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
   const [loading, setLoading] = useState(true);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  const handleGenerateTestPDF = async () => {
+    setIsGeneratingPDF(true);
+    console.log('PDF generation started');
+    const startTime = performance.now();
+    
+    try {
+      // Format bookData with real data fetched from Supabase
+      const bookData = {
+        title: `A Book of Wisdom for ${book?.recipient_name}`,
+        author: authorName || book?.from_label || 'The Author',
+        chapters: chapters.sort((a, b) => a.chapter_number - b.chapter_number).map((ch: any) => ({
+          title: ch.title,
+          content: ch.content || ch.body || `<p>No content available.</p>`,
+          chapter_number: ch.chapter_number,
+          chapter_template: ch.chapter_template,
+          photo_urls: ch.photo_urls || [],
+          quote_text: ch.quote_text,
+          quote_attribution: ch.quote_attribution,
+          bible_verse_text: ch.bible_verse_text,
+          bible_verse_reference: ch.bible_verse_reference,
+          memories: memories.filter(m => m.chapter_id === ch.id).map(m => ({
+            contributor_name: m.contributor_name,
+            memory_text: m.memory_text
+          }))
+        }))
+      };
+
+      console.log('BookData Payload:', JSON.stringify(bookData, null, 2));
+
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to generate PDF');
+      }
+
+      const blob = await response.blob();
+      saveAs(blob, 'book-test.pdf');
+      
+      const endTime = performance.now();
+      const timeInSeconds = ((endTime - startTime) / 1000).toFixed(2);
+      
+      console.log('PDF generation completed');
+      console.log(`Generation time: ${timeInSeconds} seconds`);
+      toast.success('Test PDF generated successfully');
+    } catch (err: any) {
+      console.error('PDF Generation Backend Error:', err);
+      toast.error(err.message || 'Failed to generate PDF');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   useEffect(() => {
     if (!bookId) return;
@@ -256,6 +324,15 @@ const BookDashboard = () => {
               <Button className="w-full justify-start gap-3 h-12" onClick={() => navigate(`/book/${bookId}/review?mode=order`)}>
                 <ShoppingCart className="h-4 w-4" />
                 Order Book
+              </Button>
+              <Button 
+                variant="secondary" 
+                className="w-full justify-start gap-3 h-12 mt-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20" 
+                onClick={handleGenerateTestPDF}
+                disabled={isGeneratingPDF}
+              >
+                <Download className="h-4 w-4" />
+                {isGeneratingPDF ? 'Generating...' : 'Generate Test PDF'}
               </Button>
             </div>
           </div>

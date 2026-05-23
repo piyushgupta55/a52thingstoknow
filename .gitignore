@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Test PDFs and temporary scripts
+*.pdf
+test_dpi.ts

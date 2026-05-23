@@ -65,26 +65,34 @@ const PreviewBook = () => {
   const [showLeftPageFade, setShowLeftPageFade] = useState(false);
   const flowContainerRef = useRef<HTMLDivElement | null>(null);
 
-  type SpreadDef = { type: 'letter' } | { type: 'toc' } | { type: 'chapter'; chapter: Chapter } | { type: 'ancestry' };
+  type SpreadDef = { type: 'title' } | { type: 'toc_letter' } | { type: 'chapter'; chapter: Chapter } | { type: 'ancestry' };
 
   const visibleChapters = chapters
     .filter(c => c.chapter_number > 0 && (c.status === 'complete' || c.status === 'in_progress'))
     .sort((a, b) => a.chapter_number - b.chapter_number);
 
-  const ancestryText = ancestry?.content?.trim() || '';
+  const rawAncestryText = ancestry?.content?.trim() || '';
+  const ancestryText = rawAncestryText
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/<\/?p[^>]*>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?[^>]+(>|$)/g, '')
+    .replace(/\n\n+/g, '\n\n')
+    .trim();
   const hasAncestry = ancestryText.length > 0 || !!ancestry?.pdf_url;
 
   const spreads: SpreadDef[] = [];
-  spreads.push({ type: 'letter' });
-  spreads.push({ type: 'toc' });
+  spreads.push({ type: 'title' });
+  spreads.push({ type: 'toc_letter' });
   visibleChapters.forEach(ch => spreads.push({ type: 'chapter', chapter: ch }));
   if (hasAncestry) spreads.push({ type: 'ancestry' });
 
   const totalSpreads = spreads.length;
   const clampedSpread = Math.min(currentSpread, totalSpreads - 1);
   const totalPages = totalSpreads * 2;
-  const leftPageNum = clampedSpread * 2 + 1;
-  const rightPageNum = leftPageNum + 1;
+  const leftPageNum = clampedSpread === 0 ? 0 : clampedSpread * 2;
+  const rightPageNum = clampedSpread * 2 + 1;
 
   useEffect(() => {
     if (!bookId) return;
@@ -94,7 +102,7 @@ const PreviewBook = () => {
       const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content_male, reference_content_female').eq('gender', tplGender),
-        supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId).eq('status', 'approved'),
+        supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId),
         supabase.from('book_ancestry').select('content, pdf_url, pdf_filename').eq('book_id', bookId).maybeSingle(),
       ]);
       setBook(bookData);
@@ -102,9 +110,10 @@ const PreviewBook = () => {
       setTemplates(tplData || []);
       setMemories(memData || []);
       setAncestry(ancData || null);
-      if (bookData) {
+      if (bookData?.user_id) {
+        const { data: userData } = await supabase.auth.getUser();
         const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
-        setAuthorName(profile?.display_name || '');
+        setAuthorName(bookData.from_label || profile?.display_name || userData.user?.user_metadata?.full_name || 'The Author');
       }
       setLoading(false);
     };
@@ -129,7 +138,7 @@ const PreviewBook = () => {
     }
 
     const hasPhoto = activeSpread.chapter.photo_urls && activeSpread.chapter.photo_urls.length > 0;
-    const isVerticalPhoto = activeSpread.chapter.chapter_template === 'photo_second' && hasPhoto;
+    const isVerticalPhoto = (activeSpread.chapter.chapter_template === 'photo_second' || activeSpread.chapter.chapter_template === 'vertical_photo') && hasPhoto;
     const container = flowContainerRef.current;
 
     if (isVerticalPhoto || !container) {
@@ -157,7 +166,14 @@ const PreviewBook = () => {
   if (!book) return null;
 
   const letterChapter = chapters.find(c => c.chapter_number === 0);
-  const letterRawText = letterChapter?.content?.trim() || letterChapter?.reference_text?.trim() || '';
+  const rawLetterText = letterChapter?.content?.trim() || letterChapter?.reference_text?.trim() || '';
+  const unescapedLetterText = rawLetterText.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  const letterRawText = unescapedLetterText
+    .replace(/<\/?p[^>]*>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?[^>]+(>|$)/g, '')
+    .replace(/\n\n+/g, '\n\n')
+    .trim();
   const hasLetterWritten = letterRawText.length > 0;
   const isFemale = book.recipient_gender === 'Girl/Young Woman';
 
@@ -173,19 +189,27 @@ const PreviewBook = () => {
     const tpl = templates.find(t => t.chapter_number === chapterNumber);
     if (!tpl) return null;
     const raw = isFemale ? tpl.reference_content_female : tpl.reference_content_male;
-    return raw ? replaceTokens(raw, tokenCtx) : null;
+    const tokensReplaced = raw ? replaceTokens(raw, tokenCtx) : null;
+    if (!tokensReplaced) return null;
+    const unescapedTokensReplaced = tokensReplaced.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    return unescapedTokensReplaced
+      .replace(/<\/?p[^>]*>/gi, '\n\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/?[^>]+(>|$)/g, '')
+      .replace(/\n\n+/g, '\n\n')
+      .trim();
   };
 
-  // Authoritative gender-specific chapter title from templates (falls back to stored chapter title)
   const getChapterTitle = (ch: { chapter_number: number; title: string }) => {
-    if (ch.chapter_number === 0) return ch.title;
-    const tpl = templates.find(t => t.chapter_number === ch.chapter_number);
-    return tpl?.title || ch.title;
+    return ch.title;
   };
 
-  const PageNum = ({ num }: { num: number }) => (
-    <p className="text-center mt-auto pt-4" style={{ fontFamily: SERIF, fontSize: '8px', color: GOLD }}>{num}</p>
-  );
+  const PageNum = ({ num }: { num: number }) => {
+    if (num <= 1) return <div style={{ height: '24px' }} className="mt-auto" />;
+    return (
+      <p className="text-center mt-auto pt-4" style={{ fontFamily: SERIF, fontSize: '8px', color: GOLD }}>{num}</p>
+    );
+  };
 
   const renderWithLineBreaks = (text: string) => {
     const lines = text.split('\n');
@@ -214,10 +238,114 @@ const PreviewBook = () => {
     </>
   );
 
-  const renderLetterSpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
+  const renderTitleSpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
+    const left = (
+      <div className="flex flex-col h-full items-center justify-center p-8 text-center">
+        <p style={{ fontFamily: SERIF, fontSize: '10px', color: '#9CA3AF', fontStyle: 'italic' }}>
+          Inside Front Cover
+        </p>
+      </div>
+    );
+
+    const right = (
+      <div className="flex flex-col h-full items-center justify-center">
+        <div 
+          className="w-full h-full flex flex-col items-center justify-center p-1.5"
+          style={{ 
+            border: `2px solid ${GOLD}`, 
+            borderRadius: '2px'
+          }}
+        >
+          <div 
+            className="w-full h-full flex flex-col items-center justify-center p-6 text-center"
+            style={{ 
+              border: `1px solid ${GOLD}`,
+              borderRadius: '1px'
+            }}
+          >
+            <p className="uppercase tracking-[0.25em] mb-2" style={{ fontFamily: SERIF, fontSize: '8px', color: '#9CA3AF' }}>
+              A Book of Wisdom
+            </p>
+            <h1 className="font-bold mb-2 uppercase tracking-[0.1em]" style={{ fontFamily: SERIF, fontSize: '24px', color: '#2D3748', lineHeight: 1.2 }}>
+              52 Things to Know
+            </h1>
+            <p className="mb-4" style={{ fontFamily: SERIF, fontSize: '12px', color: '#6B7280' }}>
+              For {book.recipient_name || 'your loved one'}
+            </p>
+            <div className="w-10 my-4" style={{ height: '1px', background: GOLD }} />
+            <h3 className="italic" style={{ fontFamily: SERIF, fontSize: '12px', color: '#4A5568' }}>
+              By {authorName || 'The Author'}
+            </h3>
+          </div>
+        </div>
+      </div>
+    );
+
+    return [left, right, undefined];
+  };
+
+  const renderTocLetterSpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
+    const chapterPageMap = new Map<string, number>();
+    visibleChapters.forEach((ch, i) => {
+      chapterPageMap.set(ch.id, (2 + i) * 2);
+    });
+
     const left = (
       <div className="flex flex-col h-full">
-        <div className="flex-1" />
+        <div className="flex-1 overflow-y-auto">
+          <p className="text-center uppercase tracking-[0.25em] mb-1" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
+            A Book of Wisdom
+          </p>
+          <h2 className="text-center font-bold mb-1" style={{ fontFamily: SERIF, fontSize: '18px', color: '#2D3748' }}>
+            52 Things to Know
+          </h2>
+          <p className="text-center mb-5" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280' }}>
+            For {book.recipient_name}
+          </p>
+          <div className="w-8 mx-auto mb-4" style={{ height: '1px', background: GOLD }} />
+
+          {hasLetterWritten && (
+            <div className="flex items-baseline justify-between py-2" style={{ borderBottom: '1px solid #E5E1D8' }}>
+              <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Letter from the Author</span>
+              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>3</span>
+            </div>
+          )}
+
+          {visibleChapters.length === 0 && !hasLetterWritten ? (
+            <p className="text-center mt-8 italic" style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF' }}>
+              Your book will take shape as you write.
+            </p>
+          ) : (
+            visibleChapters.map(ch => {
+              const isComplete = ch.status === 'complete';
+              const isPhoto = photoNums.has(ch.chapter_number);
+              const pageNum = chapterPageMap.get(ch.id);
+              return (
+                <div key={ch.id} className="flex items-baseline justify-between py-1.5" style={{ borderBottom: '1px solid #F0EDE6' }}>
+                  <span className="truncate pr-2" style={{ fontFamily: SERIF, fontSize: '11px', color: isComplete ? '#2D3748' : '#6B7280' }}>
+                    <span className="inline-block w-4 text-right mr-1.5 tabular-nums" style={{ fontSize: '10px', color: '#9CA3AF' }}>{ch.chapter_number}.</span>
+                    {getChapterTitle(ch)}
+                  </span>
+                  <span className="flex items-center gap-1 flex-shrink-0" style={{ fontFamily: SERIF, fontSize: '10px' }}>
+                    {isComplete ? (
+                      <span style={{ color: GOLD }}>{pageNum}</span>
+                    ) : (
+                      <span className="italic" style={{ color: '#9CA3AF' }}>(in progress)</span>
+                    )}
+                    {isPhoto && <Camera className="h-2.5 w-2.5" style={{ color: GOLD }} />}
+                  </span>
+                </div>
+              );
+            })
+          )}
+
+          {hasAncestry && (
+            <div className="flex items-baseline justify-between py-2 mt-2 pt-3" style={{ borderTop: '1px solid #E5E1D8' }}>
+              <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Where You Come From</span>
+              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>{(2 + visibleChapters.length) * 2}</span>
+            </div>
+          )}
+        </div>
         <PageNum num={leftPageNum} />
       </div>
     );
@@ -260,99 +388,29 @@ const PreviewBook = () => {
     return [left, right, undefined];
   };
 
-  const renderTocSpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
-    const chapterPageMap = new Map<string, number>();
-    visibleChapters.forEach((ch, i) => {
-      chapterPageMap.set(ch.id, (2 + i) * 2 + 1);
-    });
-
-    const left = (
-      <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-y-auto">
-          <p className="text-center uppercase tracking-[0.25em] mb-1" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
-            A Book of Wisdom
-          </p>
-          <h2 className="text-center font-bold mb-1" style={{ fontFamily: SERIF, fontSize: '18px', color: '#2D3748' }}>
-            52 Things to Know
-          </h2>
-          <p className="text-center mb-5" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280' }}>
-            For {book.recipient_name}
-          </p>
-          <div className="w-8 mx-auto mb-4" style={{ height: '1px', background: GOLD }} />
-
-          {hasLetterWritten && (
-            <div className="flex items-baseline justify-between py-2" style={{ borderBottom: '1px solid #E5E1D8' }}>
-              <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Letter from the Author</span>
-              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>2</span>
-            </div>
-          )}
-
-          {visibleChapters.length === 0 && !hasLetterWritten ? (
-            <p className="text-center mt-8 italic" style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF' }}>
-              Your book will take shape as you write.
-            </p>
-          ) : (
-            visibleChapters.map(ch => {
-              const isComplete = ch.status === 'complete';
-              const isPhoto = photoNums.has(ch.chapter_number);
-              const pageNum = chapterPageMap.get(ch.id);
-              return (
-                <div key={ch.id} className="flex items-baseline justify-between py-1.5" style={{ borderBottom: '1px solid #F0EDE6' }}>
-                  <span className="truncate pr-2" style={{ fontFamily: SERIF, fontSize: '11px', color: isComplete ? '#2D3748' : '#6B7280' }}>
-                    <span className="inline-block w-4 text-right mr-1.5 tabular-nums" style={{ fontSize: '10px', color: '#9CA3AF' }}>{ch.chapter_number}.</span>
-                    {getChapterTitle(ch)}
-                  </span>
-                  <span className="flex items-center gap-1 flex-shrink-0" style={{ fontFamily: SERIF, fontSize: '10px' }}>
-                    {isComplete ? (
-                      <span style={{ color: GOLD }}>{pageNum}</span>
-                    ) : (
-                      <span className="italic" style={{ color: '#9CA3AF' }}>(in progress)</span>
-                    )}
-                    {isPhoto && <Camera className="h-2.5 w-2.5" style={{ color: GOLD }} />}
-                  </span>
-                </div>
-              );
-            })
-          )}
-
-          {hasAncestry && (
-            <div className="flex items-baseline justify-between py-2 mt-2 pt-3" style={{ borderTop: '1px solid #E5E1D8' }}>
-              <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Where You Come From</span>
-              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>{(2 + visibleChapters.length) * 2 + 1}</span>
-            </div>
-          )}
-        </div>
-        <PageNum num={leftPageNum} />
-      </div>
-    );
-
-    const right = (
-      <div className="flex flex-col h-full">
-        <div className="flex-1" />
-        <PageNum num={rightPageNum} />
-      </div>
-    );
-
-    return [left, right, undefined];
-  };
-
   const renderChapterSpread = (ch: Chapter, spreadIndex: number): [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null] => {
-    const rawText = ch.content?.trim() || ch.reference_text?.trim() || getTemplateRef(ch.chapter_number) || '';
-    const fullText = replaceTokens(rawText, tokenCtx);
-    const hasPhoto = ch.photo_urls && ch.photo_urls.length > 0;
+    const rawFullText = ch.content?.trim() || ch.reference_text?.trim() || getTemplateRef(ch.chapter_number) || '';
+    const unescapedRawText = rawFullText.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    const fullText = replaceTokens(unescapedRawText, tokenCtx)
+      .replace(/<\/?p[^>]*>/gi, '\n\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/?[^>]+(>|$)/g, '')
+      .replace(/\n\n+/g, '\n\n')
+      .trim();
+    const hasPhoto = ch.photo_urls && ch.photo_urls.length > 0 && ch.photo_urls[0] && ch.photo_urls[0].trim() !== '';
     const hasAuthorWisdom = fullText.length > 0;
     const isComplete = ch.status === 'complete';
-    const chapterLeftPageNum = spreadIndex * 2 + 1;
+    const chapterLeftPageNum = spreadIndex * 2;
     const chapterRightPageNum = chapterLeftPageNum + 1;
-    const isVerticalPhoto = ch.chapter_template === 'photo_second' && hasPhoto;
+    const isVerticalPhoto = ch.chapter_template === 'photo_second' || ch.chapter_template === 'vertical_photo';
     const rightBg = isComplete ? '#FFFFFF' : '#FDF8F8';
     const chapterMemories = memories.filter(m => m.chapter_id === ch.id);
     const continuationFade = 'linear-gradient(to bottom, rgba(255,255,255,0) 98%, rgba(255,255,255,1) 100%)';
 
     if (isVerticalPhoto) {
       const left = (
-        <div className="flex flex-col" style={{ height: '580px', padding: '48px 36px 0' }}>
-          <div className="flex-1 relative" style={{ overflow: 'hidden', marginBottom: '0' }}>
+        <div className="flex flex-col h-full">
+          <div className="flex-1 relative overflow-y-auto pr-1" style={{ marginBottom: '0' }}>
             <p className="uppercase tracking-[0.2em] mb-2" style={{ fontFamily: SERIF, fontSize: '8px', color: '#9CA3AF' }}>
               Chapter {ch.chapter_number}
             </p>
@@ -373,13 +431,33 @@ const PreviewBook = () => {
             )}
             {fullText && <DropCapText text={fullText} color={GOLD} />}
           </div>
-          <p className="text-center" style={{ height: '24px', fontFamily: SERIF, fontSize: '8px', color: GOLD, lineHeight: '24px' }}>{chapterLeftPageNum}</p>
+          <PageNum num={chapterLeftPageNum} />
         </div>
       );
       const right = (
-        <div className="flex flex-col" style={{ height: '580px', padding: '48px 36px 0', background: rightBg }}>
+        <div className="flex flex-col h-full">
           <div className="rounded overflow-hidden" style={{ height: '55%', flexShrink: 0 }}>
-            <img src={ch.photo_urls[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+            {hasPhoto ? (
+              <img src={ch.photo_urls[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+            ) : (
+              <div 
+                className="w-full h-full flex flex-col items-center justify-center gap-2"
+                style={{ 
+                  border: '1px dashed #D1CCC4', 
+                  background: '#F9F8F6', 
+                  borderRadius: '4px',
+                  padding: '24px'
+                }}
+              >
+                <Camera className="h-8 w-8" style={{ color: '#B8B3A8' }} />
+                <p className="font-semibold" style={{ fontFamily: SERIF, fontSize: '12px', color: '#8A857C' }}>
+                  No Photo Uploaded
+                </p>
+                <p className="text-center" style={{ fontFamily: SERIF, fontSize: '10px', color: '#B8B3A8', maxWidth: '160px', lineHeight: 1.4 }}>
+                  Add a vertical photo for this chapter in the editor.
+                </p>
+              </div>
+            )}
           </div>
           <div className="flex-1 mt-3" style={{ overflow: 'hidden' }}>
             {chapterMemories.length > 0 ? (
@@ -395,7 +473,7 @@ const PreviewBook = () => {
               </div>
             ) : null}
           </div>
-          <p className="text-center" style={{ height: '24px', fontFamily: SERIF, fontSize: '8px', color: GOLD, lineHeight: '24px' }}>{chapterRightPageNum}</p>
+          <PageNum num={chapterRightPageNum} />
         </div>
       );
       return [left, right, rightBg, false, null];
@@ -420,11 +498,31 @@ const PreviewBook = () => {
             overflow: 'hidden',
           }}
         >
-          {hasPhoto && (
+          {hasPhoto ? (
             <div className="mb-3 rounded overflow-hidden" style={{ breakInside: 'avoid' }}>
               <img src={ch.photo_urls[0]} alt="" className="w-full" style={{ height: '180px', objectFit: 'cover', objectPosition: 'center top' }} />
             </div>
-          )}
+          ) : (ch.chapter_template === 'photo_top' || ch.chapter_template === 'horizontal_photo') ? (
+            <div 
+              className="mb-3 rounded flex flex-col items-center justify-center gap-2" 
+              style={{ 
+                breakInside: 'avoid', 
+                height: '180px', 
+                border: '1px dashed #D1CCC4', 
+                background: '#F9F8F6',
+                borderRadius: '4px',
+                padding: '16px'
+              }}
+            >
+              <Camera className="h-6 w-6" style={{ color: '#B8B3A8' }} />
+              <p className="font-semibold text-center" style={{ fontFamily: SERIF, fontSize: '11px', color: '#8A857C' }}>
+                No Photo Uploaded
+              </p>
+              <p className="text-center" style={{ fontFamily: SERIF, fontSize: '9px', color: '#B8B3A8', lineHeight: 1.3 }}>
+                Add a horizontal photo for this chapter in the editor.
+              </p>
+            </div>
+          ) : null}
 
           <div style={{ breakInside: 'avoid' }}>
             <p className="uppercase tracking-[0.2em] mb-2" style={{ fontFamily: SERIF, fontSize: '8px', color: '#9CA3AF' }}>
@@ -520,7 +618,7 @@ const PreviewBook = () => {
 
     const right = (
       <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto pr-1">
           {useText ? (
             paragraphs.map((para, i) => (
               <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em' }}>
@@ -551,8 +649,8 @@ const PreviewBook = () => {
   const getCurrentSpreadContent = (): [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null] => {
     const spread = spreads[clampedSpread];
     if (!spread) return [null, null, undefined, false, null];
-    if (spread.type === 'letter') return [...renderLetterSpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
-    if (spread.type === 'toc') return [...renderTocSpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
+    if (spread.type === 'title') return [...renderTitleSpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
+    if (spread.type === 'toc_letter') return [...renderTocLetterSpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
     if (spread.type === 'ancestry') return [...renderAncestrySpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
     return renderChapterSpread(spread.chapter, clampedSpread);
   };
@@ -599,15 +697,17 @@ const PreviewBook = () => {
           {bookId && spreads[clampedSpread]?.type === 'chapter' && (() => {
             const ch = (spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter;
             return (
-              <CompanionBubble
-                bookId={bookId}
-                chapterId={ch.id}
-                chapterTitle={getChapterTitle(ch)}
-                currentContent={ch.content ?? ''}
-                currentReferenceText={ch.reference_text ?? ''}
-                onRequestEdit={() => navigate(`/book/${bookId}/chapter/${ch.id}`)}
-                variant="badge"
-              />
+              <div className="absolute -top-5 -left-5 z-20">
+                <CompanionBubble
+                  bookId={bookId}
+                  chapterId={ch.id}
+                  chapterTitle={getChapterTitle(ch)}
+                  currentContent={ch.content ?? ''}
+                  currentReferenceText={ch.reference_text ?? ''}
+                  onRequestEdit={() => navigate(`/book/${bookId}/chapter/${ch.id}`)}
+                  variant="badge"
+                />
+              </div>
             );
           })()}
 
@@ -645,7 +745,7 @@ const PreviewBook = () => {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <span className="tabular-nums min-w-[140px] text-center" style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF' }}>
-          Page {leftPageNum}–{rightPageNum} of {totalPages}
+          {clampedSpread === 0 ? `Cover – Page 1 of ${totalPages}` : `Page ${leftPageNum}–${rightPageNum} of ${totalPages}`}
         </span>
         <button
           onClick={() => setCurrentSpread(p => Math.min(totalSpreads - 1, p + 1))}

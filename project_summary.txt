@@ -1,0 +1,9 @@
+Project Summary
+================
+Project Name: vite_react_shadcn_ts
+
+Objectives:
+# Welcome to your Lovable project TODO: Document your project here
+
+Main Tasks (Scripts):
+dev, build, build:dev, lint, preview, test, test:watch

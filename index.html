@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
+    <!-- Page title and favicon -->
+    <title>My Book Generator</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
     <meta name="description" content="Create personalized books of wisdom for loved ones, combining faith, personal stories, and photos.">
     <meta name="author" content="Lovable" />
 
@@ -24,6 +25,15 @@
 </head>
 
   <body>
+    <div id="error-display" style="color: red; padding: 20px; font-family: monospace; white-space: pre-wrap; font-size: 16px;"></div>
+    <script>
+      window.addEventListener('error', function(event) {
+        document.getElementById('error-display').innerText += '\n' + event.error?.stack || event.message;
+      });
+      window.addEventListener('unhandledrejection', function(event) {
+        document.getElementById('error-display').innerText += '\n' + event.reason;
+      });
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
