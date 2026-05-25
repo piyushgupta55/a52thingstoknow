@@ -1,5 +1,5 @@
-import { renderBook } from './templates/shared/layout.ts';
-import { validateChapterLength } from './utils/pagination.ts';
+import { renderBook } from './templates/shared/layout';
+import { validateChapterLength } from './utils/pagination';
 import puppeteer from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';

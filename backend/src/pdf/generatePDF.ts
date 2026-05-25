@@ -1,6 +1,6 @@
 import { BookData } from './types/pdf';
 import { renderBook } from './templates/shared/layout';
-import { pdfConfig } from '../../config/pdfConfig';
+import { pdfConfig } from '../config/pdfConfig';
 import { createEngine } from './engines';
 import { validateChapterLength } from './utils/pagination';
 import { validateImages } from './utils/imageValidation';

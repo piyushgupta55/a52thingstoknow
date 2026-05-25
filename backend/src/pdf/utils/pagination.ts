@@ -2,7 +2,7 @@ import type { BookData } from '../types/pdf';
 
 export interface ValidationWarning {
   chapterNumber: number;
-  type: 'text_overflow' | 'memory_overflow' | 'photo_missing' | 'image_low_res' | 'image_aspect_ratio';
+  type: 'text_overflow' | 'memory_overflow' | 'photo_missing' | 'image_low_res' | 'image_aspect_ratio' | 'pdf_landscape' | 'pdf_wrong_dimensions' | 'pdf_low_dpi';
   message: string;
 }
 

@@ -5,7 +5,7 @@ import type { BookData } from '../../types/pdf';
 
 export async function renderBook(bookData: BookData, actualChapterPages?: Record<string, number>): Promise<string> {
   // Load core print styles directly to avoid @import path issues in Puppeteer
-  const stylesDir = path.join(process.cwd(), 'src/features/pdf/styles');
+  const stylesDir = path.join(process.cwd(), 'src/pdf/styles');
   let printStyles = '';
   try {
     const baseCss = fs.readFileSync(path.join(stylesDir, 'base.css'), 'utf8');
@@ -33,7 +33,8 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     chapterPages[i] = currentContentPageNum;
     
     if (chapter.chapter_number !== 0) {
-      const displayPageNum = actualChapterPages ? (actualChapterPages[chapter.chapter_number.toString()] ?? currentContentPageNum) : currentContentPageNum;
+      const chNumStr = chapter.chapter_number?.toString() || String(i);
+      const displayPageNum = actualChapterPages ? (actualChapterPages[chNumStr] ?? currentContentPageNum) : currentContentPageNum;
       tocItemsHtml += `
         <div class="toc-item">
           <span class="toc-chapter-title">${chapter.title}</span>
