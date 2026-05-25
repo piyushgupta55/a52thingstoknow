@@ -90,7 +90,11 @@ const BookDashboard = () => {
 
       console.log('BookData Payload:', JSON.stringify(bookData, null, 2));
 
-      const response = await fetch('/api/generate-pdf', {
+      const pdfEndpoint = import.meta.env.VITE_API_URL 
+        ? `${import.meta.env.VITE_API_URL}/generate-pdf` 
+        : '/api/generate-pdf';
+
+      const response = await fetch(pdfEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
