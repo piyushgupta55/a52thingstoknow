@@ -6,13 +6,24 @@ import type { BookData } from '../../types/pdf';
 function formatContent(content: string | null | undefined): string {
   if (!content) return '';
   const trimmed = content.trim();
+  let html = '';
   if (/^<p|^<div|^<ol|^<ul|^<blockquote|^<table/i.test(trimmed)) {
-    return trimmed;
+    html = trimmed;
+  } else {
+    html = trimmed
+      .split(/\n\n+/)
+      .map(para => `<p>${para.replace(/\n/g, '<br />')}</p>`)
+      .join('');
   }
-  return trimmed
-    .split(/\n\n+/)
-    .map(para => `<p>${para.replace(/\n/g, '<br />')}</p>`)
-    .join('');
+  // Inject drop cap to the first actual letter of the content
+  const match = html.match(/^(\s*(?:<p[^>]*>|<div[^>]*>)*\s*)([A-Za-z0-9])/i);
+  if (match) {
+    const prefix = match[1];
+    const firstLetter = match[2];
+    const remainder = html.slice(match[0].length);
+    return `${prefix}<span class="drop-cap">${firstLetter}</span>${remainder}`;
+  }
+  return html;
 }
 
 export async function renderBook(bookData: BookData, actualChapterPages?: Record<string, number>): Promise<string> {
@@ -519,6 +530,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         }
 
         function splitParagraph(p, maxBottom) {
+          const hadDropCap = p.querySelector('span.drop-cap') !== null;
           const initialBottom = p.getBoundingClientRect().bottom;
           if (initialBottom <= maxBottom) {
             return null;
@@ -592,7 +604,18 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           // Split at the determined fitLineCount
           const splitWordIndex = lines[fitLineCount - 1][lines[fitLineCount - 1].length - 1] + 1;
           const fitText = words.slice(0, splitWordIndex).join(' ');
-          p.innerText = fitText;
+          if (hadDropCap) {
+            const match = fitText.match(/^([A-Za-z0-9])/);
+            if (match) {
+              const firstLetter = match[1];
+              const remainder = fitText.slice(1);
+              p.innerHTML = '<span class="drop-cap">' + firstLetter + '</span>' + remainder;
+            } else {
+              p.innerText = fitText;
+            }
+          } else {
+            p.innerText = fitText;
+          }
 
           const remainingText = words.slice(splitWordIndex).join(' ');
           if (!remainingText) return null;
