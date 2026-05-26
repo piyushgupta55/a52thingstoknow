@@ -3,6 +3,18 @@ import * as path from 'path';
 import type { BookData } from '../../types/pdf';
 // supabase import removed - not needed for screenshots
 
+function formatContent(content: string | null | undefined): string {
+  if (!content) return '';
+  const trimmed = content.trim();
+  if (/^<p|^<div|^<ol|^<ul|^<blockquote|^<table/i.test(trimmed)) {
+    return trimmed;
+  }
+  return trimmed
+    .split(/\n\n+/)
+    .map(para => `<p>${para.replace(/\n/g, '<br />')}</p>`)
+    .join('');
+}
+
 export async function renderBook(bookData: BookData, actualChapterPages?: Record<string, number>): Promise<string> {
   // Load core print styles directly to avoid @import path issues in Puppeteer
   const stylesDir = path.join(process.cwd(), 'src/pdf/styles');
@@ -91,7 +103,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
               <span class="line"></span>
             </div>
           </div>
-          <div class="wisdom-text chapter-opening intro-wisdom">${chapter.content}</div>
+          <div class="wisdom-text chapter-opening intro-wisdom">${formatContent(chapter.content)}</div>
           <div class="intro-separator intro-footer-separator">
             <span class="line"></span>
             <span class="diamond">✦</span>
@@ -170,7 +182,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           </div>
           <div class="wisdom-text chapter-opening">
             ${quoteHtml}
-            ${chapter.content}
+            ${formatContent(chapter.content)}
           </div>
           ${memoriesHtml}
         </div>
@@ -191,7 +203,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           ${photoHtml}
           <div class="wisdom-text chapter-opening">
             ${quoteHtml}
-            ${chapter.content}
+            ${formatContent(chapter.content)}
           </div>
           ${memoriesHtml}
         </div>
@@ -212,7 +224,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             ${photoHtml.replace('chapter-photo', 'chapter-photo vertical-photo-top')}
             <div class="wisdom-text chapter-opening">
               ${quoteHtml}
-              ${chapter.content}
+              ${formatContent(chapter.content)}
             </div>
             ${memoriesHtml}
           </div>
@@ -586,6 +598,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           if (!remainingText) return null;
 
           const newP = document.createElement('p');
+          newP.innerText = remainingText;
           return { element: newP, remainingText: remainingText, originalText: text };
         }
 
