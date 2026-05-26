@@ -16,7 +16,7 @@ function formatContent(content: string | null | undefined): string {
       .join('');
   }
   // Inject drop cap to the first actual letter of the content
-  const match = html.match(/^(\s*(?:<p[^>]*>|<div[^>]*>)*\s*)([A-Za-z0-9])/i);
+  const match = html.match(/^(\s*(?:<p[^>]*>|<div[^>]*>)*)\s*([A-Za-z0-9])/i);
   if (match) {
     const prefix = match[1];
     const firstLetter = match[2];
