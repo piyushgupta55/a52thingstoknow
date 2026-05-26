@@ -49,12 +49,15 @@ body {
   font-family: 'Lora', serif;
 }
 
-.chapter-content-page .wisdom-text.chapter-opening > p:first-of-type span.drop-cap {
-  font-size: 4rem;
+.dropcap {
   float: left;
+  font-size: 4.5rem;
+  line-height: 0.82;
+  padding-right: 0.08em;
+  padding-top: 0.04em;
+  font-family: 'Lora', serif;
   color: var(--gold);
-  line-height: 1;
-  margin-right: 0.15em;
+  font-weight: 700;
 }
 
 .quotes-container {
@@ -143,14 +146,4 @@ blockquote, .chapter-quote {
   padding: 2em;
 }
 
-/* Phase 9: Drop Caps for Chapter openings */
-.wisdom-text.chapter-opening > p:first-of-type span.drop-cap {
-  font-family: 'Lora', Georgia, serif;
-  font-size: 3.2em;
-  float: left;
-  line-height: 0.85;
-  margin-top: 0.08em;
-  margin-right: 0.15em;
-  color: var(--gold);
-  font-weight: normal;
-}
+/* Stylings handled by .dropcap class */

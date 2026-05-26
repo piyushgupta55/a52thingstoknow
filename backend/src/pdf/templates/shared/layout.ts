@@ -21,7 +21,7 @@ function formatContent(content: string | null | undefined): string {
     const prefix = match[1];
     const firstLetter = match[2];
     const remainder = html.slice(match[0].length);
-    return `${prefix}<span class="drop-cap">${firstLetter}</span>${remainder}`;
+    return `${prefix}<span class="dropcap">${firstLetter}</span>${remainder}`;
   }
   return html;
 }
@@ -530,7 +530,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         }
 
         function splitParagraph(p, maxBottom) {
-          const hadDropCap = p.querySelector('span.drop-cap') !== null;
+          const hadDropCap = p.querySelector('span.dropcap') !== null;
           const initialBottom = p.getBoundingClientRect().bottom;
           if (initialBottom <= maxBottom) {
             return null;
@@ -539,18 +539,31 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           const text = p.innerText;
           const words = text.split(' ');
           
-          // Wrap words in spans to measure them without triggering DOM reflows repeatedly
-          p.innerHTML = words.map(w => '<span>' + w + '</span>').join(' ');
+          // Wrap words in spans to measure them without triggering DOM reflows repeatedly.
+          // For drop caps, we must NOT nest the floated dropcap span inside a word span
+          // because it breaks line formatting in Puppeteer.
+          if (hadDropCap) {
+            const firstWord = words[0];
+            const firstLetter = firstWord.charAt(0);
+            const restOfFirstWord = firstWord.slice(1);
+            p.innerHTML = '<span class="dropcap">' + firstLetter + '</span><span>' + restOfFirstWord + '</span> ' +
+              words.slice(1).map(w => '<span>' + w + '</span>').join(' ');
+          } else {
+            p.innerHTML = words.map(w => '<span>' + w + '</span>').join(' ');
+          }
 
           const spans = p.querySelectorAll('span');
           if (spans.length === 0) return null;
 
           // Group spans by line (based on top coordinate)
+          // If we had a dropcap, spans[0] is the floated dropcap element.
+          // We start grouping lines from spans[1] which contains the inline text flow.
           const lines = [];
           let currentLine = [];
           let lastTop = -1;
+          const startIdx = hadDropCap ? 1 : 0;
           
-          for (let i = 0; i < spans.length; i++) {
+          for (let i = startIdx; i < spans.length; i++) {
             const rect = spans[i].getBoundingClientRect();
             if (lastTop === -1 || Math.abs(rect.top - lastTop) > 5) {
               if (currentLine.length > 0) {
@@ -602,14 +615,15 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           }
 
           // Split at the determined fitLineCount
-          const splitWordIndex = lines[fitLineCount - 1][lines[fitLineCount - 1].length - 1] + 1;
+          const lastSpanIdx = lines[fitLineCount - 1][lines[fitLineCount - 1].length - 1];
+          const splitWordIndex = hadDropCap ? lastSpanIdx : lastSpanIdx + 1;
           const fitText = words.slice(0, splitWordIndex).join(' ');
           if (hadDropCap) {
             const match = fitText.match(/^([A-Za-z0-9])/);
             if (match) {
               const firstLetter = match[1];
               const remainder = fitText.slice(1);
-              p.innerHTML = '<span class="drop-cap">' + firstLetter + '</span>' + remainder;
+              p.innerHTML = '<span class="dropcap">' + firstLetter + '</span>' + remainder;
             } else {
               p.innerText = fitText;
             }
