@@ -49,17 +49,29 @@ body {
   font-family: 'Lora', serif;
 }
 
+/* Drop Cap — float-based with alignment calibrated for Lora at 11pt / line-height 1.8 */
 .dropcap {
   float: left;
-  font-size: 4.2rem;
-  line-height: 0.9;
-  margin-right: 0.06em;
-  margin-top: 0.12em;
+  font-size: 3.6em;
+  line-height: 1;
+  margin: -0.12em 0.08em 0 0;
+  padding: 0.14em 0 0 0;
   font-family: 'Lora', serif;
   font-weight: 700;
   color: var(--gold);
 }
 
+/* Wide letters (W, M) — safe for Chromium PDF print engine (no transform) */
+.dropcap-wide {
+  font-size: 3.1em;
+  margin: -0.06em 0.06em 0 0;
+  padding-top: 0.1em;
+}
+
+/* Narrow letters (I, J, l) — can afford to be slightly wider or standard */
+.dropcap-narrow {
+  margin-right: 0.12em;
+}
 
 .quotes-container {
   margin-top: 1em;

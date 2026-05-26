@@ -21,13 +21,19 @@ function formatContent(content: string | null | undefined): string {
     const prefix = match[1];
     const firstLetter = match[2];
     const remainder = match[3];
+    // Adjust drop cap class for letter width — wide letters (W, M) get a smaller size
+    const wideLetters = 'WMwm';
+    const narrowLetters = 'IJijl1';
+    let dcClass = 'dropcap';
+    if (wideLetters.includes(firstLetter)) dcClass += ' dropcap-wide';
+    else if (narrowLetters.includes(firstLetter)) dcClass += ' dropcap-narrow';
     const pCloseIdx = remainder.indexOf('</p>');
     if (pCloseIdx !== -1) {
       const p1Body = remainder.slice(0, pCloseIdx);
       const p1Rest = remainder.slice(pCloseIdx);
-      return `${prefix}<span class="dropcap">${firstLetter}</span>${p1Body}${p1Rest}`;
+      return `${prefix}<span class="${dcClass}">${firstLetter}</span>${p1Body}${p1Rest}`;
     } else {
-      return `${prefix}<span class="dropcap">${firstLetter}</span>${remainder}`;
+      return `${prefix}<span class="${dcClass}">${firstLetter}</span>${remainder}`;
     }
   }
   return html;
@@ -538,7 +544,9 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
 
         function splitParagraph(p, maxBottom) {
           const originalHtml = p.innerHTML;
-          const hadDropCap = p.querySelector('span.dropcap') !== null;
+          const dropcapEl = p.querySelector('span.dropcap');
+          const hadDropCap = dropcapEl !== null;
+          const dropcapClass = hadDropCap ? dropcapEl.className : 'dropcap';
           const initialBottom = p.getBoundingClientRect().bottom;
           if (initialBottom <= maxBottom) {
             return null;
@@ -554,7 +562,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             const firstWord = words[0];
             const firstLetter = firstWord.charAt(0);
             const restOfFirstWord = firstWord.slice(1);
-            p.innerHTML = '<span class="dropcap">' + firstLetter + '</span><span>' + restOfFirstWord + '</span> ' +
+            p.innerHTML = '<span class="' + dropcapClass + '">' + firstLetter + '</span><span>' + restOfFirstWord + '</span> ' +
               words.slice(1).map(w => '<span>' + w + '</span>').join(' ');
           } else {
             p.innerHTML = words.map(w => '<span>' + w + '</span>').join(' ');
@@ -635,7 +643,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             if (match) {
               const firstLetter = match[1];
               const remainder = fitText.slice(1);
-              p.innerHTML = '<span class="dropcap">' + firstLetter + '</span>' + remainder;
+              p.innerHTML = '<span class="' + dropcapClass + '">' + firstLetter + '</span>' + remainder;
             } else {
               p.innerText = fitText;
             }
