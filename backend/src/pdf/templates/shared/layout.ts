@@ -25,9 +25,9 @@ function formatContent(content: string | null | undefined): string {
     if (pCloseIdx !== -1) {
       const p1Body = remainder.slice(0, pCloseIdx);
       const p1Rest = remainder.slice(pCloseIdx);
-      return `${prefix}<span class="dropcap">${firstLetter}</span><span class="dropcap-rest">${p1Body}</span>${p1Rest}`;
+      return `${prefix}<span class="dropcap">${firstLetter}</span>${p1Body}${p1Rest}`;
     } else {
-      return `${prefix}<span class="dropcap">${firstLetter}</span><span class="dropcap-rest">${remainder}</span>`;
+      return `${prefix}<span class="dropcap">${firstLetter}</span>${remainder}`;
     }
   }
   return html;
@@ -554,21 +554,13 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             const firstWord = words[0];
             const firstLetter = firstWord.charAt(0);
             const restOfFirstWord = firstWord.slice(1);
-            p.innerHTML = '<span class="dropcap">' + firstLetter + '</span><span class="dropcap-rest"><span>' + restOfFirstWord + '</span> ' +
-              words.slice(1).map(w => '<span>' + w + '</span>').join(' ') + '</span>';
+            p.innerHTML = '<span class="dropcap">' + firstLetter + '</span><span>' + restOfFirstWord + '</span> ' +
+              words.slice(1).map(w => '<span>' + w + '</span>').join(' ');
           } else {
             p.innerHTML = words.map(w => '<span>' + w + '</span>').join(' ');
           }
 
-          const spans = [];
-          if (hadDropCap) {
-            const dropcap = p.querySelector('span.dropcap');
-            if (dropcap) spans.push(dropcap);
-            const restSpans = p.querySelectorAll('span.dropcap-rest > span');
-            restSpans.forEach(s => spans.push(s));
-          } else {
-            p.querySelectorAll('span').forEach(s => spans.push(s));
-          }
+          const spans = p.querySelectorAll('span');
 
           if (spans.length === 0) {
             p.innerHTML = originalHtml;
@@ -643,7 +635,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             if (match) {
               const firstLetter = match[1];
               const remainder = fitText.slice(1);
-              p.innerHTML = '<span class="dropcap">' + firstLetter + '</span><span class="dropcap-rest">' + remainder + '</span>';
+              p.innerHTML = '<span class="dropcap">' + firstLetter + '</span>' + remainder;
             } else {
               p.innerText = fitText;
             }
