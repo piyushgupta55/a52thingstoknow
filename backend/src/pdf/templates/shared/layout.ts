@@ -537,6 +537,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         }
 
         function splitParagraph(p, maxBottom) {
+          const originalHtml = p.innerHTML;
           const hadDropCap = p.querySelector('span.dropcap') !== null;
           const initialBottom = p.getBoundingClientRect().bottom;
           if (initialBottom <= maxBottom) {
@@ -569,7 +570,10 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             p.querySelectorAll('span').forEach(s => spans.push(s));
           }
 
-          if (spans.length === 0) return null;
+          if (spans.length === 0) {
+            p.innerHTML = originalHtml;
+            return null;
+          }
 
           // Group spans by line (based on top coordinate)
           // If we had a dropcap, spans[0] is the floated dropcap element.
@@ -648,7 +652,10 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           }
 
           const remainingText = words.slice(splitWordIndex).join(' ');
-          if (!remainingText) return null;
+          if (!remainingText) {
+            p.innerHTML = originalHtml;
+            return null;
+          }
 
           const newP = document.createElement('p');
           newP.innerText = remainingText;
