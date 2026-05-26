@@ -9,15 +9,18 @@ import { validatePdfDimensions } from './utils/pdfValidation';
 
 export async function generatePDF(bookData: BookData): Promise<Buffer> {
   const validation = validateChapterLength(bookData);
-  const imageWarnings = await validateImages(bookData);
   
-  const allWarnings = [...validation.warnings, ...imageWarnings];
-
-  if (allWarnings.length > 0) {
-    console.warn("--- CONTENT BUDGET & PRINT WARNINGS ---");
-    allWarnings.forEach(w => console.warn(`[WARN] ${w.type}: ${w.message}`));
-    console.warn("---------------------------------------");
-  }
+  // Run image validation in the background so it doesn't block the critical PDF compile path
+  validateImages(bookData).then((imageWarnings) => {
+    const allWarnings = [...validation.warnings, ...imageWarnings];
+    if (allWarnings.length > 0) {
+      console.warn("--- CONTENT BUDGET & PRINT WARNINGS ---");
+      allWarnings.forEach(w => console.warn(`[WARN] ${w.type}: ${w.message}`));
+      console.warn("---------------------------------------");
+    }
+  }).catch((err) => {
+    console.warn("Image validation background error:", err);
+  });
 
   // 1. Instantiate Engine (swappable later)
   const engine = createEngine(pdfConfig.engine);

@@ -164,7 +164,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     }
 
     const hasPhoto = chapter.photo_urls && chapter.photo_urls.length > 0;
-    const photoClass = (template === 'vertical_photo' || template === 'photo_second') ? 'chapter-photo vertical-photo-top' : 'chapter-photo';
+    const photoClass = (template === 'vertical_photo' || template === 'photo_second') ? 'chapter-photo vertical-photo' : 'chapter-photo';
     const photoHtml = hasPhoto ? `<img src="${chapter.photo_urls![0]}" class="${photoClass}" />` : '';
 
     if (template === 'classic') {
@@ -210,7 +210,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       `;
     } else if (template === 'vertical_photo' || template === 'photo_second') {
       chaptersHtml += `
-          <!-- Page 1: Vertical Photo top, Wisdom below -->
+          <!-- Page 1: Title, Quotes, Wisdom, and Photo (split to Page 2) -->
           <div class="page chapter-content-page page-p1" data-chapter="${chapter.chapter_number}" data-template="${template}" data-has-memories="${chapter.memories && chapter.memories.length > 0}">
             <div class="chapter-header">
               <div class="chapter-label">Chapter ${chapter.chapter_number}</div>
@@ -221,11 +221,11 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
                 <span class="line"></span>
               </div>
             </div>
-            ${photoHtml.replace('chapter-photo', 'chapter-photo vertical-photo-top')}
             <div class="wisdom-text chapter-opening">
               ${quoteHtml}
               ${formatContent(chapter.content)}
             </div>
+            ${photoHtml}
             ${memoriesHtml}
           </div>
       `;
@@ -351,7 +351,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             
             if (template === 'vertical_photo') {
               for (let i = 0; i < units.length; i++) {
-                if (units[i].type === 'wisdom') {
+                if (units[i].type === 'photo') {
                   forcedOverflowIndex = i;
                   break;
                 }
