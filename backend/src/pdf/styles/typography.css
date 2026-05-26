@@ -51,13 +51,18 @@ body {
 
 .dropcap {
   float: left;
-  font-size: 4.8rem;
-  line-height: 0.78;
-  margin-right: 0.08em;
-  margin-top: 0.04em;
+  font-size: 4.2rem;
+  line-height: 0.9;
+  margin-right: 0.06em;
+  margin-top: 0.12em;
   font-family: 'Lora', serif;
   font-weight: 700;
   color: var(--gold);
+}
+
+.dropcap-rest {
+  display: inline;
+  line-height: 1.7;
 }
 
 .quotes-container {
