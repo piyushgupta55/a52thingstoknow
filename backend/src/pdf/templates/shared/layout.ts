@@ -15,13 +15,20 @@ function formatContent(content: string | null | undefined): string {
       .map(para => `<p>${para.replace(/\n/g, '<br />')}</p>`)
       .join('');
   }
-  // Inject drop cap to the first actual letter of the content
-  const match = html.match(/^(\s*(?:<p[^>]*>|<div[^>]*>)*)\s*([A-Za-z0-9])/i);
+  // Inject drop cap to the first actual letter of the first paragraph
+  const match = html.match(/^(\s*(?:<p[^>]*>|<div[^>]*>)*)\s*([A-Za-z0-9])(.*)$/is);
   if (match) {
     const prefix = match[1];
     const firstLetter = match[2];
-    const remainder = html.slice(match[0].length);
-    return `${prefix}<span class="dropcap">${firstLetter}</span>${remainder}`;
+    const remainder = match[3];
+    const pCloseIdx = remainder.indexOf('</p>');
+    if (pCloseIdx !== -1) {
+      const p1Body = remainder.slice(0, pCloseIdx);
+      const p1Rest = remainder.slice(pCloseIdx);
+      return `${prefix}<span class="dropcap">${firstLetter}</span><span class="dropcap-rest">${p1Body}</span>${p1Rest}`;
+    } else {
+      return `${prefix}<span class="dropcap">${firstLetter}</span><span class="dropcap-rest">${remainder}</span>`;
+    }
   }
   return html;
 }
@@ -546,13 +553,22 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             const firstWord = words[0];
             const firstLetter = firstWord.charAt(0);
             const restOfFirstWord = firstWord.slice(1);
-            p.innerHTML = '<span class="dropcap">' + firstLetter + '</span><span>' + restOfFirstWord + '</span> ' +
-              words.slice(1).map(w => '<span>' + w + '</span>').join(' ');
+            p.innerHTML = '<span class="dropcap">' + firstLetter + '</span><span class="dropcap-rest"><span>' + restOfFirstWord + '</span> ' +
+              words.slice(1).map(w => '<span>' + w + '</span>').join(' ') + '</span>';
           } else {
             p.innerHTML = words.map(w => '<span>' + w + '</span>').join(' ');
           }
 
-          const spans = p.querySelectorAll('span');
+          const spans = [];
+          if (hadDropCap) {
+            const dropcap = p.querySelector('span.dropcap');
+            if (dropcap) spans.push(dropcap);
+            const restSpans = p.querySelectorAll('span.dropcap-rest > span');
+            restSpans.forEach(s => spans.push(s));
+          } else {
+            p.querySelectorAll('span').forEach(s => spans.push(s));
+          }
+
           if (spans.length === 0) return null;
 
           // Group spans by line (based on top coordinate)
@@ -623,7 +639,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             if (match) {
               const firstLetter = match[1];
               const remainder = fitText.slice(1);
-              p.innerHTML = '<span class="dropcap">' + firstLetter + '</span>' + remainder;
+              p.innerHTML = '<span class="dropcap">' + firstLetter + '</span><span class="dropcap-rest">' + remainder + '</span>';
             } else {
               p.innerText = fitText;
             }
