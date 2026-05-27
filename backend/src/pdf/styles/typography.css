@@ -49,9 +49,9 @@ body {
   font-family: 'Lora', serif;
 }
 
-/* Drop Cap — float-based with alignment calibrated for Lora at 11pt / line-height 1.8 */
 .dropcap {
   float: left;
+  display: block;
   font-size: 3.6em;
   line-height: 1;
   margin: -0.12em 0.08em 0 0;
@@ -63,8 +63,9 @@ body {
 
 /* Wide letters (W, M) — safe for Chromium PDF print engine (no transform) */
 .dropcap-wide {
-  font-size: 2.75em;
+  font-size: 2.5em;
   line-height: 0.85;
+  height: 1.1em;
   margin: -0.04em 0.06em 0 0;
   padding-top: 0.08em;
 }
