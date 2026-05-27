@@ -63,9 +63,10 @@ body {
 
 /* Wide letters (W, M) — safe for Chromium PDF print engine (no transform) */
 .dropcap-wide {
-  font-size: 3.1em;
-  margin: -0.06em 0.06em 0 0;
-  padding-top: 0.1em;
+  font-size: 2.75em;
+  line-height: 0.85;
+  margin: -0.04em 0.06em 0 0;
+  padding-top: 0.08em;
 }
 
 /* Narrow letters (I, J, l) — can afford to be slightly wider or standard */
