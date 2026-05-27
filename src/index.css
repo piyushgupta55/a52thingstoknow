@@ -105,8 +105,18 @@
 .drop-cap::first-letter {
   float: left;
   font-size: 3.8em;
-  line-height: 0.8;
-  margin: 4px 8px 0 0;
+  line-height: 0.9;
+  margin: 0.06em 0.12em 0 0;
+  font-family: 'Merriweather', Georgia, serif;
+  color: #C9A84C;
+  font-weight: 700;
+}
+
+.dropcap {
+  float: left;
+  font-size: 3.8em;
+  line-height: 0.9;
+  margin: 0.06em 0.12em 0 0;
   font-family: 'Merriweather', Georgia, serif;
   color: #C9A84C;
   font-weight: 700;
