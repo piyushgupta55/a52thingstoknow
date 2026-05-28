@@ -231,9 +231,11 @@ const ChapterEditor = () => {
   const isPhotoTemplate = template === 'photo_top' || template === 'photo_second';
   const isLetterChapter = chapter?.chapter_number === 0;
   const budget = WORD_BUDGETS[template] || WORD_BUDGETS.all_words;
-  // Page-1 word boundary: classic chapters 150, photo templates 75
-  // (photo chapters give half of page 1 to the image).
-  const PAGE_1_WORD_LIMIT = isPhotoTemplate ? 75 : 150;
+  // Page-1 word boundary: classic chapters 150, photo templates 75.
+  // Each memory card consumes 40 words of page space, decrementing the available text space.
+  const basePage1Limit = isPhotoTemplate ? 75 : 150;
+  const memoryWordCost = (placedMemories?.length ?? 0) * 40;
+  const PAGE_1_WORD_LIMIT = Math.max(0, basePage1Limit - memoryWordCost);
   // Letter chapters use their own `content`-bound textarea; every other
   // chapter edits the single unified `mergedText` buffer.
   const editorText = isLetterChapter ? content : mergedText;
@@ -416,7 +418,8 @@ const ChapterEditor = () => {
         }
       }
       if (bookData) {
-        setRecipientName(bookData.recipient_name || '');
+        const capRecipient = bookData.recipient_name ? bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '';
+        setRecipientName(capRecipient);
         setRecipientGender(bookData.recipient_gender || '');
         setAuthorLabel(bookData.author_label || '');
         // Load author name from profile
@@ -489,6 +492,10 @@ const ChapterEditor = () => {
 
   const canMarkComplete = () => {
     if (isLetterChapter) return true;
+    
+    // Enforce that Page 1 budget must be fully met before completing the chapter
+    if (editorWordCount < PAGE_1_WORD_LIMIT) return false;
+
     const page2HasContent =
       page2AuthorWords > 0 ||
       placedMemories.length > 0 ||
@@ -949,12 +956,17 @@ const ChapterEditor = () => {
           style={{
             fontFamily: 'var(--font-devotional)',
             marginBottom: i < paragraphs.length - 1 ? '1.4em' : 0,
+            textAlign: 'justify',
+            textJustify: 'inter-word',
+            hyphens: 'auto',
+            WebkitHyphens: 'auto',
           }}
         >
           {lines.map((line, idx) => {
             const nodes = renderInline(line, variant);
+            const isFirstParaDropCap = i === 0 && withDropCap && !suppressDropCap;
             return (
-              <span key={idx} className="block">
+              <span key={idx} className={isFirstParaDropCap && idx === 0 ? 'inline' : 'block'}>
                 {nodes ?? '\u00A0'}
               </span>
             );
@@ -1462,8 +1474,6 @@ const ChapterEditor = () => {
 
             <DevotionalQuote text={quoteText} attribution={quoteAttribution} onTextChange={v => { setQuoteText(v); setQuoteId(null); setHasUnsavedChanges(true); }} onAttrChange={v => { setQuoteAttribution(v); setHasUnsavedChanges(true); }} onFindAlternatives={() => handleFindAlternatives('quote')} editing={editingQuote} onToggleEdit={() => setEditingQuote(!editingQuote)} previewMode={false} />
 
-            {template === 'photo_second' && renderPhotoZone('vertical')}
-
             {/* ─── Two-textarea editor: Page 1 above, divider, Page 2 below ─── */}
             {(() => {
               // mergedText is still the single source of truth for word
@@ -1617,6 +1627,12 @@ const ChapterEditor = () => {
                     </span>
                     <div className="flex-1 h-px bg-muted-foreground/20" />
                   </div>
+
+                  {template === 'photo_second' && (
+                    <div className="mb-4">
+                      {renderPhotoZone('vertical')}
+                    </div>
+                  )}
 
                   {/* ── Page 2 textarea ── */}
                   <div className="my-8 relative">

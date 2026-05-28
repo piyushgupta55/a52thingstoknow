@@ -17,6 +17,8 @@ export class PuppeteerEngine implements PDFEngine {
       page.setDefaultNavigationTimeout(120000);
       page.setDefaultTimeout(120000);
       page.on('console', msg => console.log('PUPPETEER PAGE LOG:', msg.text()));
+      page.on('pageerror', (err: any) => console.error('PUPPETEER PAGE ERROR:', err.message || err));
+
       
       // Pass 1: Render layout to calculate page numbers
       console.log('Pass 1: Rendering layout to calculate page numbers...');

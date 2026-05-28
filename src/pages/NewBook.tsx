@@ -31,6 +31,7 @@ const NewBook = () => {
     try {
       // Map UI gender to canonical 'female'/'male' for template lookup
       const bookGender: 'female' | 'male' = gender === 'Girl/Young Woman' ? 'female' : 'male';
+      const capitalizedRecipientName = recipientName.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
       // Fetch chapter templates filtered by gender (each chapter has separate male/female rows)
       const { data: templates, error: tplError } = await supabase
@@ -45,7 +46,7 @@ const NewBook = () => {
         .from('books')
         .insert({
           user_id: user.id,
-          recipient_name: recipientName,
+          recipient_name: capitalizedRecipientName,
           relationship,
           recipient_gender: gender,
           gender: bookGender,
@@ -62,9 +63,8 @@ const NewBook = () => {
 
       // Create the Letter from the Author chapter (chapter_number = 0)
       const authorName = user.user_metadata?.full_name || 'the author';
-      const signOff = authorLabel.trim() || fromLabel.trim() || authorName;
-      const letterBodyText = `Sometimes as parents there is a bunch of stuff we want to tell you and we never get the time or opportunity to share them. Here are 52 things I want you to know before you turn 18. I hope that I can share some wisdom with you that might help you as you become an adult. Unfortunately, many of them will also be the result of mistakes or failures that I have had or seen. One of the unpleasant tasks of being a parent is that there are many things you wish you had done differently or not at all and you have the opportunity to use yourself as a 'bad' example for your kids. The cool thing is that I can also touch on subjects where I was a good example as well. Everyone won't be serious and I am sure there will be some that won't be as interesting to you. I hope that you will accept them knowing that I am sharing them with love. Be careful you might just learn something! Be patient with me and make sure that you read each one carefully. 52 is a big number. This may be more fun for me than it is for you… Hopefully you will enjoy it as well. I am very proud to be your ${signOff}. You are special and I am your biggest fan! I love you, ${signOff}`;
-      const letterContentText = `Dear ${recipientName},\n\n${letterBodyText}`;
+      const letterBodyText = `Sometimes as parents there is a bunch of stuff we want to tell you and we never get the time or opportunity to share them. Here are 52 things I want you to know before you turn 18. I hope that I can share some wisdom with you that might help you as you become an adult. Unfortunately, many of them will also be the result of mistakes or failures that I have had or seen. One of the unpleasant tasks of being a parent is that there are many things you wish you had done differently or not at all and you have the opportunity to use yourself as a 'bad' example for your kids. The cool thing is that I can also touch on subjects where I was a good example as well. Everyone won't be serious and I am sure there will be some that won't be as interesting to you. I hope that you will accept them knowing that I am sharing them with love. Be careful you might just learn something! Be patient with me and make sure that you read each one carefully. 52 is a big number. This may be more fun for me than it is for you… Hopefully you will enjoy it as well. You are special and I am your biggest fan! I love you.`;
+      const letterContentText = `Dear ${capitalizedRecipientName},\n\n${letterBodyText}`;
 
       const letterChapter = {
         book_id: book.id,

@@ -3,6 +3,67 @@ import * as path from 'path';
 import type { BookData } from '../../types/pdf';
 // supabase import removed - not needed for screenshots
 
+interface DropcapConfig {
+  xOffset: number;    // Shift horizontally
+  yOffset: number;    // Shift vertically to lock baseline
+  scale: number;      // Optical scaling
+  aspectRatio: number;// Locked aspect ratio (prevents box collapsing)
+}
+
+const GLYPH_METRICS: Record<string, DropcapConfig> = {
+  'A': { xOffset: -0.05, yOffset: 0.08, scale: 0.95, aspectRatio: 0.85 },
+  'B': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.78 },
+  'C': { xOffset: -0.06, yOffset: 0.09, scale: 1.00, aspectRatio: 0.82 },
+  'D': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.80 },
+  'E': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.75 },
+  'F': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.70 },
+  'G': { xOffset: -0.05, yOffset: 0.09, scale: 1.00, aspectRatio: 0.85 },
+  'H': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.82 },
+  'I': { xOffset: 0.05, yOffset: 0.07, scale: 1.00, aspectRatio: 0.35 },
+  'J': { xOffset: 0.05, yOffset: 0.12, scale: 1.00, aspectRatio: 0.45 },
+  'K': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.82 },
+  'L': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.72 },
+  'M': { xOffset: -0.02, yOffset: 0.08, scale: 0.90, aspectRatio: 1.10 },
+  'N': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.82 },
+  'O': { xOffset: -0.06, yOffset: 0.09, scale: 1.00, aspectRatio: 0.86 },
+  'P': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.75 },
+  'Q': { xOffset: -0.06, yOffset: 0.15, scale: 1.00, aspectRatio: 0.86 },
+  'R': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.80 },
+  'S': { xOffset: -0.02, yOffset: 0.08, scale: 1.00, aspectRatio: 0.75 },
+  'T': { xOffset: -0.04, yOffset: 0.07, scale: 1.00, aspectRatio: 0.85 },
+  'U': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.82 },
+  'V': { xOffset: -0.03, yOffset: 0.08, scale: 0.98, aspectRatio: 0.82 },
+  'W': { xOffset: -0.02, yOffset: 0.08, scale: 0.90, aspectRatio: 1.15 },
+  'X': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.82 },
+  'Y': { xOffset: -0.03, yOffset: 0.08, scale: 0.98, aspectRatio: 0.80 },
+  'Z': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.78 },
+  'default': { xOffset: 0.0, yOffset: 0.08, scale: 1.0, aspectRatio: 0.80 }
+};
+
+const LORA_GLYPH_PATHS: Record<string, { d: string, aspect: number }> = {
+  'A': { d: 'M0,85 L25,15 L55,15 L80,85 L65,85 L58,65 L22,65 L15,85 Z M40,25 L26,55 L54,55 Z', aspect: 0.85 },
+  'T': { d: 'M0,20 L30,20 L30,85 L50,85 L50,20 L80,20 L80,10 L0,10 Z', aspect: 0.85 },
+  'I': { d: 'M0,10 L30,10 L30,85 L0,85 Z', aspect: 0.35 }
+};
+
+function injectSvgDropcap(letter: string, fontClass: string = 'book-font-serif'): string {
+  const upper = letter.toUpperCase();
+  const metrics = GLYPH_METRICS[upper] || GLYPH_METRICS['default'];
+  const glyph = LORA_GLYPH_PATHS[upper];
+  
+  const width = Math.round(100 * metrics.aspectRatio);
+  const height = 100;
+  
+  const x = (width / 2) + (metrics.xOffset * 100);
+  const y = 80 + (metrics.yOffset * 100);
+  
+  const innerContent = glyph 
+    ? `<path d="${glyph.d}" fill="var(--gold, #c9a14a)" />`
+    : `<text x="${x}" y="${y}" font-size="${metrics.scale * 100}" text-anchor="middle" class="dropcap-svg-text ${fontClass}" style="dominant-baseline: alphabetic; font-family: 'Lora', 'Georgia', serif; fill: var(--gold, #c9a14a); font-weight: normal;">${letter}</text>`;
+  
+  return `<span class="dropcap-svg-container" style="aspect-ratio: ${metrics.aspectRatio}; float: left; display: block; height: calc(1.8em * 3 - 0.4em); margin-right: 0.6em; margin-top: 0.15em; line-height: 0;" data-dropcap-letter="${letter}"><svg viewBox="0 0 ${width} ${height}" style="height: 100%; width: auto; overflow: visible;" preserveAspectRatio="xMidYMid meet">${innerContent}</svg></span>`;
+}
+
 function formatContent(content: string | null | undefined): string {
   if (!content) return '';
   const trimmed = content.trim();
@@ -15,29 +76,31 @@ function formatContent(content: string | null | undefined): string {
       .map(para => `<p>${para.replace(/\n/g, '<br />')}</p>`)
       .join('');
   }
+
+  // Suppress drop cap for placeholder content
+  const plainText = trimmed.replace(/<[^>]+>/g, '').trim();
+  if (plainText === 'No content available.') {
+    return html;
+  }
+
   // Inject drop cap to the first actual letter of the first paragraph
   const match = html.match(/^(\s*(?:<p[^>]*>|<div[^>]*>)*)\s*([A-Za-z0-9])(.*)$/is);
   if (match) {
     const prefix = match[1];
     const firstLetter = match[2];
     const remainder = match[3];
-    // Adjust drop cap class for letter width — wide letters (W, M) get a smaller size
-    const wideLetters = 'WMwm';
-    const narrowLetters = 'IJijl1';
-    let dcClass = 'dropcap';
-    if (wideLetters.includes(firstLetter)) dcClass += ' dropcap-wide';
-    else if (narrowLetters.includes(firstLetter)) dcClass += ' dropcap-narrow';
     const pCloseIdx = remainder.indexOf('</p>');
     if (pCloseIdx !== -1) {
       const p1Body = remainder.slice(0, pCloseIdx);
       const p1Rest = remainder.slice(pCloseIdx);
-      return `${prefix}<span class="${dcClass}">${firstLetter}</span>${p1Body}${p1Rest}`;
+      return `${prefix}${injectSvgDropcap(firstLetter)}<span class="text-flow">${p1Body}</span>${p1Rest}`;
     } else {
-      return `${prefix}<span class="${dcClass}">${firstLetter}</span>${remainder}`;
+      return `${prefix}${injectSvgDropcap(firstLetter)}<span class="text-flow">${remainder}</span>`;
     }
   }
   return html;
 }
+
 
 export async function renderBook(bookData: BookData, actualChapterPages?: Record<string, number>): Promise<string> {
   // Load core print styles directly to avoid @import path issues in Puppeteer
@@ -115,6 +178,25 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     
     // The Letter (Chapter 0)
     if (chapter.chapter_number === 0) {
+      let rawContent = chapter.content || '';
+      const authorName = bookData.author || 'The Author';
+      if (authorName) {
+        const escapedAuthor = authorName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        // Match "I love you, <authorName>" or "I love you, the author" or "I love you, [AUTHOR_NAME]" at the very end
+        const loveYouRegex = new RegExp(`I love you,\\s*(?:${escapedAuthor}|the author|\\[AUTHOR_NAME\\])\\.?\\s*$`, 'i');
+        rawContent = rawContent.replace(loveYouRegex, 'I love you.');
+
+        // Match "I am very proud to be your <authorName>" or "I am very proud to be your the author" or "I am very proud to be your [AUTHOR_NAME]"
+        const proudRegex = new RegExp(`I am very proud to be your\\s*(?:${escapedAuthor}|the author|\\[AUTHOR_NAME\\])\\.?`, 'i');
+        rawContent = rawContent.replace(proudRegex, 'I am very proud of you.');
+      }
+
+      // Match and title-case the recipient's name in the "Dear <recipient>," greeting block at the start
+      rawContent = rawContent.replace(/^(\s*(?:<p[^>]*>)?\s*Dear\s+)([^,\n<]+)(,)/i, (match, prefix, name, suffix) => {
+        const capitalizedName = name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        return `${prefix}${capitalizedName}${suffix}`;
+      });
+
       chaptersHtml += `
         <!-- Page 1: Introduction Letter (no static overflow placeholder) -->
         <div class="page chapter-content-page page-p1" data-chapter="${chapter.chapter_number}">
@@ -127,7 +209,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
               <span class="line"></span>
             </div>
           </div>
-          <div class="wisdom-text chapter-opening intro-wisdom">${formatContent(chapter.content)}</div>
+          <div class="wisdom-text chapter-opening intro-wisdom">${formatContent(rawContent)}</div>
           <div class="intro-separator intro-footer-separator">
             <span class="line"></span>
             <span class="diamond">✦</span>
@@ -305,15 +387,193 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       ${chaptersHtml}
 
       <script>
+        console.log("PUPPETEER BOOTSTRAP ACTIVE");
+        window.onerror = function(msg, url, line, col, error) {
+          console.error("BROWSER EXCEPTION:", msg, "at", url, "line", line, "col", col);
+          return false;
+        };
+        window.GLYPH_METRICS = {
+
+          'A': { xOffset: -0.05, yOffset: 0.08, scale: 0.95, aspectRatio: 0.85 },
+          'B': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.78 },
+          'C': { xOffset: -0.06, yOffset: 0.09, scale: 1.00, aspectRatio: 0.82 },
+          'D': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.80 },
+          'E': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.75 },
+          'F': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.70 },
+          'G': { xOffset: -0.05, yOffset: 0.09, scale: 1.00, aspectRatio: 0.85 },
+          'H': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.82 },
+          'I': { xOffset: 0.05, yOffset: 0.07, scale: 1.00, aspectRatio: 0.35 },
+          'J': { xOffset: 0.05, yOffset: 0.12, scale: 1.00, aspectRatio: 0.45 },
+          'K': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.82 },
+          'L': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.72 },
+          'M': { xOffset: -0.02, yOffset: 0.08, scale: 0.90, aspectRatio: 1.10 },
+          'N': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.82 },
+          'O': { xOffset: -0.06, yOffset: 0.09, scale: 1.00, aspectRatio: 0.86 },
+          'P': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.75 },
+          'Q': { xOffset: -0.06, yOffset: 0.15, scale: 1.00, aspectRatio: 0.86 },
+          'R': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.80 },
+          'S': { xOffset: -0.02, yOffset: 0.08, scale: 1.00, aspectRatio: 0.75 },
+          'T': { xOffset: -0.04, yOffset: 0.07, scale: 1.00, aspectRatio: 0.85 },
+          'U': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.82 },
+          'V': { xOffset: -0.03, yOffset: 0.08, scale: 0.98, aspectRatio: 0.82 },
+          'W': { xOffset: -0.02, yOffset: 0.08, scale: 0.90, aspectRatio: 1.15 },
+          'X': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.82 },
+          'Y': { xOffset: -0.03, yOffset: 0.08, scale: 0.98, aspectRatio: 0.80 },
+          'Z': { xOffset: 0.00, yOffset: 0.07, scale: 1.00, aspectRatio: 0.78 },
+          'default': { xOffset: 0.0, yOffset: 0.08, scale: 1.0, aspectRatio: 0.80 }
+        };
+
+        window.LORA_GLYPH_PATHS = {
+          'A': { d: 'M0,85 L25,15 L55,15 L80,85 L65,85 L58,65 L22,65 L15,85 Z M40,25 L26,55 L54,55 Z', aspect: 0.85 },
+          'T': { d: 'M0,20 L30,20 L30,85 L50,85 L50,20 L80,20 L80,10 L0,10 Z', aspect: 0.85 },
+          'I': { d: 'M0,10 L30,10 L30,85 L0,85 Z', aspect: 0.35 }
+        };
+
+        function injectSvgDropcap(letter, fontClass = 'book-font-serif') {
+          const upper = letter.toUpperCase();
+          const metrics = GLYPH_METRICS[upper] || GLYPH_METRICS['default'];
+          const glyph = LORA_GLYPH_PATHS[upper];
+          
+          const width = Math.round(100 * metrics.aspectRatio);
+          const height = 100;
+          
+          const x = (width / 2) + (metrics.xOffset * 100);
+          const y = 80 + (metrics.yOffset * 100);
+          
+          const innerContent = glyph 
+            ? '<path d="' + glyph.d + '" fill="var(--gold, #c9a14a)" />'
+            : '<text x="' + x + '" y="' + y + '" font-size="' + (metrics.scale * 100) + '" text-anchor="middle" class="dropcap-svg-text ' + fontClass + '" style="dominant-baseline: alphabetic; font-family: Lora, Georgia, serif; fill: var(--gold, #c9a14a); font-weight: normal;">' + letter + '</text>';
+          
+          return '<span class="dropcap-svg-container" style="aspect-ratio: ' + metrics.aspectRatio + '; float: left; display: block; height: calc(1.8em * 3 - 0.4em); margin-right: 0.6em; margin-top: 0.15em; line-height: 0;" data-dropcap-letter="' + letter + '"><svg viewBox="0 0 ' + width + ' ' + height + '" style="height: 100%; width: auto; overflow: visible;" preserveAspectRatio="xMidYMid meet">' + innerContent + '</svg></span>';
+        }
+
+
+        function findLineBreakOffsetsBinary(container, graphemeOffsets) {
+          const lines = [];
+          const totalGraphemes = graphemeOffsets.length - 1;
+          
+          let lineStartGraphemeIdx = 0;
+          const range = document.createRange();
+          
+          while (lineStartGraphemeIdx < totalGraphemes) {
+            let low = lineStartGraphemeIdx + 1;
+            let high = totalGraphemes;
+            let boundaryIdx = totalGraphemes;
+            
+            const startCharOffset = graphemeOffsets[lineStartGraphemeIdx];
+            
+            while (low <= high) {
+              const mid = Math.floor((low + high) / 2);
+              const midCharOffset = graphemeOffsets[mid];
+              
+              const startOk = setRangeStartAtOffset(range, container, startCharOffset);
+              const endOk = setRangeEndAtOffset(range, container, midCharOffset);
+              if (!startOk || !endOk) {
+                low = mid + 1;
+                continue;
+              }
+              
+              const rects = range.getClientRects();
+              
+              if (rects.length > 0 && isMultiLineRange(rects, 8)) {
+                boundaryIdx = mid;
+                high = mid - 1;
+              } else {
+                low = mid + 1;
+              }
+            }
+            
+            const endCharOffset = graphemeOffsets[boundaryIdx - 1] !== undefined ? graphemeOffsets[boundaryIdx - 1] : graphemeOffsets[boundaryIdx];
+            lines.push({ 
+              startOffset: startCharOffset, 
+              endOffset: boundaryIdx === totalGraphemes ? graphemeOffsets[totalGraphemes] : endCharOffset 
+            });
+            
+            // MATHEMATICALLY GUARANTEED PROGRESSION:
+            // nextStart must be strictly greater than lineStartGraphemeIdx to prevent infinite loop traps
+            const nextStart = Math.max(boundaryIdx - 1, lineStartGraphemeIdx + 1);
+            lineStartGraphemeIdx = nextStart;
+            
+            if (boundaryIdx === totalGraphemes) break;
+          }
+          
+          return lines;
+        }
+
+        function isMultiLineRange(rects, threshold = 8) {
+          if (rects.length <= 1) return false;
+          const firstTop = rects[0].top;
+          for (let i = 1; i < rects.length; i++) {
+            if (Math.abs(rects[i].top - firstTop) > threshold) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+
+        function setRangeStartAtOffset(range, node, targetOffset) {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const len = node.textContent.length;
+            if (targetOffset <= len) {
+              range.setStart(node, targetOffset);
+              return true;
+            }
+            return targetOffset - len;
+          }
+          
+          let remaining = targetOffset;
+          for (let i = 0; i < node.childNodes.length; i++) {
+            const res = setRangeStartAtOffset(range, node.childNodes[i], remaining);
+            if (res === true) return true;
+            remaining = res;
+          }
+          return remaining;
+        }
+
+        function setRangeEndAtOffset(range, node, targetOffset) {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const len = node.textContent.length;
+            if (targetOffset <= len) {
+              range.setEnd(node, targetOffset);
+              return true;
+            }
+            return targetOffset - len;
+          }
+          
+          let remaining = targetOffset;
+          for (let i = 0; i < node.childNodes.length; i++) {
+            const res = setRangeEndAtOffset(range, node.childNodes[i], remaining);
+            if (res === true) return true;
+            remaining = res;
+          }
+          return remaining;
+        }
+
+        function getOffsetVerticalBottom(container, offset) {
+          const range = document.createRange();
+          const startOk = setRangeStartAtOffset(range, container, offset > 0 ? offset - 1 : 0);
+          const endOk = setRangeEndAtOffset(range, container, offset);
+          if (!startOk || !endOk) return container.getBoundingClientRect().bottom;
+          const rects = range.getClientRects();
+          return rects.length > 0 ? rects[0].bottom : container.getBoundingClientRect().bottom;
+        }
+
         // Client-side text splitting to flow overflowing content from page-p1 to page-p2 and dynamically create overflow pages as needed
         window.addEventListener('load', () => {
           document.fonts.ready.then(() => {
-            splitAllChaptersOverflow();
-            cleanEmptyPages();
-            markSparsePages();
-            document.body.classList.add('layout-final');
+            try {
+              splitAllChaptersOverflow();
+              cleanEmptyPages();
+              markSparsePages();
+            } catch (err) {
+              console.error('CLIENT-SIDE PAGINATION ERROR:', err);
+            } finally {
+              document.body.classList.add('layout-final');
+            }
           });
         });
+
 
         function splitAllChaptersOverflow() {
           const p1Pages = document.querySelectorAll('.page-p1');
@@ -409,7 +669,8 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             const nextPageWisdom = nextPage.querySelector('.wisdom-text');
 
             let unitsToMove = [];
-            if (!forceMoveEntireUnit && overflowUnit.type === 'wisdom' && overflowUnit.element.tagName.toLowerCase() === 'p') {
+            const isIntroLetter = chapterNum === '0';
+            if (!isIntroLetter && !forceMoveEntireUnit && overflowUnit.type === 'wisdom' && overflowUnit.element.tagName.toLowerCase() === 'p') {
               // Split paragraph
               const splitResult = splitParagraph(overflowUnit.element, maxBottom);
               if (splitResult) {
@@ -544,123 +805,143 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
 
         function splitParagraph(p, maxBottom) {
           const originalHtml = p.innerHTML;
-          const dropcapEl = p.querySelector('span.dropcap');
-          const hadDropCap = dropcapEl !== null;
-          const dropcapClass = hadDropCap ? dropcapEl.className : 'dropcap';
+          
+          // 1. Detect if paragraph has a dropcap container
+          const dropcapContainer = p.querySelector('.dropcap-svg-container');
+          const hadDropCap = dropcapContainer !== null;
+          
+          let dropcapLetter = '';
+          let fontClass = 'book-font-serif';
+          
+          if (hadDropCap) {
+            dropcapLetter = dropcapContainer.getAttribute('data-dropcap-letter') || 'T';
+            const textNode = p.querySelector('.dropcap-svg-text');
+            if (textNode) {
+              fontClass = Array.from(textNode.classList)
+                .filter(c => c !== 'dropcap-svg-text')
+                .join(' ');
+            }
+          }
+
           const initialBottom = p.getBoundingClientRect().bottom;
           if (initialBottom <= maxBottom) {
             return null;
           }
 
-          const text = p.innerText;
-          const words = text.split(' ');
+          // 2. PARSE UNICODE-SAFE GRAPHEME & WORD BOUNDARIES
+          const textFlow = p.querySelector('.text-flow') || p;
+          const rawText = textFlow.textContent || '';
           
-          // Wrap words in spans to measure them without triggering DOM reflows repeatedly.
-          // For drop caps, we must NOT nest the floated dropcap span inside a word span
-          // because it breaks line formatting in Puppeteer.
-          if (hadDropCap) {
-            const firstWord = words[0];
-            const firstLetter = firstWord.charAt(0);
-            const restOfFirstWord = firstWord.slice(1);
-            p.innerHTML = '<span class="' + dropcapClass + '">' + firstLetter + '</span><span>' + restOfFirstWord + '</span> ' +
-              words.slice(1).map(w => '<span>' + w + '</span>').join(' ');
-          } else {
-            p.innerHTML = words.map(w => '<span>' + w + '</span>').join(' ');
-          }
-
-          const spans = p.querySelectorAll('span');
-
-          if (spans.length === 0) {
-            p.innerHTML = originalHtml;
-            return null;
-          }
-
-          // Group spans by line (based on top coordinate)
-          // If we had a dropcap, spans[0] is the floated dropcap element.
-          // We start grouping lines from spans[1] which contains the inline text flow.
-          const lines = [];
-          let currentLine = [];
-          let lastTop = -1;
-          const startIdx = hadDropCap ? 1 : 0;
+          const graphemeSegmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+          const wordSegmenter = new Intl.Segmenter('en', { granularity: 'word' });
           
-          for (let i = startIdx; i < spans.length; i++) {
-            const rect = spans[i].getBoundingClientRect();
-            if (lastTop === -1 || Math.abs(rect.top - lastTop) > 5) {
-              if (currentLine.length > 0) {
-                lines.push(currentLine);
-              }
-              currentLine = [];
-              lastTop = rect.top;
+          const graphemes = Array.from(graphemeSegmenter.segment(rawText));
+          const words = Array.from(wordSegmenter.segment(rawText));
+          
+          // Create a set of character index offsets that represent valid word boundaries
+          const wordBoundarySet = new Set();
+          words.forEach(w => {
+            wordBoundarySet.add(w.index);
+            wordBoundarySet.add(w.index + w.segment.length);
+          });
+
+          // Filter grapheme indices to only allow splitting on valid word boundaries
+          const safeSplitOffsets = [0];
+          graphemes.forEach(g => {
+            const nextOffset = g.index + g.segment.length;
+            if (wordBoundarySet.has(nextOffset)) {
+              safeSplitOffsets.push(nextOffset);
             }
-            currentLine.push(i); // store word index
-          }
-          if (currentLine.length > 0) {
-            lines.push(currentLine);
+          });
+
+          // Ensure terminal index is included
+          if (safeSplitOffsets[safeSplitOffsets.length - 1] !== rawText.length) {
+            safeSplitOffsets.push(rawText.length);
           }
 
-          // Find the last line that fits entirely below maxBottom
+          // 3. O(L log N) BINARY SEARCH LINE BREAK OFFSET DETECTION
+          const lines = findLineBreakOffsetsBinary(textFlow, safeSplitOffsets);
+          
+          if (lines.length <= 1) {
+            const bounds = p.getBoundingClientRect();
+            if (bounds.bottom <= maxBottom) return null;
+            // Entire paragraph overflow
+            return { element: p, remainingText: rawText, originalText: rawText, pushEntire: true };
+          }
+
+          // 4. CALIBRATE HOW MANY LINES FIT
           let fitLineCount = 0;
           for (let i = 0; i < lines.length; i++) {
-            const lastWordIdx = lines[i][lines[i].length - 1];
-            const lastWordBottom = spans[lastWordIdx].getBoundingClientRect().bottom;
-            if (lastWordBottom <= maxBottom) {
+            const lineEndOffset = lines[i].endOffset;
+            const lineBottom = getOffsetVerticalBottom(textFlow, lineEndOffset);
+            if (lineBottom <= maxBottom) {
               fitLineCount = i + 1;
             } else {
               break;
             }
           }
 
-          // Apply Widows/Orphans constraints (minimum 2 lines in each part)
+          // Apply Widows/Orphans checks
           const totalLines = lines.length;
           const remainingLines = totalLines - fitLineCount;
 
           if (fitLineCount < 2) {
-            // Orphan warning: less than 2 lines would fit on current page.
-            // So we push the entire paragraph to the next page!
-            fitLineCount = 0;
+            fitLineCount = 0; // Push entire block
           } else if (remainingLines < 2) {
-            // Widow warning: less than 2 lines would be left on the next page.
-            // So we pull one more line to the next page (reduce fitLineCount by 1).
-            fitLineCount = totalLines - 2;
-            if (fitLineCount < 2) {
-              // If pulling a line leaves less than 2 lines on the current page, push the whole paragraph!
-              fitLineCount = 0;
-            }
+            fitLineCount = totalLines - 2; // Pull lines forward
+            if (fitLineCount < 2) fitLineCount = 0;
           }
 
           if (fitLineCount === 0) {
-            // Push entire paragraph to next page: restore original text and return it
-            p.innerText = text;
-            return { element: p, remainingText: text, originalText: text, pushEntire: true };
+            return { element: p, remainingText: rawText, originalText: rawText, pushEntire: true };
           }
 
-          // Split at the determined fitLineCount
-          const lastSpanIdx = lines[fitLineCount - 1][lines[fitLineCount - 1].length - 1];
-          const splitWordIndex = hadDropCap ? lastSpanIdx : lastSpanIdx + 1;
-          const fitText = words.slice(0, splitWordIndex).join(' ');
+          // 5. PERFORM RICH DOM SPLITTING VIA RANGE CLONING
+          const splitOffset = lines[fitLineCount - 1].endOffset;
+          
+          // Part 1: Range from start to split point
+          const range1 = document.createRange();
+          range1.setStart(textFlow, 0);
+          setRangeEndAtOffset(range1, textFlow, splitOffset);
+          const part1Fragment = range1.cloneContents();
+
+          // Part 2: Range from split point to end
+          const range2 = document.createRange();
+          setRangeStartAtOffset(range2, textFlow, splitOffset);
+          range2.setEnd(textFlow, textFlow.childNodes.length);
+          const part2Fragment = range2.cloneContents();
+
+          // Re-serialize text metadata safely (No layout-dependent innerText)
+          const remainingText = rawText.slice(splitOffset);
+
+          // 6. ASSEMBLE OUTPUT CONTAINERS
+          // Current Page Paragraph
+          p.innerHTML = '';
           if (hadDropCap) {
-            const match = fitText.match(/^([A-Za-z0-9])/);
-            if (match) {
-              const firstLetter = match[1];
-              const remainder = fitText.slice(1);
-              p.innerHTML = '<span class="' + dropcapClass + '">' + firstLetter + '</span>' + remainder;
-            } else {
-              p.innerText = fitText;
-            }
+            p.innerHTML = injectSvgDropcap(dropcapLetter, fontClass);
+            p.classList.add('has-dropcap');
           } else {
-            p.innerText = fitText;
+            p.classList.remove('has-dropcap');
           }
+          
+          const part1Flow = document.createElement('span');
+          part1Flow.className = 'text-flow';
+          part1Flow.appendChild(part1Fragment);
+          p.appendChild(part1Flow);
 
-          const remainingText = words.slice(splitWordIndex).join(' ');
-          if (!remainingText) {
-            p.innerHTML = originalHtml;
-            return null;
-          }
-
+          // Overflow Paragraph (Plain flow, no drop cap)
           const newP = document.createElement('p');
-          newP.innerText = remainingText;
-          return { element: newP, remainingText: remainingText, originalText: text };
+          const part2Flow = document.createElement('span');
+          part2Flow.className = 'text-flow';
+          part2Flow.appendChild(part2Fragment);
+          newP.appendChild(part2Flow);
+
+          return { element: newP, remainingText: remainingText, originalText: rawText, pushEntire: false };
         }
+
+
+
+
 
         function cleanEmptyPages() {
           const allPages = document.querySelectorAll('.page');

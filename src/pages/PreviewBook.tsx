@@ -105,6 +105,9 @@ const PreviewBook = () => {
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId),
         supabase.from('book_ancestry').select('content, pdf_url, pdf_filename').eq('book_id', bookId).maybeSingle(),
       ]);
+      if (bookData && bookData.recipient_name) {
+        bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
       setBook(bookData);
       setChapters(chapData || []);
       setTemplates(tplData || []);
@@ -223,15 +226,29 @@ const PreviewBook = () => {
   const DropCapText = ({ text, color }: { text: string; color: string }) => (
     <>
       {text.split(/\n\n+/).filter(Boolean).map((para, i) => {
-        const body = i === 0 ? para.slice(1) : para;
+        const isPlaceholder = para.trim() === 'No content available.';
+        const shouldApplyDropCap = i === 0 && !isPlaceholder;
+        const body = shouldApplyDropCap ? para.slice(1) : para;
         return (
-          <p key={i} data-body-paragraph="true" style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '0.9em' }}>
-            {i === 0 && (
+          <p key={i} data-body-paragraph="true" style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '0.9em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>
+            {shouldApplyDropCap && (
               <span className="float-left mr-2" style={{ fontFamily: SERIF, fontSize: '2.6em', lineHeight: 0.8, fontWeight: 700, color, marginTop: '3px' }}>
                 {para.charAt(0)}
               </span>
             )}
-            {renderWithLineBreaks(body)}
+            {shouldApplyDropCap ? (
+              // First paragraph: render first line inline to flow next to floated drop cap
+              (() => {
+                const lines = body.split('\n');
+                return lines.map((line, idx) => (
+                  <span key={idx} style={{ display: idx === 0 ? 'inline' : 'block' }}>
+                    {line || '\u00A0'}
+                  </span>
+                ));
+              })()
+            ) : (
+              renderWithLineBreaks(body)
+            )}
           </p>
         );
       })}
@@ -359,10 +376,27 @@ const PreviewBook = () => {
         </div>
       );
     } else {
-      const letterText = replaceTokens(
+      let letterText = replaceTokens(
         letterRawText.replace(/\[AUTHOR_NAME\]/g, authorName || 'The Author'),
         tokenCtx
       );
+
+      if (authorName) {
+        const escapedAuthor = authorName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        // Match "I love you, <authorName>" or "I love you, the author" at the very end
+        const loveYouRegex = new RegExp(`I love you,\\s*(?:${escapedAuthor}|the author)\\.?\\s*$`, 'i');
+        letterText = letterText.replace(loveYouRegex, 'I love you.');
+
+        // Match "I am very proud to be your <authorName>" or "I am very proud to be your the author"
+        const proudRegex = new RegExp(`I am very proud to be your\\s*(?:${escapedAuthor}|the author)\\.?`, 'i');
+        letterText = letterText.replace(proudRegex, 'I am very proud of you.');
+      }
+
+      // Match and title-case the recipient's name in the "Dear <recipient>," greeting block if it's present at the start of letterText
+      letterText = letterText.replace(/^(\s*(?:<p[^>]*>)?\s*Dear\s+)([^,\n<]+)(,)/i, (match, prefix, name, suffix) => {
+        const capitalizedName = name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        return `${prefix}${capitalizedName}${suffix}`;
+      });
 
       right = (
         <div className="flex flex-col h-full">
@@ -371,7 +405,7 @@ const PreviewBook = () => {
               Dear {book.recipient_name},
             </p>
             {letterText.split(/\n\n+/).filter(Boolean).map((para, i) => (
-              <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em' }}>
+              <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>
                 {para}
               </p>
             ))}
@@ -436,13 +470,17 @@ const PreviewBook = () => {
       );
       const right = (
         <div className="flex flex-col h-full">
-          <div className="rounded overflow-hidden" style={{ height: '55%', flexShrink: 0 }}>
+          <div className="flex justify-center items-center mb-4 flex-shrink-0" style={{ height: '340px' }}>
             {hasPhoto ? (
-              <img src={ch.photo_urls[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+              <div className="rounded overflow-hidden shadow-md" style={{ width: '260px', height: '340px' }}>
+                <img src={ch.photo_urls[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+              </div>
             ) : (
               <div 
-                className="w-full h-full flex flex-col items-center justify-center gap-2"
+                className="flex flex-col items-center justify-center gap-2"
                 style={{ 
+                  width: '260px',
+                  height: '340px',
                   border: '1px dashed #D1CCC4', 
                   background: '#F9F8F6', 
                   borderRadius: '4px',
@@ -621,7 +659,7 @@ const PreviewBook = () => {
         <div className="flex-1 overflow-y-auto pr-1">
           {useText ? (
             paragraphs.map((para, i) => (
-              <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em' }}>
+              <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>
                 {para}
               </p>
             ))

@@ -57,7 +57,13 @@ const Dashboard = () => {
     }
     supabase.from('books').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       .then(({ data, error }: any) => {
-        setBooks(data || []);
+        const capBooks = (data || []).map((b: any) => {
+          if (b.recipient_name) {
+            b.recipient_name = b.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          }
+          return b;
+        });
+        setBooks(capBooks);
         setLoading(false);
       });
   }, [user]);

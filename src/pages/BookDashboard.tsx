@@ -135,6 +135,9 @@ const BookDashboard = () => {
         supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle(),
       ]);
       if (ancData?.status) setAncestryStatus(ancData.status);
+      if (bookData && bookData.recipient_name) {
+        bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
       setBook(bookData);
       // Override stale chapter titles with authoritative gender-specific template titles
       const titleByNumber = new Map<number, string>((tplData || []).map((t: any) => [t.chapter_number as number, t.title as string]));
