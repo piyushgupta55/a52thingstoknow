@@ -73,7 +73,13 @@ const BookDashboard = () => {
         author: authorName || book?.from_label || 'The Author',
         chapters: chapters.sort((a, b) => a.chapter_number - b.chapter_number).map((ch: any) => ({
           title: ch.title,
-          content: ch.content || ch.body || `<p>No content available.</p>`,
+          content: (() => {
+            if (ch.chapter_number === 0) return ch.content || `<p>No content available.</p>`;
+            const refText = ch.reference_text || '';
+            const mainContent = ch.content || '';
+            const needsSpace = refText.length > 0 && mainContent.length > 0 && !/\s$/.test(refText) && !/^\s/.test(mainContent);
+            return refText + (needsSpace ? ' ' : '') + mainContent || `<p>No content available.</p>`;
+          })(),
           chapter_number: ch.chapter_number,
           chapter_template: ch.chapter_template,
           photo_urls: ch.photo_urls || [],

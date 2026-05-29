@@ -423,7 +423,13 @@ const PreviewBook = () => {
   };
 
   const renderChapterSpread = (ch: Chapter, spreadIndex: number): [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null] => {
-    const rawFullText = ch.content?.trim() || ch.reference_text?.trim() || getTemplateRef(ch.chapter_number) || '';
+    const rawFullText = (() => {
+      if (ch.chapter_number === 0) return ch.content?.trim() || '';
+      const refText = ch.reference_text?.trim() || '';
+      const mainContent = ch.content?.trim() || '';
+      const needsSpace = refText.length > 0 && mainContent.length > 0 && !/\s$/.test(refText) && !/^\s/.test(mainContent);
+      return refText + (needsSpace ? ' ' : '') + mainContent || getTemplateRef(ch.chapter_number) || '';
+    })();
     const unescapedRawText = rawFullText.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
     const fullText = replaceTokens(unescapedRawText, tokenCtx)
       .replace(/<\/?p[^>]*>/gi, '\n\n')

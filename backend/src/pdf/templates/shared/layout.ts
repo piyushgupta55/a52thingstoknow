@@ -669,8 +669,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             const nextPageWisdom = nextPage.querySelector('.wisdom-text');
 
             let unitsToMove = [];
-            const isIntroLetter = chapterNum === '0';
-            if (!isIntroLetter && !forceMoveEntireUnit && overflowUnit.type === 'wisdom' && overflowUnit.element.tagName.toLowerCase() === 'p') {
+            if (!forceMoveEntireUnit && overflowUnit.type === 'wisdom' && overflowUnit.element.tagName.toLowerCase() === 'p') {
               // Split paragraph
               const splitResult = splitParagraph(overflowUnit.element, maxBottom);
               if (splitResult) {
