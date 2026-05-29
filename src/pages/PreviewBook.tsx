@@ -68,7 +68,7 @@ const PreviewBook = () => {
   type SpreadDef = { type: 'title' } | { type: 'toc_letter' } | { type: 'chapter'; chapter: Chapter } | { type: 'ancestry' };
 
   const visibleChapters = chapters
-    .filter(c => c.chapter_number > 0)
+    .filter(c => c.chapter_number > 0 && c.status === 'complete')
     .sort((a, b) => a.chapter_number - b.chapter_number);
 
   const rawAncestryText = ancestry?.content?.trim() || '';
