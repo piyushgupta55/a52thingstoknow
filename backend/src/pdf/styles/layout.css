@@ -99,7 +99,7 @@
 }
 
 .layout-final .chapter-content-page .memories-section {
-  margin-top: auto; /* Push memories to the bottom once layout is final */
+  margin-top: 3em; /* Let memories flow naturally right after text */
   margin-bottom: 1em; /* Prevent touching the bottom margin */
 }
 
