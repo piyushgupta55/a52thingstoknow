@@ -4,8 +4,8 @@
 
 export const WORD_BUDGETS: Record<string, number> = {
   all_words: 450,
-  photo_top: 350,
-  photo_second: 350,
+  photo_top: 225,
+  photo_second: 175,
   letter: 200,
 };
 

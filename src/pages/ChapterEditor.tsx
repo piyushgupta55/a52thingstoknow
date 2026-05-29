@@ -61,8 +61,8 @@ const MAX_CONTENT_LENGTH = 5000;
 // Unified word budgets per template
 const WORD_BUDGETS: Record<string, number> = {
   all_words: 450,
-  photo_top: 350,
-  photo_second: 350,
+  photo_top: 225,
+  photo_second: 175,
   letter: 200,
 };
 
@@ -233,7 +233,7 @@ const ChapterEditor = () => {
   const budget = WORD_BUDGETS[template] || WORD_BUDGETS.all_words;
   // Page-1 word boundary: classic chapters 150, photo templates 75.
   // Each memory card consumes 40 words of page space, decrementing the available text space.
-  const basePage1Limit = isPhotoTemplate ? 75 : 150;
+  const basePage1Limit = isPhotoTemplate ? 75 : 135;
   const memoryWordCost = (placedMemories?.length ?? 0) * 40;
   const PAGE_1_WORD_LIMIT = Math.max(0, basePage1Limit - memoryWordCost);
   // Letter chapters use their own `content`-bound textarea; every other

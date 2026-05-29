@@ -72,9 +72,12 @@ const BookDashboard = () => {
         title: "52 Things to Know",
         recipientName: book?.recipient_name || '',
         author: book?.from_label || authorName || 'The Author',
-        chapters: chapters.sort((a, b) => a.chapter_number - b.chapter_number).map((ch: any) => ({
-          title: ch.title,
-          content: (() => {
+        chapters: chapters
+          .filter((ch: any) => ch.chapter_number === 0 || ch.status === 'complete')
+          .sort((a, b) => a.chapter_number - b.chapter_number)
+          .map((ch: any) => ({
+            title: ch.title,
+            content: (() => {
             if (ch.chapter_number === 0) return ch.content || `<p>No content available.</p>`;
             const refText = ch.reference_text || '';
             const mainContent = ch.content || '';

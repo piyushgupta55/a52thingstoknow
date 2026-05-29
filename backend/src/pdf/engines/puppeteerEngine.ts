@@ -1,6 +1,8 @@
 import puppeteer from 'puppeteer';
 import { PDFEngine } from './pdfEngine';
 import { PDFDocument } from 'pdf-lib';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class PuppeteerEngine implements PDFEngine {
   async generate(options: {
@@ -23,8 +25,27 @@ export class PuppeteerEngine implements PDFEngine {
       // Pass 1: Render layout to calculate page numbers
       console.log('Pass 1: Rendering layout to calculate page numbers...');
       const htmlPass1 = await options.renderHtml();
+      
+      try {
+        fs.writeFileSync(path.join(process.cwd(), 'debug-pass1.html'), htmlPass1, 'utf8');
+        fs.writeFileSync(path.join(process.cwd(), '../public/debug-pass1.html'), htmlPass1, 'utf8');
+        console.log(`Saved Pass 1 HTML for debugging: ${path.join(process.cwd(), '../public/debug-pass1.html')}`);
+      } catch (err) {
+        console.warn('Could not save debug-pass1.html:', err);
+      }
+
       await page.setContent(htmlPass1, {
         waitUntil: 'load',
+      });
+      await page.evaluate(async () => {
+        const imgs = Array.from(document.querySelectorAll('img'));
+        await Promise.all(imgs.map(img => {
+          if (img.complete) return;
+          return new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        }));
       });
       await page.waitForSelector('body.layout-final');
 
@@ -49,8 +70,27 @@ export class PuppeteerEngine implements PDFEngine {
       // Pass 2: Re-render layout with correct page numbers and generate PDF
       console.log('Pass 2: Re-rendering layout with correct page numbers...');
       const htmlPass2 = await options.renderHtml(layoutInfo.mapping);
+
+      try {
+        fs.writeFileSync(path.join(process.cwd(), 'debug-pass2.html'), htmlPass2, 'utf8');
+        fs.writeFileSync(path.join(process.cwd(), '../public/debug-pass2.html'), htmlPass2, 'utf8');
+        console.log(`Saved Pass 2 HTML for debugging: ${path.join(process.cwd(), '../public/debug-pass2.html')}`);
+      } catch (err) {
+        console.warn('Could not save debug-pass2.html:', err);
+      }
+
       await page.setContent(htmlPass2, {
         waitUntil: 'load',
+      });
+      await page.evaluate(async () => {
+        const imgs = Array.from(document.querySelectorAll('img'));
+        await Promise.all(imgs.map(img => {
+          if (img.complete) return;
+          return new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        }));
       });
       await page.waitForSelector('body.layout-final');
 

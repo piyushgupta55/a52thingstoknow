@@ -113,6 +113,16 @@ export async function main(): Promise<void> {
     });
 
     await page.setContent(styledHtml, { waitUntil: 'load' });
+    await page.evaluate(async () => {
+      const imgs = Array.from(document.querySelectorAll('img'));
+      await Promise.all(imgs.map(img => {
+        if (img.complete) return;
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      }));
+    });
     await page.waitForSelector('body.layout-final');
 
     const pageElements = await page.$$('.page');

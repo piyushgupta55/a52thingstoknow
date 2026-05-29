@@ -392,10 +392,10 @@ const PreviewBook = () => {
         letterText = letterText.replace(proudRegex, 'I am very proud of you.');
       }
 
-      // Match and title-case the recipient's name in the "Dear <recipient>," greeting block if it's present at the start of letterText
-      letterText = letterText.replace(/^(\s*(?:<p[^>]*>)?\s*Dear\s+)([^,\n<]+)(,)/i, (match, prefix, name, suffix) => {
-        const capitalizedName = name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-        return `${prefix}${capitalizedName}${suffix}`;
+      let hasGreeting = false;
+      let strippedLetterText = letterText.replace(/^(\s*(?:<p[^>]*>)?\s*Dear\s+[^,\n<]+,?\s*(?:<\/p>)?)/i, () => {
+        hasGreeting = true;
+        return '';
       });
 
       right = (
@@ -404,7 +404,7 @@ const PreviewBook = () => {
             <p className="mb-4 italic" style={{ fontFamily: SERIF, fontSize: '14px', color: '#2D3748', lineHeight: 1.8 }}>
               Dear {book.recipient_name},
             </p>
-            {letterText.split(/\n\n+/).filter(Boolean).map((para, i) => (
+            {strippedLetterText.split(/\n\n+/).filter(Boolean).map((para, i) => (
               <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>
                 {para}
               </p>

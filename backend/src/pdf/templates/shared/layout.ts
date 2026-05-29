@@ -64,7 +64,7 @@ function injectSvgDropcap(letter: string, fontClass: string = 'book-font-serif')
   return `<span class="dropcap-svg-container" style="aspect-ratio: ${metrics.aspectRatio}; float: left; display: block; height: calc(1.8em * 3 - 0.4em); margin-right: 0.6em; margin-top: 0.15em; line-height: 0;" data-dropcap-letter="${letter}"><svg viewBox="0 0 ${width} ${height}" style="height: 100%; width: auto; overflow: visible;" preserveAspectRatio="xMidYMid meet">${innerContent}</svg></span>`;
 }
 
-function formatContent(content: string | null | undefined): string {
+function formatContent(content: string | null | undefined, disableDropcap = false): string {
   if (!content) return '';
   const trimmed = content.trim();
   let html = '';
@@ -77,9 +77,9 @@ function formatContent(content: string | null | undefined): string {
       .join('');
   }
 
-  // Suppress drop cap for placeholder content
+  // Suppress drop cap for placeholder content or if explicitly disabled
   const plainText = trimmed.replace(/<[^>]+>/g, '').trim();
-  if (plainText === 'No content available.') {
+  if (plainText === 'No content available.' || disableDropcap) {
     return html;
   }
 
@@ -101,6 +101,59 @@ function formatContent(content: string | null | undefined): string {
   return html;
 }
 
+
+function countWords(s: string | null | undefined): number {
+  if (!s) return 0;
+  return s
+    .replace(/[—–]/g, ' ')
+    .replace(/\n/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+function splitRefByWordLimit(text: string, wordLimit: number) {
+  if (!text) return { page1: '', page2: '' };
+  const tokens = text.split(/(\s+)/);
+  let words = 0;
+  let splitAt = tokens.length;
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    if (tok && !/^\s+$/.test(tok)) {
+      const inner = countWords(tok);
+      if (words + inner > wordLimit) { splitAt = i; break; }
+      words += inner;
+    }
+  }
+  return {
+    page1: tokens.slice(0, splitAt).join(''),
+    page2: tokens.slice(splitAt).join('').replace(/^\s+/, ''),
+  };
+}
+
+function splitAtSentenceBoundary(text: string, wordLimit: number) {
+  if (!text) return { page1: '', page2: '' };
+  const wordSplit = splitRefByWordLimit(text, wordLimit);
+  if (!wordSplit.page2) return wordSplit;
+
+  const pageOneEnd = wordSplit.page1.length;
+  const sentenceEndRe = /[.!?]["')\]]?(?=\s|$)/g;
+  let lastEnd = -1;
+  let m: RegExpExecArray | null;
+  while ((m = sentenceEndRe.exec(text)) !== null) {
+    const endPos = m.index + m[0].length;
+    if (endPos > pageOneEnd) break;
+    lastEnd = endPos;
+  }
+  if (lastEnd < 0) return wordSplit;
+
+  const ws = /^\s+/.exec(text.slice(lastEnd));
+  const seam = lastEnd + (ws ? ws[0].length : 0);
+  return {
+    page1: text.slice(0, seam),
+    page2: text.slice(seam),
+  };
+}
 
 export async function renderBook(bookData: BookData, actualChapterPages?: Record<string, number>): Promise<string> {
   // Load core print styles directly to avoid @import path issues in Puppeteer
@@ -191,11 +244,14 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         rawContent = rawContent.replace(proudRegex, 'I am very proud of you.');
       }
 
-      // Match and title-case the recipient's name in the "Dear <recipient>," greeting block at the start
-      rawContent = rawContent.replace(/^(\s*(?:<p[^>]*>)?\s*Dear\s+)([^,\n<]+)(,)/i, (match, prefix, name, suffix) => {
-        const capitalizedName = name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-        return `${prefix}${capitalizedName}${suffix}`;
+      let hasGreeting = false;
+      let strippedContent = rawContent.replace(/^(\s*(?:<p[^>]*>)?\s*Dear\s+[^,\n<]+,?\s*(?:<\/p>)?)/i, () => {
+        hasGreeting = true;
+        return '';
       });
+
+      const recipientName = (bookData as any).recipientName || 'your loved one';
+      const greetingHtml = `<p class="mb-4 italic" style="font-family: 'Lora', serif; font-size: 14px; color: #2D3748; line-height: 1.8; font-style: italic; margin-bottom: 1em;">Dear ${recipientName},</p>`;
 
       chaptersHtml += `
         <!-- Page 1: Introduction Letter (no static overflow placeholder) -->
@@ -209,7 +265,10 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
               <span class="line"></span>
             </div>
           </div>
-          <div class="wisdom-text chapter-opening intro-wisdom">${formatContent(rawContent)}</div>
+          <div class="wisdom-text chapter-opening intro-wisdom">
+            ${greetingHtml}
+            ${formatContent(strippedContent, true)}
+          </div>
           <div class="intro-separator intro-footer-separator">
             <span class="line"></span>
             <span class="diamond">✦</span>
@@ -273,6 +332,24 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     const photoClass = (template === 'vertical_photo' || template === 'photo_second') ? 'chapter-photo vertical-photo' : 'chapter-photo';
     const photoHtml = hasPhoto ? `<img src="${chapter.photo_urls![0]}" class="${photoClass}" />` : '';
 
+    const isPhotoTemplate = template === 'horizontal_photo' || template === 'vertical_photo' || template === 'photo_top' || template === 'photo_second';
+    const basePage1Limit = isPhotoTemplate ? 75 : 135;
+    const memoryWordCost = (chapter.memories?.length ?? 0) * 40;
+    const PAGE_1_WORD_LIMIT = Math.max(0, basePage1Limit - memoryWordCost);
+
+    const { page1: page1Text, page2: page2Text } = splitAtSentenceBoundary(chapter.content || '', PAGE_1_WORD_LIMIT);
+
+    let mergedWisdomHtml = '';
+    if (page2Text) {
+      const page1Html = formatContent(page1Text);
+      const page2HtmlRaw = formatContent(page2Text);
+      // Inject force-page-break class to the first paragraph of page 2
+      const page2Html = page2HtmlRaw.replace(/^(\s*<p[^>]*>)/i, '$1<span class="force-page-break"></span>');
+      mergedWisdomHtml = page1Html + '\n' + page2Html;
+    } else {
+      mergedWisdomHtml = formatContent(chapter.content);
+    }
+
     if (template === 'classic') {
       chaptersHtml += `
         <!-- Page 1: Title, Quote, Wisdom -->
@@ -288,7 +365,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           </div>
           <div class="wisdom-text chapter-opening">
             ${quoteHtml}
-            ${formatContent(chapter.content)}
+            ${mergedWisdomHtml}
           </div>
           ${memoriesHtml}
         </div>
@@ -309,7 +386,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           ${photoHtml}
           <div class="wisdom-text chapter-opening">
             ${quoteHtml}
-            ${formatContent(chapter.content)}
+            ${mergedWisdomHtml}
           </div>
           ${memoriesHtml}
         </div>
@@ -329,7 +406,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             </div>
             <div class="wisdom-text chapter-opening">
               ${quoteHtml}
-              ${formatContent(chapter.content)}
+              ${mergedWisdomHtml}
             </div>
             ${photoHtml}
             ${memoriesHtml}
@@ -369,6 +446,9 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     <head>
       <meta charset="UTF-8">
       <title>${bookData.title}</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
       <style>
         ${printStyles}
       </style>
@@ -612,7 +692,10 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
                 }
               });
             } else if (child.classList.contains('letter-signature') || child.classList.contains('intro-footer-separator')) {
-              units.push({ type: 'signature', element: child });
+              // Never split the signature or footer separator of the intro letter to a new page
+              if (chapterNum !== '0') {
+                units.push({ type: 'signature', element: child });
+              }
             }
           });
 
@@ -635,16 +718,18 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           if (depth === 0) {
             let forcedOverflowIndex = -1;
             
-            if (template === 'vertical_photo') {
+            // Check for explicit force-page-break marker from the editor's split
+            for (let i = 0; i < units.length; i++) {
+              if (units[i].element.classList.contains('force-page-break') || 
+                  units[i].element.querySelector('.force-page-break')) {
+                forcedOverflowIndex = i;
+                break;
+              }
+            }
+
+            if (forcedOverflowIndex === -1 && template === 'vertical_photo') {
               for (let i = 0; i < units.length; i++) {
                 if (units[i].type === 'photo') {
-                  forcedOverflowIndex = i;
-                  break;
-                }
-              }
-            } else if (hasMemories) {
-              for (let i = 0; i < units.length; i++) {
-                if (units[i].type === 'memory') {
                   forcedOverflowIndex = i;
                   break;
                 }
@@ -745,11 +830,16 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
               if (unit.type === 'wisdom') {
                 nextPageWisdom.appendChild(unit.element);
               } else if (unit.type === 'photo') {
-                const nextMems = nextPage.querySelector('.memories-section');
-                if (nextMems) {
-                  nextPage.insertBefore(unit.element, nextMems);
+                const isVertical = unit.element.classList.contains('vertical-photo');
+                if (isVertical) {
+                  nextPage.insertBefore(unit.element, nextPageWisdom);
                 } else {
-                  nextPage.appendChild(unit.element);
+                  const nextMems = nextPage.querySelector('.memories-section');
+                  if (nextMems) {
+                    nextPage.insertBefore(unit.element, nextMems);
+                  } else {
+                    nextPage.appendChild(unit.element);
+                  }
                 }
               } else if (unit.type === 'memory') {
                 if (!nextMemories) {

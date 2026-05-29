@@ -77,7 +77,7 @@ const templates: {
 }[] = [
   { value: 'all_words', label: 'Classic', desc: 'No photo · 450 word budget', isPhoto: false },
   { value: 'photo_top', label: 'Horizontal Photo', desc: 'Photo on page 1 · 225 word budget', isPhoto: true },
-  { value: 'photo_second', label: 'Vertical Photo', desc: 'Photo on page 2 · 225 word budget', isPhoto: true },
+  { value: 'photo_second', label: 'Vertical Photo', desc: 'Photo on page 2 · 175 word budget', isPhoto: true },
 ];
 
 const TemplateSelector = ({
