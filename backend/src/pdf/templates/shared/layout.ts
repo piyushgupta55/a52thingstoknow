@@ -377,9 +377,11 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       <div class="page title-page">
         <div class="cover-frame">
           <div class="cover-inner">
-            <h1>${bookData.title}</h1>
-            <hr class="gold-separator" />
-            ${bookData.author ? `<h3>By ${bookData.author}</h3>` : ''}
+            <p class="uppercase-sub" style="text-transform: uppercase; letter-spacing: 0.25em; font-size: 8pt; color: #9CA3AF; margin-bottom: 0.5em; font-family: 'Lora', serif;">A Book of Wisdom</p>
+            <h1 style="font-weight: bold; margin-bottom: 0.5em; text-transform: uppercase; letter-spacing: 0.1em; font-size: 24pt; color: #2D3748; line-height: 1.2;">52 Things to Know</h1>
+            <p class="recipient-label" style="margin-bottom: 1em; font-size: 12pt; color: #6B7280; font-family: 'Lora', serif;">For ${bookData.recipientName || 'your loved one'}</p>
+            <hr class="gold-separator" style="width: 40px; height: 1px; background-color: var(--gold); border: none; margin: 1.5em auto;" />
+            ${bookData.author ? `<h3 style="font-style: italic; font-size: 12pt; color: #4A5568; font-family: 'Lora', serif;">By ${bookData.author}</h3>` : ''}
           </div>
         </div>
       </div>

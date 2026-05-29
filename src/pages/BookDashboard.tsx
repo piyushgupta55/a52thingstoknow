@@ -69,8 +69,9 @@ const BookDashboard = () => {
     try {
       // Format bookData with real data fetched from Supabase
       const bookData = {
-        title: `A Book of Wisdom for ${book?.recipient_name}`,
-        author: authorName || book?.from_label || 'The Author',
+        title: "52 Things to Know",
+        recipientName: book?.recipient_name || '',
+        author: book?.from_label || authorName || 'The Author',
         chapters: chapters.sort((a, b) => a.chapter_number - b.chapter_number).map((ch: any) => ({
           title: ch.title,
           content: (() => {

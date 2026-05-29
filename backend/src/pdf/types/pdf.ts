@@ -1,6 +1,7 @@
 export interface BookData {
   title: string;
   author?: string;
+  recipientName?: string | null;
   chapters: Array<{
     title: string;
     content: string; // HTML or Markdown depending on layout
