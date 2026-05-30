@@ -292,21 +292,21 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     let quoteHtml = '';
     if (chapter.quote_text || chapter.bible_verse_text) {
       // Wrap each quote in a consistent wrapper for styling
-      if (chapter.quote_text) {
-        quoteHtml += `
-          <div class="quote-wrapper">
-            <blockquote class="chapter-quote">
-              "${chapter.quote_text}"
-              ${chapter.quote_attribution ? `<span class="attribution">— ${chapter.quote_attribution}</span>` : ''}
-            </blockquote>
-          </div>`;
-      }
       if (chapter.bible_verse_text) {
         quoteHtml += `
-          <div class="quote-wrapper">
+          <div class="quote-wrapper bible-verse">
             <blockquote class="chapter-quote bible-verse">
               "${chapter.bible_verse_text}"
               ${chapter.bible_verse_reference ? `<span class="attribution">— ${chapter.bible_verse_reference}</span>` : ''}
+            </blockquote>
+          </div>`;
+      }
+      if (chapter.quote_text) {
+        quoteHtml += `
+          <div class="quote-wrapper general-quote">
+            <blockquote class="chapter-quote">
+              "${chapter.quote_text}"
+              ${chapter.quote_attribution ? `<span class="attribution">— ${chapter.quote_attribution}</span>` : ''}
             </blockquote>
           </div>`;
       }
@@ -319,8 +319,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       for (const m of chapter.memories) {
         memoriesHtml += `
           <div class="memory-item">
-            <span class="memory-star">★</span>
-            <div class="memory-text">"${m.memory_text}"</div>
+            <div class="memory-text"><span class="memory-diamond">✦</span>${m.memory_text}</div>
             <span class="memory-contributor">— ${m.contributor_name}</span>
           </div>
         `;
@@ -332,17 +331,16 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     const photoClass = (template === 'vertical_photo' || template === 'photo_second') ? 'chapter-photo vertical-photo' : 'chapter-photo';
     const photoHtml = hasPhoto ? `<img src="${chapter.photo_urls![0]}" class="${photoClass}" />` : '';
 
-    const isPhotoTemplate = template === 'horizontal_photo' || template === 'vertical_photo' || template === 'photo_top' || template === 'photo_second';
-    const basePage1Limit = isPhotoTemplate ? 75 : 135;
-    const memoryWordCost = (chapter.memories?.length ?? 0) * 40;
-    const PAGE_1_WORD_LIMIT = Math.max(0, basePage1Limit - memoryWordCost);
+    const isPhotoOnPage1 = template === 'horizontal_photo' || template === 'photo_top';
+    const basePage1Limit = isPhotoOnPage1 ? 75 : 135;
+    const PAGE_1_WORD_LIMIT = basePage1Limit;
 
     const { page1: page1Text, page2: page2Text } = splitAtSentenceBoundary(chapter.content || '', PAGE_1_WORD_LIMIT);
 
     let mergedWisdomHtml = '';
     if (page2Text) {
       const page1Html = formatContent(page1Text);
-      const page2HtmlRaw = formatContent(page2Text);
+      const page2HtmlRaw = formatContent(page2Text, true);
       // Inject force-page-break class to the first paragraph of page 2
       const page2Html = page2HtmlRaw.replace(/^(\s*<p[^>]*>)/i, '$1<span class="force-page-break"></span>');
       mergedWisdomHtml = page1Html + '\n' + page2Html;
@@ -357,11 +355,6 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           <div class="chapter-header">
             <div class="chapter-label">Chapter ${chapter.chapter_number}</div>
             <h2 class="chapter-title ${chapter.title.length > 50 ? 'long-title' : ''}">${chapter.title}</h2>
-            <div class="chapter-separator">
-              <span class="line"></span>
-              <span class="diamond">✦</span>
-              <span class="line"></span>
-            </div>
           </div>
           <div class="wisdom-text chapter-opening">
             ${quoteHtml}
@@ -374,16 +367,11 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       chaptersHtml += `
         <!-- Page 1: Photo Top, Wisdom -->
         <div class="page chapter-content-page page-p1" data-chapter="${chapter.chapter_number}" data-template="${template}" data-has-memories="${chapter.memories && chapter.memories.length > 0}">
-          <div class="chapter-header">
+          ${photoHtml}
+          <div class="chapter-header" style="margin-top: 1em;">
             <div class="chapter-label">Chapter ${chapter.chapter_number}</div>
             <h2 class="chapter-title ${chapter.title.length > 50 ? 'long-title' : ''}">${chapter.title}</h2>
-            <div class="chapter-separator">
-              <span class="line"></span>
-              <span class="diamond">✦</span>
-              <span class="line"></span>
-            </div>
           </div>
-          ${photoHtml}
           <div class="wisdom-text chapter-opening">
             ${quoteHtml}
             ${mergedWisdomHtml}
@@ -398,11 +386,6 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             <div class="chapter-header">
               <div class="chapter-label">Chapter ${chapter.chapter_number}</div>
               <h2 class="chapter-title ${chapter.title.length > 50 ? 'long-title' : ''}">${chapter.title}</h2>
-              <div class="chapter-separator">
-                <span class="line"></span>
-                <span class="diamond">✦</span>
-                <span class="line"></span>
-              </div>
             </div>
             <div class="wisdom-text chapter-opening">
               ${quoteHtml}
@@ -421,11 +404,6 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       <div class="page chapter-content-page page-p1" data-chapter="ancestry">
         <div class="chapter-header">
           <h2 class="chapter-title">Where You Come From</h2>
-          <div class="chapter-separator">
-            <span class="line"></span>
-            <span class="diamond">✦</span>
-            <span class="line"></span>
-          </div>
         </div>
         ${bookData.ancestryText ? `
         <div class="wisdom-text chapter-opening">
@@ -847,12 +825,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
                   if (!nextMemories) {
                     nextMemories = document.createElement('div');
                     nextMemories.className = 'memories-section';
-                    const nextPhoto = nextPage.querySelector('.chapter-photo');
-                    if (nextPhoto) {
-                      nextPhoto.after(nextMemories);
-                    } else {
-                      nextPageWisdom.after(nextMemories);
-                    }
+                    nextPageWisdom.after(nextMemories);
                   }
                 }
                 nextMemories.appendChild(unit.element);

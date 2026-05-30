@@ -47,7 +47,7 @@
 
     --font-heading: 'Merriweather', Georgia, serif;
     --font-body: 'Source Sans 3', system-ui, sans-serif;
-    --font-devotional: 'Lora', 'Merriweather', Georgia, serif;
+    --font-devotional: 'Lora', 'Georgia', 'Times New Roman', serif;
 
     --devotional-bg: 40 33% 97%;
     --devotional-accent: 40 45% 65%;
@@ -107,7 +107,7 @@
   font-size: 3.8em;
   line-height: 0.9;
   margin: 0.06em 0.12em 0 0;
-  font-family: 'Lora', 'Merriweather', Georgia, serif;
+  font-family: 'Lora', 'Georgia', 'Times New Roman', serif;
   color: #C9A84C;
   font-weight: 700;
 }
@@ -117,7 +117,7 @@
   font-size: 3.8em;
   line-height: 0.9;
   margin: 0.06em 0.12em 0 0;
-  font-family: 'Lora', 'Merriweather', Georgia, serif;
+  font-family: 'Lora', 'Georgia', 'Times New Roman', serif;
   color: #C9A84C;
   font-weight: 700;
 }

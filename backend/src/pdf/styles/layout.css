@@ -41,7 +41,7 @@
 
 .chapter-photo {
   width: 100%;
-  height: 4.5in;
+  height: 1.875in; /* Aligned with frontend preview height of 180px */
   object-fit: cover; /* Rigid scaling rule for both portrait and landscape */
   object-position: center;
   border-radius: 2px;
@@ -50,8 +50,8 @@
 }
 
 .chapter-photo.vertical-photo {
-  width: 3.0in;
-  height: 3.8in;
+  width: 2.7in; /* Aligned with frontend preview width of 260px */
+  height: 3.54in; /* Aligned with frontend preview height of 340px */
   object-fit: cover;
   margin: 0 auto 1.5em auto;
   display: block;
@@ -93,7 +93,6 @@
 
 .chapter-content-page .memories-section {
   margin-top: 2em; /* Natural spacing during layout splitting calculation */
-  padding-top: 1.5em;
   border-top: none;
   width: 100%;
   max-width: 28em; /* Match wisdom text */
@@ -108,7 +107,7 @@
 }
 
 .chapter-content-page.sparse-page {
-  justify-content: center !important;
+  justify-content: flex-start !important;
   padding-top: 0.625in !important;
 }
 
@@ -121,37 +120,36 @@
   line-height: 1.6;
   display: flex;
   flex-direction: column;
-  background-color: #fdfbf7; /* Warm handwriting background */
-  border: 1px solid #eee;
+  background-color: #F5F0E8; /* Editor page background */
+  border: none;
   padding: 1.2em;
-  border-radius: 4px;
+  border-radius: 8px; /* 8px rounded corners */
   position: relative;
 }
 
-.memory-star {
+.memory-diamond {
   color: var(--gold);
-  font-size: 1.2em;
-  position: absolute;
-  top: 1em;
-  right: 1em;
+  margin-right: 0.3em;
+  font-weight: bold;
 }
 
 .memory-text {
   /* Natural flow */
-  margin-right: 1.5em; /* Avoid star */
   font-family: 'Caveat', cursive;
-  font-size: 16pt;
-  color: #222;
+  font-size: 12.5pt;
+  color: #2D3748; /* Matching editor text color */
   margin-bottom: 0.5em;
 }
 
 .memory-contributor {
   display: block;
-  text-align: right;
-  font-weight: bold;
+  text-align: left; /* Left align for consistency */
+  font-weight: normal;
   font-style: normal;
-  font-family: 'Lora', serif; /* Ensure Lora for attribution */
-  color: #555;
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #718096; /* Subtle muted gray */
   margin-top: 0.5em;
 }
 
@@ -240,15 +238,21 @@
   padding-left: 1.5em;
   padding-top: 0.5em;
   padding-bottom: 0.5em;
-  border-left: 3px solid var(--gold);
   color: #333;
 }
+.quote-wrapper.general-quote {
+  border-left: 2.5px solid #C4788A; /* Pink single line */
+}
+.quote-wrapper.bible-verse {
+  border-left: 2.5px solid var(--gold); /* Gold single line */
+}
 .chapter-quote {
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-style: italic;
-  font-size: 13pt;
+  font-size: 11pt; /* Aligned with frontend preview size of 14.4px */
   margin: 0;
-  line-height: 1.6;
-  color: #222;
+  line-height: 1.7; /* Aligned with frontend preview line-height of 1.7 */
+  color: rgba(29, 38, 48, 0.7); /* Hex #1D2630B2, just like the preview */
 }
 .chapter-quote > *:first-child {
   margin-top: 0;
@@ -258,18 +262,14 @@
 }
 .chapter-quote .attribution {
   display: block;
-  margin-top: 1em;
-  font-size: 10pt;
-  font-weight: 600;
-  color: #666;
+  margin-top: 0.8em;
+  font-size: 8pt; /* Aligned with frontend preview size of 10.4px */
+  font-weight: normal; /* Normal, just like the preview */
+  color: rgba(106, 117, 129, 0.5); /* Hex #6A758180, just like the preview */
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em; /* Aligned with frontend preview letter-spacing of 0.12em */
   font-style: normal;
-}
-.bible-verse {
-  font-family: 'Lora', serif;
-  font-size: 11pt;
-  color: #555;
+  font-family: 'Source Sans 3', system-ui, sans-serif; /* Body font stack just like the preview */
 }
 
 .intro-header {
@@ -318,16 +318,16 @@
 }
 
 .chapter-header {
-  text-align: center;
+  text-align: left;
   margin-bottom: 1.4em; /* Reduced from 2.5em to save vertical space */
   width: 100%;
 }
 
 .chapter-title {
-  font-family: 'Lora', serif;
-  font-size: 22pt;
-  font-weight: normal;
-  color: #111;
+  font-family: 'Lora', 'Georgia', serif;
+  font-size: 15pt; /* Aligned with frontend preview height/size of 20px */
+  font-weight: bold; /* Bold, just like the preview */
+  color: #2D3748; /* Slate gray, just like the preview */
   margin: 0.4em 0;
 }
 

@@ -47,7 +47,7 @@ interface ChapterTemplate {
   reference_content_female: string | null;
 }
 
-const SERIF = 'Georgia, "Times New Roman", serif';
+const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const GOLD = '#BBA96A';
 const PINK = '#C4788A';
 
@@ -230,7 +230,7 @@ const PreviewBook = () => {
         const shouldApplyDropCap = i === 0 && !isPlaceholder;
         const body = shouldApplyDropCap ? para.slice(1) : para;
         return (
-          <p key={i} data-body-paragraph="true" style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '0.9em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>
+          <p key={i} data-body-paragraph="true" style={{ fontFamily: SERIF, fontSize: '14.5px', color: '#2D3748', lineHeight: 1.8, marginBottom: '0.9em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>
             {shouldApplyDropCap && (
               <span className="float-left mr-2" style={{ fontFamily: SERIF, fontSize: '2.6em', lineHeight: 0.8, fontWeight: 700, color, marginTop: '3px' }}>
                 {para.charAt(0)}
@@ -459,14 +459,14 @@ const PreviewBook = () => {
             </h2>
             {ch.bible_verse_text && (
               <div className="mb-3 pl-3 py-1" style={{ borderLeft: `2px solid ${GOLD}` }}>
-                <p className="italic" style={{ fontFamily: SERIF, fontSize: '11px', color: 'rgba(45,55,72,0.7)', lineHeight: 1.7 }}>"{ch.bible_verse_text}"</p>
-                {ch.bible_verse_reference && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: SERIF, fontSize: '7px', color: '#9CA3AF' }}>— {ch.bible_verse_reference}</p>}
+                <p className="italic" style={{ fontFamily: SERIF, fontSize: '14.4px', color: '#1D2630B2', lineHeight: 1.7 }}>"{ch.bible_verse_text}"</p>
+                {ch.bible_verse_reference && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: 'var(--font-body)', fontSize: '10.4px', color: '#6A758180' }}>— {ch.bible_verse_reference}</p>}
               </div>
             )}
             {ch.quote_text && (
               <div className="mb-3 pl-3 py-1" style={{ borderLeft: `2px solid ${PINK}` }}>
-                <p className="italic" style={{ fontFamily: SERIF, fontSize: '11px', color: 'rgba(45,55,72,0.7)', lineHeight: 1.7 }}>"{ch.quote_text}"</p>
-                {ch.quote_attribution && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: SERIF, fontSize: '7px', color: '#9CA3AF' }}>— {ch.quote_attribution}</p>}
+                <p className="italic" style={{ fontFamily: SERIF, fontSize: '14.4px', color: '#1D2630B2', lineHeight: 1.7 }}>"{ch.quote_text}"</p>
+                {ch.quote_attribution && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: 'var(--font-body)', fontSize: '10.4px', color: '#6A758180' }}>— {ch.quote_attribution}</p>}
               </div>
             )}
             {fullText && <DropCapText text={fullText} color={GOLD} />}
@@ -506,9 +506,16 @@ const PreviewBook = () => {
           <div className="flex-1 mt-3" style={{ overflow: 'hidden' }}>
             {chapterMemories.length > 0 ? (
               chapterMemories.slice(0, 2).map(m => (
-                <div key={m.id} className="mb-2 pl-3 py-1" style={{ borderLeft: `2px solid ${GOLD}`, background: '#F5F0E8', borderRadius: '2px', padding: '8px 10px 8px 12px' }}>
-                  <p style={{ fontFamily: '"Caveat", cursive', fontSize: '13px', color: '#2D3748', lineHeight: 1.6 }}>"{m.memory_text}"</p>
-                  <p className="mt-1" style={{ fontFamily: SERIF, fontSize: '8px', color: '#9CA3AF' }}>— {m.contributor_name}</p>
+                <div key={m.id} className="mb-3 px-4 py-4 rounded-lg relative" style={{ background: '#F5F0E8' }}>
+                  <p style={{ fontFamily: '"Caveat", cursive', fontSize: '15px', color: '#2D3748', lineHeight: 1.6 }}>
+                    <span className="text-[#C9A84C] mr-1">✦</span>
+                    {m.memory_text}
+                  </p>
+                  {m.contributor_name && (
+                    <p className="mt-2 text-[8px] uppercase tracking-[0.12em] text-muted-foreground/60" style={{ fontFamily: SERIF }}>
+                      — {m.contributor_name}
+                    </p>
+                  )}
                 </div>
               ))
             ) : !isComplete ? (
@@ -579,15 +586,15 @@ const PreviewBook = () => {
 
           {ch.bible_verse_text && (
             <div className="mb-3 pl-3 py-1" style={{ borderLeft: `2px solid ${GOLD}`, breakInside: 'avoid' }}>
-              <p className="italic" style={{ fontFamily: SERIF, fontSize: '11px', color: 'rgba(45,55,72,0.7)', lineHeight: 1.7 }}>"{ch.bible_verse_text}"</p>
-              {ch.bible_verse_reference && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: SERIF, fontSize: '7px', color: '#9CA3AF' }}>— {ch.bible_verse_reference}</p>}
+              <p className="italic" style={{ fontFamily: SERIF, fontSize: '14.4px', color: '#1D2630B2', lineHeight: 1.7 }}>"{ch.bible_verse_text}"</p>
+              {ch.bible_verse_reference && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: 'var(--font-body)', fontSize: '10.4px', color: '#6A758180' }}>— {ch.bible_verse_reference}</p>}
             </div>
           )}
 
           {ch.quote_text && (
             <div className="mb-3 pl-3 py-1" style={{ borderLeft: `2px solid ${PINK}`, breakInside: 'avoid' }}>
-              <p className="italic" style={{ fontFamily: SERIF, fontSize: '11px', color: 'rgba(45,55,72,0.7)', lineHeight: 1.7 }}>"{ch.quote_text}"</p>
-              {ch.quote_attribution && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: SERIF, fontSize: '7px', color: '#9CA3AF' }}>— {ch.quote_attribution}</p>}
+              <p className="italic" style={{ fontFamily: SERIF, fontSize: '14.4px', color: '#1D2630B2', lineHeight: 1.7 }}>"{ch.quote_text}"</p>
+              {ch.quote_attribution && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: 'var(--font-body)', fontSize: '10.4px', color: '#6A758180' }}>— {ch.quote_attribution}</p>}
             </div>
           )}
 
@@ -600,9 +607,16 @@ const PreviewBook = () => {
           )}
 
           {chapterMemories.map(m => (
-            <div key={m.id} className="mt-3 pl-3 py-1" style={{ borderLeft: `2px solid ${GOLD}`, background: '#F5F0E8', borderRadius: '2px', padding: '8px 10px 8px 12px', breakInside: 'avoid' }}>
-              <p style={{ fontFamily: '"Caveat", cursive', fontSize: '13px', color: '#2D3748', lineHeight: 1.6 }}>"{m.memory_text}"</p>
-              <p className="mt-1" style={{ fontFamily: SERIF, fontSize: '8px', color: '#9CA3AF' }}>— {m.contributor_name}</p>
+            <div key={m.id} className="mt-4 px-4 py-4 rounded-lg relative" style={{ background: '#F5F0E8', breakInside: 'avoid' }}>
+              <p style={{ fontFamily: '"Caveat", cursive', fontSize: '15px', color: '#2D3748', lineHeight: 1.6 }}>
+                <span className="text-[#C9A84C] mr-1">✦</span>
+                {m.memory_text}
+              </p>
+              {m.contributor_name && (
+                <p className="mt-2 text-[8px] uppercase tracking-[0.12em] text-muted-foreground/60" style={{ fontFamily: SERIF }}>
+                  — {m.contributor_name}
+                </p>
+              )}
             </div>
           ))}
 

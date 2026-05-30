@@ -231,11 +231,11 @@ const ChapterEditor = () => {
   const isPhotoTemplate = template === 'photo_top' || template === 'photo_second';
   const isLetterChapter = chapter?.chapter_number === 0;
   const budget = WORD_BUDGETS[template] || WORD_BUDGETS.all_words;
-  // Page-1 word boundary: classic chapters 150, photo templates 75.
+  // Page-1 word boundary: classic chapters 135, photo_top (horizontal photo) 75.
   // Each memory card consumes 40 words of page space, decrementing the available text space.
-  const basePage1Limit = isPhotoTemplate ? 75 : 135;
-  const memoryWordCost = (placedMemories?.length ?? 0) * 40;
-  const PAGE_1_WORD_LIMIT = Math.max(0, basePage1Limit - memoryWordCost);
+  const isPhotoOnPage1 = template === 'photo_top';
+  const basePage1Limit = isPhotoOnPage1 ? 75 : 135;
+  const PAGE_1_WORD_LIMIT = basePage1Limit;
   // Letter chapters use their own `content`-bound textarea; every other
   // chapter edits the single unified `mergedText` buffer.
   const editorText = isLetterChapter ? content : mergedText;
@@ -950,12 +950,10 @@ const ChapterEditor = () => {
       return (
         <p
           key={i}
-          className={`${isRef ? 'text-[14px] leading-[1.75] text-foreground/55' : 'text-[15px] leading-[1.8] text-foreground/80'} ${
-            i === 0 && withDropCap && !suppressDropCap ? 'drop-cap' : ''
-          }`}
+          className={`text-[14.5px] leading-[1.8] text-foreground/80 ${i === 0 && withDropCap && !suppressDropCap ? 'drop-cap' : ''}`}
           style={{
             fontFamily: 'var(--font-devotional)',
-            marginBottom: i < paragraphs.length - 1 ? '1.4em' : 0,
+            marginBottom: i < paragraphs.length - 1 ? '0.9em' : 0,
             textAlign: 'justify',
             textJustify: 'inter-word',
             hyphens: 'auto',
@@ -1743,49 +1741,58 @@ const ChapterEditor = () => {
               </div>
             )}
 
-            {/* Page 2 status — single simple line */}
-            <div className="text-center mt-8 pt-4 border-t border-[hsl(var(--devotional-border))]">
+            {/* Comprehensive Page 1 & Page 2 status bar */}
+            <div className="flex items-center justify-center gap-6 mt-8 pt-4 border-t border-[hsl(var(--devotional-border))] text-xs font-medium" style={{ fontFamily: 'var(--font-body)' }}>
               {(() => {
+                // Calculate states for both Page 1 and Page 2
                 const page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
-                // Read from the unified state buffer — never the DOM ref —
-                // so this number is a stable function of what was typed.
-                // Per client spec: paragraph break = 3 words, memory slot
-                // = 40 words. The empty placeholder hint is still free.
                 const rawText = mergedText;
                 const combinedWords = countWords(rawText);
                 const paragraphBreaks = (rawText.match(/\n\n+/g) || []).length;
                 const memoryWordCost = (placedMemories?.length ?? 0) * 40;
+                
                 const page2Words =
                   Math.max(0, combinedWords - PAGE_1_WORD_LIMIT) +
                   paragraphBreaks * 3 +
                   memoryWordCost;
                 const remaining = page2Budget - page2Words;
 
-                let label: string;
-                let color: string;
+                // 1. Page 1 Status
+                const page1Words = Math.min(combinedWords, PAGE_1_WORD_LIMIT);
+                const isPage1Full = combinedWords >= PAGE_1_WORD_LIMIT;
+                const p1Ratio = page1Words / PAGE_1_WORD_LIMIT;
+                const page1Color = isPage1Full ? '#16A34A' : p1Ratio >= 0.9 ? '#D97706' : '#6B7280';
+                const page1Label = `Page 1 · ${page1Words} / ${PAGE_1_WORD_LIMIT} words${isPage1Full ? ' (Full)' : ''}`;
+
+                // 2. Page 2 Status
+                let page2Label: string;
+                let page2Color: string;
                 if (combinedWords < PAGE_1_WORD_LIMIT) {
-                  // Still filling page 1 — show progress so the counter
-                  // moves with every keystroke on short chapters that
-                  // never reach page 2.
-                  label = `Page 1 · ${combinedWords} / ${PAGE_1_WORD_LIMIT} words`;
-                  const ratio = combinedWords / PAGE_1_WORD_LIMIT;
-                  color = ratio >= 0.9 ? '#D97706' : '#16A34A';
+                  page2Label = `Page 2 · ${page2Budget} words available`;
+                  page2Color = '#9CA3AF'; // Inactive gray
                 } else {
                   const isOver = remaining < 0;
-                  color = isOver ? '#EF4444' : '#16A34A';
+                  page2Color = isOver ? '#EF4444' : '#16A34A';
                   if (isOver) {
                     const over = Math.abs(remaining);
-                    label = `Page 2 · ${over} word${over === 1 ? '' : 's'} over`;
+                    page2Label = `Page 2 · ${over} word${over === 1 ? '' : 's'} over`;
                   } else if (remaining === 0) {
-                    label = 'Page 2 · Full';
+                    page2Label = 'Page 2 · Full';
                   } else {
-                    label = `Page 2 · ${remaining} word${remaining === 1 ? '' : 's'} available`;
+                    page2Label = `Page 2 · ${remaining} word${remaining === 1 ? '' : 's'} available`;
                   }
                 }
+
                 return (
-                  <span className="font-medium" style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color }}>
-                    {label}
-                  </span>
+                  <>
+                    <span style={{ color: page1Color }}>
+                      {page1Label}
+                    </span>
+                    <span style={{ color: '#E5E7EB' }}>|</span>
+                    <span style={{ color: page2Color }}>
+                      {page2Label}
+                    </span>
+                  </>
                 );
               })()}
             </div>
