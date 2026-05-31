@@ -64,6 +64,33 @@ function injectSvgDropcap(letter: string, fontClass: string = 'book-font-serif')
   return `<span class="dropcap-svg-container" style="aspect-ratio: ${metrics.aspectRatio}; float: left; display: block; height: calc(1.8em * 3 - 0.4em); margin-right: 0.6em; margin-top: 0.15em; line-height: 0;" data-dropcap-letter="${letter}"><svg viewBox="0 0 ${width} ${height}" style="height: 100%; width: auto; overflow: visible;" preserveAspectRatio="xMidYMid meet">${innerContent}</svg></span>`;
 }
 
+function renderInlineHtml(line: string): string {
+  if (!line) return '';
+  const re =
+    /<mark[^>]*>([\s\S]*?)<\/mark>|\*\*([^*\n]+?)\*\*|~~([^~\n]+?)~~|`([^`\n]+?)`|\*([^*\n]+?)\*|_([^_\n]+?)_/g;
+  return line.replace(re, (match, p1, p2, p3, p4, p5, p6) => {
+    if (p1 !== undefined) {
+      return `<mark style="background-color: #FEF3C7; color: inherit; padding: 0 2px; border-radius: 2px;">${p1}</mark>`;
+    }
+    if (p2 !== undefined) {
+      return `<strong>${p2}</strong>`;
+    }
+    if (p3 !== undefined) {
+      return `<s>${p3}</s>`;
+    }
+    if (p4 !== undefined) {
+      return `<code style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; background: rgba(0,0,0,0.05); padding: 0 4px; border-radius: 2px;">${p4}</code>`;
+    }
+    if (p5 !== undefined) {
+      return `<em style="font-style: italic;">${p5}</em>`;
+    }
+    if (p6 !== undefined) {
+      return `<em style="font-style: italic;">${p6}</em>`;
+    }
+    return match;
+  });
+}
+
 function formatContent(content: string | null | undefined, disableDropcap = false): string {
   if (!content) return '';
   const trimmed = content.trim();
@@ -73,7 +100,7 @@ function formatContent(content: string | null | undefined, disableDropcap = fals
   } else {
     html = trimmed
       .split(/\n\n+/)
-      .map(para => `<p>${para.replace(/\n/g, '<br />')}</p>`)
+      .map(para => `<p>${renderInlineHtml(para).replace(/\n/g, '<br />')}</p>`)
       .join('');
   }
 
@@ -407,7 +434,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         </div>
         ${bookData.ancestryText ? `
         <div class="wisdom-text chapter-opening">
-          ${bookData.ancestryText}
+          ${formatContent(bookData.ancestryText, true)}
         </div>
         ` : ''}
       </div>

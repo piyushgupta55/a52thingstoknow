@@ -214,11 +214,67 @@ const PreviewBook = () => {
     );
   };
 
+  const renderInline = (line: string): React.ReactNode => {
+    if (!line) return null;
+    const re =
+      /<mark[^>]*>([\s\S]*?)<\/mark>|\*\*([^*\n]+?)\*\*|~~([^~\n]+?)~~|`([^`\n]+?)`|\*([^*\n]+?)\*|_([^_\n]+?)_/g;
+    const parts: React.ReactNode[] = [];
+    let last = 0;
+    let m: RegExpExecArray | null;
+    let k = 0;
+    const emStyle: React.CSSProperties = { fontStyle: 'italic' };
+    while ((m = re.exec(line)) !== null) {
+      if (m.index > last) parts.push(line.slice(last, m.index));
+      if (m[1] !== undefined) {
+        parts.push(
+          <mark
+            key={`mk${k++}`}
+            style={{
+              backgroundColor: '#FEF3C7',
+              color: 'inherit',
+              padding: '0 2px',
+              borderRadius: '2px',
+            }}
+          >
+            {m[1]}
+          </mark>,
+        );
+      } else if (m[2] !== undefined) {
+        parts.push(<strong key={`b${k++}`} style={{ fontWeight: 'bold' }}>{m[2]}</strong>);
+      } else if (m[3] !== undefined) {
+        parts.push(<s key={`s${k++}`}>{m[3]}</s>);
+      } else if (m[4] !== undefined) {
+        parts.push(
+          <code
+            key={`c${k++}`}
+            style={{
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              fontSize: '0.92em',
+              background: 'rgba(0,0,0,0.05)',
+              padding: '0 4px',
+              borderRadius: '2px',
+            }}
+          >
+            {m[4]}
+          </code>,
+        );
+      } else if (m[5] !== undefined) {
+        parts.push(<em key={`i${k++}`} style={emStyle}>{m[5]}</em>);
+      } else if (m[6] !== undefined) {
+        parts.push(<em key={`u${k++}`} style={emStyle}>{m[6]}</em>);
+      }
+      last = m.index + m[0].length;
+    }
+    if (last < line.length) parts.push(line.slice(last));
+    if (parts.length === 0) return line;
+    return parts.length === 1 ? parts[0] : parts;
+  };
+
   const renderWithLineBreaks = (text: string) => {
     const lines = text.split('\n');
     return lines.map((line, idx) => (
       <span key={idx} style={{ display: 'block' }}>
-        {line || '\u00A0'}
+        {renderInline(line) || '\u00A0'}
       </span>
     ));
   };
@@ -242,7 +298,7 @@ const PreviewBook = () => {
                 const lines = body.split('\n');
                 return lines.map((line, idx) => (
                   <span key={idx} style={{ display: idx === 0 ? 'inline' : 'block' }}>
-                    {line || '\u00A0'}
+                    {renderInline(line) || '\u00A0'}
                   </span>
                 ));
               })()
@@ -406,7 +462,7 @@ const PreviewBook = () => {
             </p>
             {strippedLetterText.split(/\n\n+/).filter(Boolean).map((para, i) => (
               <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>
-                {para}
+                {renderWithLineBreaks(para)}
               </p>
             ))}
             <p className="mt-5" style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748' }}>With love,</p>
@@ -680,7 +736,7 @@ const PreviewBook = () => {
           {useText ? (
             paragraphs.map((para, i) => (
               <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>
-                {para}
+                {renderWithLineBreaks(para)}
               </p>
             ))
           ) : ancestry?.pdf_url ? (
