@@ -55,7 +55,7 @@ const MemorySuggestion = ({ memories = [], onPlace, placingId }: Props) => {
                   type="button"
                   onClick={() => onPlace(m.id)}
                   disabled={placingId !== null && placingId !== undefined}
-                  className="text-left rounded-md bg-white/60 border border-border/50 hover:border-[#C9A84C] hover:bg-white transition-colors px-3 py-3 disabled:opacity-50"
+                  className="text-left rounded-md bg-white/60 border border-border/50 hover:border-[#C9A84C] hover:bg-white transition-colors px-3 py-3 disabled:opacity-50 mx-auto w-full max-w-[28em]"
                 >
                   <p
                     className="leading-snug text-foreground/90"

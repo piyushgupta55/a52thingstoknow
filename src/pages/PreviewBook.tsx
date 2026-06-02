@@ -4,48 +4,26 @@ import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { X, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
 import CompanionBubble from '@/components/chapter/CompanionBubble';
-
-interface Memory {
-  id: string;
-  chapter_id: string;
-  contributor_name: string;
-  memory_text: string;
-}
-
-interface Book {
-  id: string;
-  recipient_name: string;
-  recipient_gender: string;
-  relationship: string;
-  occasion: string;
-  user_id: string;
-  from_label: string | null;
-  author_label: string | null;
-}
-
-interface Chapter {
-  id: string;
-  chapter_number: number;
-  title: string;
-  status: string;
-  content: string | null;
-  reference_text: string | null;
-  bible_verse_text: string | null;
-  bible_verse_reference: string | null;
-  quote_text: string | null;
-  quote_attribution: string | null;
-  photo_urls: string[];
-  chapter_template: string;
-  is_photo_chapter: boolean;
-}
-
-interface ChapterTemplate {
-  chapter_number: number;
-  title: string;
-  is_photo_chapter: boolean;
-  reference_content_male: string | null;
-  reference_content_female: string | null;
-}
+import {
+  PREVIEW_PAGE_CONTENT_HEIGHT,
+  PREVIEW_PAGE_FOOTER_HEIGHT,
+  PREVIEW_PAGE_HEIGHT,
+  PREVIEW_PAGE_WIDTH,
+  PREVIEW_PAGE_PADDING_INNER,
+  PREVIEW_PAGE_PADDING_OUTER,
+  PREVIEW_PAGE_PADDING_TOP,
+  PREVIEW_PHOTO_HORIZONTAL_HEIGHT,
+  PREVIEW_PHOTO_VERTICAL_HEIGHT,
+  PREVIEW_PHOTO_VERTICAL_WIDTH,
+  PREVIEW_MAX_VIEWPORT_HEIGHT_RATIO,
+  PREVIEW_MAX_VIEWPORT_WIDTH_RATIO,
+  PREVIEW_SPINE_HALF_WIDTH,
+  PREVIEW_SPREAD_COLUMN_GAP,
+  PREVIEW_SPREAD_HEIGHT,
+  PREVIEW_SPINE_WIDTH,
+  PREVIEW_SPREAD_WIDTH,
+} from '@/features/preview/geometry';
+import type { Book, Chapter, ChapterTemplate, Memory, SpreadDef, SpreadRender } from '@/features/preview/types';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const GOLD = '#BBA96A';
@@ -63,9 +41,16 @@ const PreviewBook = () => {
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
   const [showLeftPageFade, setShowLeftPageFade] = useState(false);
+  const [viewportScale, setViewportScale] = useState(1);
+  const [exactPreviewHtml, setExactPreviewHtml] = useState('');
+  const [exactPreviewLoading, setExactPreviewLoading] = useState(false);
+  const [exactPreviewError, setExactPreviewError] = useState<string | null>(null);
+  const [exactPageCount, setExactPageCount] = useState(0);
+  const [isCompactPreview, setIsCompactPreview] = useState(false);
+  const [compactPageIndex, setCompactPageIndex] = useState(0);
+  const exactHasInsideFrontCover = true;
   const flowContainerRef = useRef<HTMLDivElement | null>(null);
-
-  type SpreadDef = { type: 'title' } | { type: 'toc_letter' } | { type: 'chapter'; chapter: Chapter } | { type: 'ancestry' };
+  const exactPreviewIframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const visibleChapters = chapters
     .filter(c => c.chapter_number > 0 && c.status === 'complete')
@@ -159,6 +144,206 @@ const PreviewBook = () => {
     setShowLeftPageFade(continuesOnRight);
   }, [book?.recipient_gender, book?.recipient_name, chapters, clampedSpread, templates]);
 
+  useEffect(() => {
+    const computeScale = () => {
+      const compact = window.innerWidth < 1200;
+      setIsCompactPreview(compact);
+      const availableWidth = window.innerWidth * PREVIEW_MAX_VIEWPORT_WIDTH_RATIO;
+      const availableHeight = window.innerHeight * PREVIEW_MAX_VIEWPORT_HEIGHT_RATIO;
+      const targetWidth = compact ? PREVIEW_PAGE_WIDTH : PREVIEW_SPREAD_WIDTH;
+      const targetHeight = compact ? PREVIEW_PAGE_HEIGHT : PREVIEW_SPREAD_HEIGHT;
+      const widthScale = availableWidth / targetWidth;
+      const heightScale = availableHeight / targetHeight;
+      const next = Math.min(widthScale, heightScale, 1.25);
+      setViewportScale(Math.max(0.35, next));
+    };
+
+    computeScale();
+    window.addEventListener('resize', computeScale);
+    return () => window.removeEventListener('resize', computeScale);
+  }, []);
+
+  useEffect(() => {
+    if (isCompactPreview) {
+      setCurrentSpread(0);
+      setCompactPageIndex(0);
+    }
+  }, [isCompactPreview]);
+
+  useEffect(() => {
+    if (loading || !book) return;
+
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const normalizeContent = (referenceText: string | null, content: string | null) => {
+      const ref = (referenceText || '').trim();
+      const body = (content || '').trim();
+      if (!ref) return body;
+      if (!body) return ref;
+      return /\s$/.test(ref) || /^\s/.test(body) ? `${ref}${body}` : `${ref} ${body}`;
+    };
+
+    const letter = chapters.find(c => c.chapter_number === 0);
+    const payloadChapters: Array<Record<string, unknown>> = [];
+
+    if (letter && ((letter.content || '').trim() || (letter.reference_text || '').trim())) {
+      payloadChapters.push({
+        chapter_number: 0,
+        title: letter.title || 'Letter from the Author',
+        chapter_template: 'letter',
+        content: normalizeContent(letter.reference_text, letter.content),
+        photo_urls: [],
+        memories: [],
+      });
+    }
+
+    visibleChapters.forEach((ch) => {
+      const chapterMemories = memories
+        .filter(m => m.chapter_id === ch.id)
+        .map(m => ({ memory_text: m.memory_text, contributor_name: m.contributor_name }));
+
+      payloadChapters.push({
+        chapter_number: ch.chapter_number,
+        title: ch.title,
+        chapter_template: ch.chapter_template,
+        content: normalizeContent(ch.reference_text, ch.content),
+        photo_urls: (ch.photo_urls || []).filter(Boolean),
+        bible_verse_text: ch.bible_verse_text,
+        bible_verse_reference: ch.bible_verse_reference,
+        quote_text: ch.quote_text,
+        quote_attribution: ch.quote_attribution,
+        memories: chapterMemories,
+      });
+    });
+
+    const payload = {
+      title: 'A Book of Wisdom',
+      author: authorName || 'The Author',
+      recipientName: book.recipient_name,
+      chapters: payloadChapters,
+      ancestryText: ancestryText || undefined,
+      ancestryPdfUrl: ancestry?.pdf_url || undefined,
+    };
+
+    const loadExactPreview = async () => {
+      setExactPreviewLoading(true);
+      setExactPreviewError(null);
+      try {
+        const response = await fetch(`${apiBase}/generate-preview-html`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          throw new Error(`Preview HTML failed (${response.status})`);
+        }
+        const html = await response.text();
+        setExactPreviewHtml(html);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to load exact preview HTML';
+        setExactPreviewError(message);
+      } finally {
+        setExactPreviewLoading(false);
+      }
+    };
+
+    loadExactPreview();
+  }, [loading, book, chapters, memories, authorName, ancestryText, ancestry?.pdf_url]);
+
+  useEffect(() => {
+    if (!exactPreviewHtml) return;
+    setExactPageCount(0);
+    setCurrentSpread(0);
+    setCompactPageIndex(0);
+    setExactPreviewError(null);
+  }, [exactPreviewHtml]);
+
+  useEffect(() => {
+    return () => {
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!exactPreviewHtml || exactPageCount === 0) return;
+
+    const iframe = exactPreviewIframeRef.current;
+    const doc = iframe?.contentDocument;
+    if (!doc) return;
+
+    const pages = Array.from(doc.querySelectorAll<HTMLElement>('.page')).filter((page) => {
+      const hasText = (page.textContent || '').replace(/\s+/g, '').length > 0;
+      const hasMedia = page.querySelector('img, svg, .chapter-photo, .memory-item, .cover-frame') !== null;
+      return hasText || hasMedia;
+    });
+    const contentSpreads = Math.max(1, Math.ceil(Math.max(0, exactPageCount - 1) / 2));
+    const totalSpreads = contentSpreads + (exactHasInsideFrontCover ? 1 : 0);
+    const clamped = Math.max(0, Math.min(currentSpread, totalSpreads - 1));
+    const isInsideFrontCoverSpread = exactHasInsideFrontCover && clamped === 0;
+    const contentSpreadIndex = isInsideFrontCoverSpread ? 0 : clamped - (exactHasInsideFrontCover ? 1 : 0);
+    const start = isInsideFrontCoverSpread ? 0 : (contentSpreadIndex * 2) + 1;
+    const end = start + 1;
+    const selectedCompactDocIndex = isCompactPreview
+      ? (compactPageIndex === 0 ? null : compactPageIndex - 1)
+      : null;
+
+    pages.forEach((page, idx) => {
+      const shouldShow = isCompactPreview
+        ? idx === selectedCompactDocIndex
+        : idx === start || (!isInsideFrontCoverSpread && idx === end);
+      page.style.display = shouldShow ? 'block' : 'none';
+      page.style.flex = '0 0 auto';
+      page.style.margin = '0';
+      page.style.boxSizing = 'border-box';
+      if (isCompactPreview) {
+        page.style.paddingLeft = '0.5in';
+        page.style.paddingRight = '0.5in';
+        page.style.paddingTop = '0.5in';
+        page.style.paddingBottom = '0';
+        page.style.maxWidth = '100%';
+      }
+    });
+
+    doc.body.style.margin = '0';
+    doc.body.style.padding = '0';
+    doc.body.style.height = '100%';
+    doc.body.style.background = '#ffffff';
+    doc.body.style.display = 'flex';
+    doc.body.style.flexDirection = isCompactPreview ? 'column' : 'row';
+    doc.body.style.justifyContent = isCompactPreview ? 'center' : (isInsideFrontCoverSpread ? 'flex-end' : 'center');
+    doc.body.style.alignItems = isCompactPreview ? 'center' : 'flex-start';
+    doc.body.style.overflow = 'hidden';
+
+    if (doc.documentElement) {
+      doc.documentElement.style.height = '100%';
+      doc.documentElement.style.overflow = 'hidden';
+    }
+  }, [exactPreviewHtml, exactPageCount, currentSpread, exactHasInsideFrontCover, isCompactPreview, compactPageIndex]);
+
+  const waitForLayoutFinal = async (doc: Document) => {
+    for (let i = 0; i < 120; i += 1) {
+      if (doc.body?.classList.contains('layout-final')) return;
+      await new Promise(resolve => window.setTimeout(resolve, 50));
+    }
+  };
+
+  const handleExactPreviewLoad = async () => {
+    const iframe = exactPreviewIframeRef.current;
+    const doc = iframe?.contentDocument;
+    if (!doc) return;
+
+    await waitForLayoutFinal(doc);
+    const pages = Array.from(doc.querySelectorAll<HTMLElement>('.page')).filter((page) => {
+      const hasText = (page.textContent || '').replace(/\s+/g, '').length > 0;
+      const hasMedia = page.querySelector('img, svg, .chapter-photo, .memory-item, .cover-frame') !== null;
+      return hasText || hasMedia;
+    });
+
+    if (pages.length === 0) return;
+
+    setExactPageCount(prev => (prev === pages.length ? prev : pages.length));
+    const totalSpreads = Math.max(1, Math.ceil(Math.max(0, pages.length - 1) / 2)) + (exactHasInsideFrontCover ? 1 : 0);
+    setCurrentSpread(prev => Math.min(prev, totalSpreads - 1));
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: '#EDEBE5' }}>
@@ -167,6 +352,181 @@ const PreviewBook = () => {
     );
   }
   if (!book) return null;
+
+  if (!loading && exactPreviewLoading && !exactPreviewHtml) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: '#EDEBE5' }}>
+        <p style={{ fontFamily: SERIF, color: '#6B7280' }}>Loading exact PDF preview…</p>
+      </div>
+    );
+  }
+
+  if (!loading && exactPreviewHtml && !exactPreviewError) {
+    const exactContentSpreads = Math.max(1, Math.ceil(Math.max(0, exactPageCount - 1) / 2));
+    const exactTotalSpreads = exactContentSpreads + (exactHasInsideFrontCover ? 1 : 0);
+    const exactTotalPages = exactPageCount + (exactHasInsideFrontCover ? 1 : 0);
+    const exactClampedSpread = Math.min(currentSpread, exactTotalSpreads - 1);
+    const exactIsInsideFrontCoverSpread = exactHasInsideFrontCover && exactClampedSpread === 0;
+    const exactContentSpreadIndex = exactIsInsideFrontCoverSpread
+      ? -1
+      : exactClampedSpread - (exactHasInsideFrontCover ? 1 : 0);
+    const exactLeftPageNum = exactIsInsideFrontCoverSpread ? 1 : (exactContentSpreadIndex * 2) + 2;
+    const exactRightPageNum = Math.min(exactLeftPageNum + 1, exactTotalPages);
+    const exactCompactTotalPages = exactPageCount + (exactHasInsideFrontCover ? 1 : 0);
+    const compactLabel = compactPageIndex === 0
+      ? 'Inside Front Cover'
+      : `Page ${compactPageIndex + 1} of ${exactCompactTotalPages}`;
+    const compactWidth = isCompactPreview ? Math.min(PREVIEW_PAGE_WIDTH, Math.floor(window.innerWidth * 0.92)) : PREVIEW_SPREAD_WIDTH;
+
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'linear-gradient(180deg, #d7d4cc 0%, #d2cfc7 100%)' }}>
+        <button
+          onClick={() => navigate(`/book/${bookId}`)}
+          className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-opacity hover:opacity-70"
+          style={{ background: 'rgba(255,255,255,0.5)', color: '#6B7280', fontFamily: SERIF, fontSize: '0.75rem', minWidth: '44px', minHeight: '44px', backdropFilter: 'blur(2px)' }}
+        >
+          <X className="h-3.5 w-3.5" />
+          Close
+        </button>
+
+        <div className="flex-1 overflow-hidden flex items-center justify-center py-2 px-2 sm:px-4">
+          <div
+            className="relative"
+            style={{
+              width: `${isCompactPreview ? compactWidth : PREVIEW_SPREAD_WIDTH}px`,
+              height: `${isCompactPreview ? PREVIEW_PAGE_HEIGHT : PREVIEW_SPREAD_HEIGHT}px`,
+              boxShadow: '0 12px 34px rgba(58, 55, 46, 0.22)',
+              borderRadius: '4px',
+              overflow: 'hidden',
+              transform: `scale(${viewportScale})`,
+              transformOrigin: 'center center',
+              background: '#faf8f5',
+              border: '1px solid rgba(255,255,255,0.65)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {!isCompactPreview && (
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: 0,
+                  transform: 'translateX(-50%)',
+                  width: '18px',
+                  height: '100%',
+                  background: '#ece6dc',
+                  borderLeft: '1px solid #c27488',
+                  borderRight: '1px solid #c27488',
+                  zIndex: 2,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+
+            {isCompactPreview ? (
+              compactPageIndex === 0 ? (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: '#ffffff',
+                    zIndex: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <p style={{ fontFamily: SERIF, fontSize: '14px', color: '#7c8797', fontStyle: 'italic' }}>
+                    Inside Front Cover
+                  </p>
+                </div>
+              ) : null
+            ) : exactIsInsideFrontCoverSpread && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: `calc(50% - 9px)`,
+                  height: '100%',
+                  background: '#ffffff',
+                  zIndex: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                }}
+              >
+                <p style={{ fontFamily: SERIF, fontSize: '14px', color: '#7c8797', fontStyle: 'italic' }}>
+                  Inside Front Cover
+                </p>
+              </div>
+            )}
+
+            <iframe
+              ref={exactPreviewIframeRef}
+              onLoad={handleExactPreviewLoad}
+              title="Exact PDF Preview"
+              srcDoc={exactPreviewHtml}
+              className="w-full h-full border-0"
+              sandbox="allow-same-origin allow-scripts"
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                opacity: 1,
+                pointerEvents: 'auto',
+                width: '100%',
+                height: '100%',
+              }}
+            />
+          </div>
+        </div>
+
+        <div
+          className="absolute left-0 right-0 bottom-3 sm:bottom-4 z-20 flex items-center justify-center gap-3 sm:gap-8"
+          style={{ pointerEvents: 'none' }}
+        >
+          <button
+            onClick={() => {
+              if (isCompactPreview) {
+                setCompactPageIndex(p => Math.max(0, p - 1));
+              } else {
+                setCurrentSpread(p => Math.max(0, p - 1));
+              }
+            }}
+            disabled={isCompactPreview ? compactPageIndex === 0 : exactClampedSpread === 0}
+            className="flex items-center justify-center rounded-full border transition-opacity disabled:opacity-20"
+            style={{ color: '#6B7280', width: '40px', height: '40px', background: '#fff', borderColor: '#D1CCC4', pointerEvents: 'auto' }}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          <span className="tabular-nums min-w-[120px] sm:min-w-[160px] text-center" style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF', background: 'rgba(255,255,255,0.72)', borderRadius: '999px', padding: '6px 10px', pointerEvents: 'auto' }}>
+            {exactPageCount > 0 ? (isCompactPreview ? compactLabel : (exactIsInsideFrontCoverSpread ? 'Inside Front Cover' : `Page ${exactLeftPageNum}${exactRightPageNum > exactLeftPageNum ? `-${exactRightPageNum}` : ''} of ${exactTotalPages}`)) : 'Preparing pages...'}
+          </span>
+
+          <button
+            onClick={() => {
+              if (isCompactPreview) {
+                setCompactPageIndex(p => Math.min(exactCompactTotalPages - 1, p + 1));
+              } else {
+                setCurrentSpread(p => Math.min(exactTotalSpreads - 1, p + 1));
+              }
+            }}
+            disabled={isCompactPreview ? compactPageIndex >= exactCompactTotalPages - 1 : exactClampedSpread >= exactTotalSpreads - 1}
+            className="flex items-center justify-center rounded-full border transition-opacity disabled:opacity-20"
+            style={{ color: '#6B7280', width: '40px', height: '40px', background: '#fff', borderColor: '#D1CCC4', pointerEvents: 'auto' }}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const letterChapter = chapters.find(c => c.chapter_number === 0);
   const rawLetterText = letterChapter?.content?.trim() || letterChapter?.reference_text?.trim() || '';
@@ -286,9 +646,9 @@ const PreviewBook = () => {
         const shouldApplyDropCap = i === 0 && !isPlaceholder;
         const body = shouldApplyDropCap ? para.slice(1) : para;
         return (
-          <p key={i} data-body-paragraph="true" style={{ fontFamily: SERIF, fontSize: '14.5px', color: '#2D3748', lineHeight: 1.8, marginBottom: '0.9em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>
+          <p key={i} data-body-paragraph="true" style={{ fontFamily: SERIF, fontSize: '11pt', color: '#263445', lineHeight: 1.65, marginBottom: '0.8em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>
             {shouldApplyDropCap && (
-              <span className="float-left mr-2" style={{ fontFamily: SERIF, fontSize: '2.6em', lineHeight: 0.8, fontWeight: 700, color, marginTop: '3px' }}>
+              <span className="float-left" style={{ fontFamily: SERIF, fontSize: '3.6em', lineHeight: 1, fontWeight: 700, color, margin: '-0.12em 0.08em 0 0', paddingTop: '0.14em' }}>
                 {para.charAt(0)}
               </span>
             )}
@@ -478,7 +838,7 @@ const PreviewBook = () => {
     return [left, right, undefined];
   };
 
-  const renderChapterSpread = (ch: Chapter, spreadIndex: number): [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null] => {
+  const renderChapterSpread = (ch: Chapter, spreadIndex: number): SpreadRender => {
     const rawFullText = (() => {
       if (ch.chapter_number === 0) return ch.content?.trim() || '';
       const refText = ch.reference_text?.trim() || '';
@@ -495,11 +855,10 @@ const PreviewBook = () => {
       .trim();
     const hasPhoto = ch.photo_urls && ch.photo_urls.length > 0 && ch.photo_urls[0] && ch.photo_urls[0].trim() !== '';
     const hasAuthorWisdom = fullText.length > 0;
-    const isComplete = ch.status === 'complete';
     const chapterLeftPageNum = spreadIndex * 2;
     const chapterRightPageNum = chapterLeftPageNum + 1;
-    const isVerticalPhoto = ch.chapter_template === 'photo_second' || ch.chapter_template === 'vertical_photo';
-    const rightBg = isComplete ? '#FFFFFF' : '#FDF8F8';
+    const isVerticalPhoto = (ch.chapter_template === 'photo_second' || ch.chapter_template === 'vertical_photo') && hasPhoto;
+    const rightBg = '#FFFFFF';
     const chapterMemories = memories.filter(m => m.chapter_id === ch.id);
     const continuationFade = 'linear-gradient(to bottom, rgba(255,255,255,0) 98%, rgba(255,255,255,1) 100%)';
 
@@ -507,22 +866,22 @@ const PreviewBook = () => {
       const left = (
         <div className="flex flex-col h-full">
           <div className="flex-1 relative overflow-y-auto pr-1" style={{ marginBottom: '0' }}>
-            <p className="uppercase tracking-[0.2em] mb-2" style={{ fontFamily: SERIF, fontSize: '8px', color: '#9CA3AF' }}>
+            <p className="uppercase tracking-[0.2em]" style={{ fontFamily: SERIF, fontSize: '10pt', color: '#888', marginBottom: '0.5em' }}>
               Chapter {ch.chapter_number}
             </p>
-            <h2 className="font-bold mb-4" style={{ fontFamily: SERIF, fontSize: '20px', color: '#2D3748', lineHeight: 1.2 }}>
+            <h2 className="font-bold" style={{ fontFamily: SERIF, fontSize: '15pt', color: '#2D3748', lineHeight: 1.2, marginTop: '0.4em', marginBottom: '1.4em' }}>
               {getChapterTitle(ch)}
             </h2>
             {ch.bible_verse_text && (
-              <div className="mb-3 pl-3 py-1" style={{ borderLeft: `2px solid ${GOLD}` }}>
-                <p className="italic" style={{ fontFamily: SERIF, fontSize: '14.4px', color: '#1D2630B2', lineHeight: 1.7 }}>"{ch.bible_verse_text}"</p>
-                {ch.bible_verse_reference && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: 'var(--font-body)', fontSize: '10.4px', color: '#6A758180' }}>— {ch.bible_verse_reference}</p>}
+              <div style={{ borderLeft: `2.5px solid ${GOLD}`, margin: '1.3em 0', paddingLeft: '1.5em' }}>
+                <p className="italic" style={{ fontFamily: SERIF, fontSize: '11pt', color: 'rgba(29, 38, 48, 0.7)', lineHeight: 1.7, margin: 0 }}>"{ch.bible_verse_text}"</p>
+                {ch.bible_verse_reference && <p className="uppercase tracking-[0.12em]" style={{ fontFamily: 'Source Sans 3, system-ui, sans-serif', fontSize: '8pt', color: 'rgba(106, 117, 129, 0.5)', marginTop: '0.8em', marginBottom: 0 }}>— {ch.bible_verse_reference}</p>}
               </div>
             )}
             {ch.quote_text && (
-              <div className="mb-3 pl-3 py-1" style={{ borderLeft: `2px solid ${PINK}` }}>
-                <p className="italic" style={{ fontFamily: SERIF, fontSize: '14.4px', color: '#1D2630B2', lineHeight: 1.7 }}>"{ch.quote_text}"</p>
-                {ch.quote_attribution && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: 'var(--font-body)', fontSize: '10.4px', color: '#6A758180' }}>— {ch.quote_attribution}</p>}
+            <div style={{ borderLeft: `2.5px solid ${PINK}`, margin: '1.3em 0', paddingLeft: '1.5em' }}>
+                <p className="italic" style={{ fontFamily: SERIF, fontSize: '11pt', color: 'rgba(29, 38, 48, 0.7)', lineHeight: 1.7, margin: 0 }}>"{ch.quote_text}"</p>
+                {ch.quote_attribution && <p className="uppercase tracking-[0.12em]" style={{ fontFamily: 'Source Sans 3, system-ui, sans-serif', fontSize: '8pt', color: 'rgba(106, 117, 129, 0.5)', marginTop: '0.8em', marginBottom: 0 }}>— {ch.quote_attribution}</p>}
               </div>
             )}
             {fullText && <DropCapText text={fullText} color={GOLD} />}
@@ -532,32 +891,10 @@ const PreviewBook = () => {
       );
       const right = (
         <div className="flex flex-col h-full">
-          <div className="flex justify-center items-center mb-4 flex-shrink-0" style={{ height: '340px' }}>
-            {hasPhoto ? (
-              <div className="rounded overflow-hidden shadow-md" style={{ width: '260px', height: '340px' }}>
-                <img src={ch.photo_urls[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
-              </div>
-            ) : (
-              <div 
-                className="flex flex-col items-center justify-center gap-2"
-                style={{ 
-                  width: '260px',
-                  height: '340px',
-                  border: '1px dashed #D1CCC4', 
-                  background: '#F9F8F6', 
-                  borderRadius: '4px',
-                  padding: '24px'
-                }}
-              >
-                <Camera className="h-8 w-8" style={{ color: '#B8B3A8' }} />
-                <p className="font-semibold" style={{ fontFamily: SERIF, fontSize: '12px', color: '#8A857C' }}>
-                  No Photo Uploaded
-                </p>
-                <p className="text-center" style={{ fontFamily: SERIF, fontSize: '10px', color: '#B8B3A8', maxWidth: '160px', lineHeight: 1.4 }}>
-                  Add a vertical photo for this chapter in the editor.
-                </p>
-              </div>
-            )}
+          <div className="flex justify-center items-center mb-4 flex-shrink-0" style={{ height: `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` }}>
+            <div className="rounded overflow-hidden shadow-md" style={{ width: `${PREVIEW_PHOTO_VERTICAL_WIDTH}px`, height: `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` }}>
+              <img src={ch.photo_urls[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+            </div>
           </div>
           <div className="flex-1 mt-3" style={{ overflow: 'hidden' }}>
             {chapterMemories.length > 0 ? (
@@ -574,10 +911,6 @@ const PreviewBook = () => {
                   )}
                 </div>
               ))
-            ) : !isComplete ? (
-              <div className="flex items-center justify-center" style={{ border: '1px dashed #D1CCC4', borderRadius: '4px', height: '80px', marginTop: '8px' }}>
-                <p className="italic text-center" style={{ fontFamily: SERIF, fontSize: '11px', color: '#B8B3A8' }}>A memory will appear here…</p>
-              </div>
             ) : null}
           </div>
           <PageNum num={chapterRightPageNum} />
@@ -587,70 +920,50 @@ const PreviewBook = () => {
     }
 
     const fullSpread = (
-      <div style={{ position: 'relative', width: '100%', height: '580px' }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 'calc(50% - 7px)', background: '#FFFFFF' }} />
-        <div style={{ position: 'absolute', left: 'calc(50% - 7px)', top: 0, bottom: 0, width: '14px', background: '#EDE5D4', borderLeft: `1px solid ${PINK}`, borderRight: `1px solid ${PINK}`, zIndex: 2 }} />
-        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 'calc(50% - 7px)', background: rightBg }} />
+      <div style={{ position: 'relative', width: '100%', height: `${PREVIEW_SPREAD_HEIGHT}px` }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `calc(50% - ${PREVIEW_SPINE_HALF_WIDTH}px)`, background: '#FFFFFF' }} />
+        <div style={{ position: 'absolute', left: `calc(50% - ${PREVIEW_SPINE_HALF_WIDTH}px)`, top: 0, bottom: 0, width: `${PREVIEW_SPINE_WIDTH}px`, background: '#EDE5D4', borderLeft: `1px solid ${PINK}`, borderRight: `1px solid ${PINK}`, zIndex: 2 }} />
+        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: `calc(50% - ${PREVIEW_SPINE_HALF_WIDTH}px)`, background: rightBg }} />
 
         <div
           ref={flowContainerRef}
           style={{
             position: 'relative',
             zIndex: 1,
-            height: 'calc(100% - 24px)',
-            padding: '48px 36px 0',
+            height: `${PREVIEW_PAGE_CONTENT_HEIGHT}px`,
+            padding: `${PREVIEW_PAGE_PADDING_TOP}px ${PREVIEW_PAGE_PADDING_OUTER}px 0`,
             columnCount: 2,
-            columnGap: '86px',
+            columnGap: `${PREVIEW_SPREAD_COLUMN_GAP}px`,
             columnFill: 'auto',
             overflow: 'hidden',
           }}
         >
-          {hasPhoto ? (
-            <div className="mb-3 rounded overflow-hidden" style={{ breakInside: 'avoid' }}>
-              <img src={ch.photo_urls[0]} alt="" className="w-full" style={{ height: '180px', objectFit: 'cover', objectPosition: 'center top' }} />
-            </div>
-          ) : (ch.chapter_template === 'photo_top' || ch.chapter_template === 'horizontal_photo') ? (
-            <div 
-              className="mb-3 rounded flex flex-col items-center justify-center gap-2" 
-              style={{ 
-                breakInside: 'avoid', 
-                height: '180px', 
-                border: '1px dashed #D1CCC4', 
-                background: '#F9F8F6',
-                borderRadius: '4px',
-                padding: '16px'
-              }}
-            >
-              <Camera className="h-6 w-6" style={{ color: '#B8B3A8' }} />
-              <p className="font-semibold text-center" style={{ fontFamily: SERIF, fontSize: '11px', color: '#8A857C' }}>
-                No Photo Uploaded
-              </p>
-              <p className="text-center" style={{ fontFamily: SERIF, fontSize: '9px', color: '#B8B3A8', lineHeight: 1.3 }}>
-                Add a horizontal photo for this chapter in the editor.
-              </p>
-            </div>
-          ) : null}
-
           <div style={{ breakInside: 'avoid' }}>
-            <p className="uppercase tracking-[0.2em] mb-2" style={{ fontFamily: SERIF, fontSize: '8px', color: '#9CA3AF' }}>
+            <p className="uppercase tracking-[0.2em]" style={{ fontFamily: SERIF, fontSize: '10pt', color: '#888', marginBottom: '0.5em' }}>
               Chapter {ch.chapter_number}
             </p>
-            <h2 className="font-bold mb-4" style={{ fontFamily: SERIF, fontSize: '20px', color: '#2D3748', lineHeight: 1.2 }}>
+            <h2 className="font-bold" style={{ fontFamily: SERIF, fontSize: '15pt', color: '#2D3748', lineHeight: 1.2, marginTop: '0.4em', marginBottom: '1.4em' }}>
               {getChapterTitle(ch)}
             </h2>
           </div>
 
+          {hasPhoto && (ch.chapter_template === 'photo_top' || ch.chapter_template === 'horizontal_photo') ? (
+            <div className="rounded overflow-hidden" style={{ breakInside: 'avoid', margin: '1.2em 0 0.8em' }}>
+              <img src={ch.photo_urls[0]} alt="" className="w-full" style={{ height: `${PREVIEW_PHOTO_HORIZONTAL_HEIGHT}px`, objectFit: 'cover', objectPosition: 'center top' }} />
+            </div>
+          ) : null}
+
           {ch.bible_verse_text && (
-            <div className="mb-3 pl-3 py-1" style={{ borderLeft: `2px solid ${GOLD}`, breakInside: 'avoid' }}>
-              <p className="italic" style={{ fontFamily: SERIF, fontSize: '14.4px', color: '#1D2630B2', lineHeight: 1.7 }}>"{ch.bible_verse_text}"</p>
-              {ch.bible_verse_reference && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: 'var(--font-body)', fontSize: '10.4px', color: '#6A758180' }}>— {ch.bible_verse_reference}</p>}
+            <div style={{ borderLeft: `2.5px solid ${GOLD}`, breakInside: 'avoid', margin: '1.3em 0', paddingLeft: '1.5em' }}>
+              <p className="italic" style={{ fontFamily: SERIF, fontSize: '11pt', color: 'rgba(29, 38, 48, 0.7)', lineHeight: 1.7, margin: 0 }}>"{ch.bible_verse_text}"</p>
+              {ch.bible_verse_reference && <p className="uppercase tracking-[0.12em]" style={{ fontFamily: 'Source Sans 3, system-ui, sans-serif', fontSize: '8pt', color: 'rgba(106, 117, 129, 0.5)', marginTop: '0.8em', marginBottom: 0 }}>— {ch.bible_verse_reference}</p>}
             </div>
           )}
 
           {ch.quote_text && (
-            <div className="mb-3 pl-3 py-1" style={{ borderLeft: `2px solid ${PINK}`, breakInside: 'avoid' }}>
-              <p className="italic" style={{ fontFamily: SERIF, fontSize: '14.4px', color: '#1D2630B2', lineHeight: 1.7 }}>"{ch.quote_text}"</p>
-              {ch.quote_attribution && <p className="uppercase tracking-[0.12em] mt-1" style={{ fontFamily: 'var(--font-body)', fontSize: '10.4px', color: '#6A758180' }}>— {ch.quote_attribution}</p>}
+            <div style={{ borderLeft: `2.5px solid ${PINK}`, breakInside: 'avoid', margin: '1.3em 0', paddingLeft: '1.5em' }}>
+              <p className="italic" style={{ fontFamily: SERIF, fontSize: '11pt', color: 'rgba(29, 38, 48, 0.7)', lineHeight: 1.7, margin: 0 }}>"{ch.quote_text}"</p>
+              {ch.quote_attribution && <p className="uppercase tracking-[0.12em]" style={{ fontFamily: 'Source Sans 3, system-ui, sans-serif', fontSize: '8pt', color: 'rgba(106, 117, 129, 0.5)', marginTop: '0.8em', marginBottom: 0 }}>— {ch.quote_attribution}</p>}
             </div>
           )}
 
@@ -676,11 +989,6 @@ const PreviewBook = () => {
             </div>
           ))}
 
-          {!isComplete && chapterMemories.length === 0 && (
-            <div className="mt-3" style={{ breakInside: 'avoid', border: '1px dashed #D1CCC4', borderRadius: '4px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p className="italic text-center" style={{ fontFamily: SERIF, fontSize: '11px', color: '#B8B3A8' }}>A memory will appear here…</p>
-            </div>
-          )}
         </div>
 
         {showLeftPageFade && (
@@ -690,8 +998,8 @@ const PreviewBook = () => {
               position: 'absolute',
               left: 0,
               top: 0,
-              width: 'calc(50% - 7px)',
-              height: 'calc(100% - 24px)',
+              width: `calc(50% - ${PREVIEW_SPINE_HALF_WIDTH}px)`,
+              height: `${PREVIEW_PAGE_CONTENT_HEIGHT}px`,
               pointerEvents: 'none',
               background: continuationFade,
               zIndex: 2,
@@ -699,8 +1007,8 @@ const PreviewBook = () => {
           />
         )}
 
-        <p className="absolute text-center" style={{ bottom: '4px', left: '36px', height: '24px', lineHeight: '24px', fontFamily: SERIF, fontSize: '8px', color: GOLD, zIndex: 3 }}>{chapterLeftPageNum}</p>
-        <p className="absolute text-center" style={{ bottom: '4px', right: '36px', height: '24px', lineHeight: '24px', fontFamily: SERIF, fontSize: '8px', color: GOLD, zIndex: 3 }}>{chapterRightPageNum}</p>
+        <p className="absolute text-center" style={{ bottom: `${Math.max(4, Math.round((PREVIEW_PAGE_FOOTER_HEIGHT - 24) / 2))}px`, left: `${PREVIEW_PAGE_PADDING_OUTER}px`, height: '24px', lineHeight: '24px', fontFamily: SERIF, fontSize: '8px', color: GOLD, zIndex: 3 }}>{chapterLeftPageNum}</p>
+        <p className="absolute text-center" style={{ bottom: `${Math.max(4, Math.round((PREVIEW_PAGE_FOOTER_HEIGHT - 24) / 2))}px`, right: `${PREVIEW_PAGE_PADDING_OUTER}px`, height: '24px', lineHeight: '24px', fontFamily: SERIF, fontSize: '8px', color: GOLD, zIndex: 3 }}>{chapterRightPageNum}</p>
       </div>
     );
 
@@ -760,12 +1068,12 @@ const PreviewBook = () => {
     return [left, right, undefined];
   };
 
-  const getCurrentSpreadContent = (): [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null] => {
+  const getCurrentSpreadContent = (): SpreadRender => {
     const spread = spreads[clampedSpread];
     if (!spread) return [null, null, undefined, false, null];
-    if (spread.type === 'title') return [...renderTitleSpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
-    if (spread.type === 'toc_letter') return [...renderTocLetterSpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
-    if (spread.type === 'ancestry') return [...renderAncestrySpread(), false, null] as [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
+    if (spread.type === 'title') return [...renderTitleSpread(), false, null];
+    if (spread.type === 'toc_letter') return [...renderTocLetterSpread(), false, null];
+    if (spread.type === 'ancestry') return [...renderAncestrySpread(), false, null];
     return renderChapterSpread(spread.chapter, clampedSpread);
   };
 
@@ -795,16 +1103,17 @@ const PreviewBook = () => {
       </button>
 
       {/* Two-page spread */}
-      <div className="flex-1 overflow-y-auto flex items-center justify-center py-6 px-4">
+      <div className="flex-1 overflow-hidden flex items-center justify-center py-2 px-4">
         <div
           className="flex relative"
           style={{
-            width: '920px',
-            maxWidth: '100%',
-            minHeight: '580px',
+            width: `${PREVIEW_SPREAD_WIDTH}px`,
+            minHeight: `${PREVIEW_SPREAD_HEIGHT}px`,
             boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
             borderRadius: '3px',
             overflow: 'visible',
+            transform: `scale(${viewportScale})`,
+            transformOrigin: 'center center',
           }}
         >
           {/* 52 Companion badge on chapter spreads */}
@@ -831,15 +1140,33 @@ const PreviewBook = () => {
             ) : (
               <>
                 {/* Left page */}
-                <div style={{ flex: 1, background: '#FFFFFF', padding: '48px 36px 28px', height: '580px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    flex: 1,
+                    background: '#FFFFFF',
+                    padding: `${PREVIEW_PAGE_PADDING_TOP}px ${PREVIEW_PAGE_PADDING_INNER}px ${PREVIEW_PAGE_FOOTER_HEIGHT}px ${PREVIEW_PAGE_PADDING_OUTER}px`,
+                    height: `${PREVIEW_SPREAD_HEIGHT}px`,
+                    overflow: 'hidden',
+                  }}
+                >
                   {leftContent}
                 </div>
 
                 {/* Spine */}
-                <div style={{ width: '14px', background: '#EDE5D4', borderLeft: `1px solid ${PINK}`, borderRight: `1px solid ${PINK}` }} />
+                <div style={{ width: `${PREVIEW_SPINE_WIDTH}px`, background: '#EDE5D4', borderLeft: `1px solid ${PINK}`, borderRight: `1px solid ${PINK}` }} />
 
                 {/* Right page */}
-                <div style={{ flex: 1, background: rightPageBg || '#FFFFFF', padding: isFullBleedRight ? '0' : '48px 36px 28px', height: '580px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    flex: 1,
+                    background: rightPageBg || '#FFFFFF',
+                    padding: isFullBleedRight
+                      ? '0'
+                      : `${PREVIEW_PAGE_PADDING_TOP}px ${PREVIEW_PAGE_PADDING_OUTER}px ${PREVIEW_PAGE_FOOTER_HEIGHT}px ${PREVIEW_PAGE_PADDING_INNER}px`,
+                    height: `${PREVIEW_SPREAD_HEIGHT}px`,
+                    overflow: 'hidden',
+                  }}
+                >
                   {rightContent}
                 </div>
               </>

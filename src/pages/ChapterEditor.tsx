@@ -21,6 +21,22 @@ import CompanionBubble from '@/components/chapter/CompanionBubble';
 import MemoryCaptureOverlay from '@/components/chapter/MemoryCaptureOverlay';
 import { type CompanionEdit } from '@/hooks/useCompanionChat';
 import {
+  ISSUE_LABEL,
+  MAX_CONTENT_LENGTH,
+  MIN_PAGE_1_WORD_LIMIT,
+  PAGE_1_WORD_LIMITS,
+  WORD_BUDGETS,
+} from '@/features/chapter-editor/constants';
+import { validatePhoto } from '@/features/chapter-editor/photoValidation';
+import { mergeRefAndContent, splitForCurrentLayout as splitTextForLayout, splitRefByWordLimit } from '@/features/chapter-editor/textSplit';
+import {
+  PREVIEW_PHOTO_HORIZONTAL_HEIGHT,
+  PREVIEW_PHOTO_VERTICAL_HEIGHT,
+  PREVIEW_PHOTO_VERTICAL_WIDTH,
+  PREVIEW_PAGE_HEIGHT,
+  PREVIEW_PAGE_WIDTH,
+} from '@/features/preview/geometry';
+import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogHeader,
@@ -30,6 +46,8 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
+
+const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 
 
 
@@ -56,94 +74,29 @@ interface LibraryItem {
   attribution: string;
 }
 
-const MAX_CONTENT_LENGTH = 5000;
+interface ChapterTemplateRow {
+  chapter_number: number;
+  is_photo_chapter: boolean;
+  gender: string;
+  title: string;
+}
 
-// Unified word budgets per template
-const WORD_BUDGETS: Record<string, number> = {
-  all_words: 450,
-  photo_top: 225,
-  photo_second: 175,
-  letter: 200,
-};
+interface MemoryRow {
+  id: string;
+  chapter_id: string | null;
+  memory_text: string;
+  contributor_name: string;
+  placed_at: string | null;
+  created_at: string;
+}
 
 // Photo chapter designation is now loaded from database (chapter_templates.is_photo_chapter)
 // instead of being hardcoded
-
-interface PhotoValidationResult {
-  valid: boolean;
-  error?: string;
-  warning?: string;
-}
-
-const validatePhoto = (file: File, variant: 'horizontal' | 'vertical'): Promise<PhotoValidationResult> => {
-  return new Promise((resolve) => {
-    // Format check
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      resolve({ valid: false, error: 'Only JPG and PNG formats are accepted for print quality.' });
-      return;
-    }
-    // Size checks
-    if (file.size < 500 * 1024) {
-      resolve({ valid: false, error: 'This photo is under 500KB — it may be too low quality for print. Please choose a higher resolution image.' });
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      resolve({ valid: false, error: 'This photo exceeds the 15MB limit. Please compress or resize it before uploading.' });
-      return;
-    }
-    // Resolution check
-    const img = new Image();
-    img.onload = () => {
-      const w = img.naturalWidth;
-      const h = img.naturalHeight;
-      URL.revokeObjectURL(img.src);
-      if (w < 300 || h < 300) {
-        resolve({ valid: false, error: 'This photo is too low resolution for print. Please choose a higher quality image.' });
-        return;
-      }
-      const minW = variant === 'horizontal' ? 1200 : 800;
-      const minH = variant === 'horizontal' ? 800 : 1200;
-      if (w < minW || h < minH) {
-        resolve({ valid: true, warning: `This photo may appear blurry in print (${w}×${h}px). A minimum of ${minW}×${minH}px is recommended. You can still use it.` });
-        return;
-      }
-      resolve({ valid: true });
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(img.src);
-      resolve({ valid: false, error: 'Could not read this image file. Please try a different photo.' });
-    };
-    img.src = URL.createObjectURL(file);
-  });
-};
-
-// Reconstruct the single editing buffer from a saved reference/content split.
-// Mirrors the previous inline `combined` logic so existing DB rows load
-// byte-identically into the unified editor.
-const mergeRefAndContent = (referenceText: string, content: string) => {
-  const needsSpace =
-    referenceText.length > 0 &&
-    content.length > 0 &&
-    !/\s$/.test(referenceText) &&
-    !/^\s/.test(content);
-  return referenceText + (needsSpace ? ' ' : '') + content;
-};
 
 const getChapterIndicatorStatus = (ch: { status: string }) => {
   if (ch.status === 'complete') return 'complete';
   if (ch.status === 'in_progress') return 'in_progress';
   return 'not_started';
-};
-
-// Short human label per Book Review issue type — used in the Fix It
-// checklist banner shown at the top of the editor.
-const ISSUE_LABEL: Record<string, string> = {
-  typo: 'Typo',
-  missing_punctuation: 'Missing punctuation',
-  name_mismatch: 'Name',
-  cut_off: 'Cut-off sentence',
-  double_space: 'Extra spacing',
-  empty_page_2: 'Empty Page 2',
 };
 
 interface ReviewIssue { id: string; type: string; snippet: string; message: string }
@@ -183,6 +136,11 @@ const ChapterEditor = () => {
   const [companionOpen, setCompanionOpen] = useState(false);
   const [printNotice, setPrintNotice] = useState(false);
   const printNoticeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const exactPreviewIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [exactPreviewHtml, setExactPreviewHtml] = useState('');
+  const [exactPreviewLoading, setExactPreviewLoading] = useState(false);
+  const [exactPreviewError, setExactPreviewError] = useState<string | null>(null);
+  const [chapterPreviewPageCount, setChapterPreviewPageCount] = useState(0);
 
   const [referenceContent, setReferenceContent] = useState<string | null>(null);
   const [referenceText, setReferenceText] = useState('');
@@ -229,13 +187,39 @@ const ChapterEditor = () => {
   const scrollPositionRef = useRef(0);
 
   const isPhotoTemplate = template === 'photo_top' || template === 'photo_second';
+  const primaryPhotoUrl = (photoUrls[0] || '').trim();
+  const hasUploadedPhoto = /^(https?:|data:image\/|blob:)/i.test(primaryPhotoUrl);
+  const usesPhotoCapacity = isPhotoTemplate;
+  const requiresPhotoForTemplate = isPhotoTemplate;
+  const photoTemplateNeedsUpload = requiresPhotoForTemplate && !hasUploadedPhoto;
+  const photoTemplateHelpMessage = photoTemplateNeedsUpload
+    ? 'You need to add a photo or select a classic template.'
+    : null;
+  const effectiveTemplate = isPhotoTemplate ? template : 'all_words';
   const isLetterChapter = chapter?.chapter_number === 0;
-  const budget = WORD_BUDGETS[template] || WORD_BUDGETS.all_words;
-  // Page-1 word boundary: classic chapters 135, photo_top (horizontal photo) 75.
-  // Each memory card consumes 40 words of page space, decrementing the available text space.
-  const isPhotoOnPage1 = template === 'photo_top';
-  const basePage1Limit = isPhotoOnPage1 ? 75 : 135;
-  const PAGE_1_WORD_LIMIT = basePage1Limit;
+  const budget = WORD_BUDGETS[effectiveTemplate] || WORD_BUDGETS.all_words;
+  // Page-1 word boundary baseline.
+  const basePage1Limit =
+    effectiveTemplate === 'photo_top'
+      ? PAGE_1_WORD_LIMITS.photo_top
+      : PAGE_1_WORD_LIMITS.all_words;
+  // In photo layouts, quotes/verses consume real vertical space before body
+  // text. Apply a conservative penalty so editor split better matches PDF flow.
+  const quoteBlocksCount = Number(Boolean((bibleVerseText || '').trim())) + Number(Boolean((quoteText || '').trim()));
+  const quoteWords =
+    countWords(bibleVerseText || '') +
+    countWords(bibleVerseRef || '') +
+    countWords(quoteText || '') +
+    countWords(quoteAttribution || '');
+  const quotePenalty = usesPhotoCapacity && quoteBlocksCount > 0
+    ? Math.min(30, Math.max(8, Math.round(quoteWords * 0.5) + quoteBlocksCount * 4))
+    : 0;
+  const PAGE_1_WORD_LIMIT = Math.max(MIN_PAGE_1_WORD_LIMIT, basePage1Limit - quotePenalty);
+  const previewBasePage1Limit = hasUploadedPhoto && template === 'photo_top' ? 75 : 170;
+  const previewQuotePenalty = hasUploadedPhoto && template === 'photo_top' && quoteBlocksCount > 0
+    ? Math.min(30, Math.max(8, Math.round(quoteWords * 0.5) + quoteBlocksCount * 4))
+    : 0;
+  const PREVIEW_PAGE_1_WORD_LIMIT = Math.max(35, previewBasePage1Limit - previewQuotePenalty);
   // Letter chapters use their own `content`-bound textarea; every other
   // chapter edits the single unified `mergedText` buffer.
   const editorText = isLetterChapter ? content : mergedText;
@@ -333,7 +317,9 @@ const ChapterEditor = () => {
           return;
         }
       }
-    } catch {}
+    } catch (error) {
+      console.error('Failed to load review issues', error);
+    }
     setReviewIssues([]);
   }, [chapterId]);
 
@@ -354,11 +340,11 @@ const ChapterEditor = () => {
       ]);
       if (capData) setMaxPhotoChapters(Number(capData.value) || 15);
       const bookGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
-      const genderTpls = (allTpls || []).filter((t: any) => t.gender === bookGender);
-      const photoNums = new Set<number>(genderTpls.filter((t: any) => t.is_photo_chapter).map((t: any) => t.chapter_number as number));
+      const genderTpls = ((allTpls || []) as ChapterTemplateRow[]).filter((t) => t.gender === bookGender);
+      const photoNums = new Set<number>(genderTpls.filter((t) => t.is_photo_chapter).map((t) => t.chapter_number));
       setPhotoChapterNums(photoNums);
       // Map chapter_number -> authoritative title from templates (gender-specific)
-      const titleByNumber = new Map<number, string>(genderTpls.map((t: any) => [t.chapter_number as number, t.title as string]));
+      const titleByNumber = new Map<number, string>(genderTpls.map((t) => [t.chapter_number, t.title]));
       if (chapterData) {
         // Override stale chapter title with authoritative gender-specific template title
         const authoritativeTitle = chapterData.chapter_number > 0
@@ -430,30 +416,31 @@ const ChapterEditor = () => {
       const { data: ancData } = await supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle();
       setAncestryStatus(ancData?.status || 'not_started');
       if (memoriesData) {
+        const rows = memoriesData as MemoryRow[];
         const counts: Record<string, number> = {};
-        memoriesData.forEach((m: any) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
+        rows.forEach((m) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
         setMemoryCountsByChapter(counts);
         setPlacedMemories(
-          memoriesData
-            .filter((m: any) => m.chapter_id === chapterId)
-            .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+          rows
+            .filter((m) => m.chapter_id === chapterId)
+            .map((m) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
         );
         setUnplacedMemories(
-          memoriesData
-            .filter((m: any) => !m.chapter_id)
-            .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+          rows
+            .filter((m) => !m.chapter_id)
+            .map((m) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
         );
         setSuggestionIndex(0);
       }
       if (allCh) {
-        const withCorrectTitles = allCh.map((c: any) =>
+        const withCorrectTitles = allCh.map((c) =>
           c.chapter_number > 0
             ? { ...c, title: titleByNumber.get(c.chapter_number) || c.title }
             : c
         );
         setAllChapters(withCorrectTitles);
-        const siblings = withCorrectTitles.filter((c: any) => c.id !== chapterId);
-        setPhotoChapterCount(siblings.filter((s: any) => s.chapter_template === 'photo_top' || s.chapter_template === 'photo_second').length);
+        const siblings = withCorrectTitles.filter((c) => c.id !== chapterId);
+        setPhotoChapterCount(siblings.filter((s) => s.chapter_template === 'photo_top' || s.chapter_template === 'photo_second').length);
       }
       setLoading(false);
       const thisHasContent = ((chapterData?.content || '') as string).trim().length > 0;
@@ -499,7 +486,7 @@ const ChapterEditor = () => {
     const page2HasContent =
       page2AuthorWords > 0 ||
       placedMemories.length > 0 ||
-      photoUrls.length > 0;
+      hasUploadedPhoto;
     return page2HasContent;
   };
 
@@ -517,17 +504,26 @@ const ChapterEditor = () => {
 
   const save = async (markComplete = false, statusOverride?: string) => {
     if (!chapterId) return;
+    if (photoTemplateNeedsUpload) {
+      toast({
+        title: 'Photo required',
+        description: 'You need to add a photo or select a classic template.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setSaving(true);
     const savedAt = new Date().toISOString();
     const newStatus = statusOverride || (markComplete ? 'complete' : chapter?.status === 'complete' ? 'complete' : 'in_progress');
 
     // The split into page-1 (reference_text) / page-2 (content) happens
-    // here, ONLY on save — never while the author is typing. Letter
-    // chapters edit `content` directly and aren't split.
+    // here, ONLY on save — never while the author is typing. We use the
+    // same sentence-aware boundary as preview so saved data matches what
+    // the author sees. Letter chapters edit `content` directly and aren't split.
     let refToSave = referenceText;
     let contentToSave = content;
     if (!isLetterChapter) {
-      const { page1, page2 } = splitRefByWordLimit(mergedText, PAGE_1_WORD_LIMIT);
+      const { page1, page2 } = splitForCurrentLayout(mergedText);
       refToSave = page1;
       contentToSave = page2;
     }
@@ -539,7 +535,7 @@ const ChapterEditor = () => {
       quote_attribution: quoteAttribution || null,
       content: contentToSave || null,
       reference_text: refToSave || null,
-      photo_urls: photoUrls,
+      photo_urls: hasUploadedPhoto ? [primaryPhotoUrl] : [],
       chapter_template: template,
       verse_id: verseId,
       quote_id: quoteId,
@@ -648,15 +644,15 @@ const ChapterEditor = () => {
       return true;
     };
 
-    window.history.pushState = function (data: any, unused: string, url?: string | URL | null) {
+    window.history.pushState = function (data: unknown, unused: string, url?: string | URL | null) {
       const target = url ? (typeof url === 'string' ? url : url.toString()) : currentPath;
       if (intercept(target)) return;
-      return origPush.apply(this, [data, unused, url] as any);
+      return origPush.apply(this, [data, unused, url] as Parameters<History['pushState']>);
     };
-    window.history.replaceState = function (data: any, unused: string, url?: string | URL | null) {
+    window.history.replaceState = function (data: unknown, unused: string, url?: string | URL | null) {
       const target = url ? (typeof url === 'string' ? url : url.toString()) : currentPath;
       if (intercept(target)) return;
-      return origReplace.apply(this, [data, unused, url] as any);
+      return origReplace.apply(this, [data, unused, url] as Parameters<History['replaceState']>);
     };
 
     const onPop = () => {
@@ -944,13 +940,12 @@ const ChapterEditor = () => {
 
   const renderParagraphs = (text: string, withDropCap: boolean, suppressDropCap: boolean, variant: 'body' | 'reference' = 'body') => {
     const paragraphs = text.split(/\n\n+/).filter(Boolean);
-    const isRef = variant === 'reference';
     return paragraphs.map((p, i) => {
       const lines = p.split('\n');
       return (
         <p
           key={i}
-          className={`text-[14.5px] leading-[1.8] text-foreground/80 ${i === 0 && withDropCap && !suppressDropCap ? 'drop-cap' : ''}`}
+          className={`text-[11pt] leading-[1.7] text-foreground/80 ${i === 0 && withDropCap && !suppressDropCap ? 'drop-cap' : ''}`}
           style={{
             fontFamily: 'var(--font-devotional)',
             marginBottom: i < paragraphs.length - 1 ? '0.9em' : 0,
@@ -960,15 +955,12 @@ const ChapterEditor = () => {
             WebkitHyphens: 'auto',
           }}
         >
-          {lines.map((line, idx) => {
-            const nodes = renderInline(line, variant);
-            const isFirstParaDropCap = i === 0 && withDropCap && !suppressDropCap;
-            return (
-              <span key={idx} className={isFirstParaDropCap && idx === 0 ? 'inline' : 'block'}>
-                {nodes ?? '\u00A0'}
-              </span>
-            );
-          })}
+          {lines.map((line, idx) => (
+            <span key={idx}>
+              {renderInline(line, variant) ?? '\u00A0'}
+              {idx < lines.length - 1 && <br />}
+            </span>
+          ))}
         </p>
       );
     });
@@ -976,17 +968,28 @@ const ChapterEditor = () => {
 
   const renderPhotoZone = (variant: 'horizontal' | 'vertical' = 'horizontal') => {
     if (previewMode) {
-      if (photoUrls.length === 0) return null;
+      if (!hasUploadedPhoto) return null;
       const isVert = variant === 'vertical';
       return (
-        <div className={`rounded-sm overflow-hidden mb-6 ${isVert ? 'flex justify-center' : ''}`}>
+        <div
+          className={`rounded-sm overflow-hidden mb-6 ${isVert ? 'flex justify-center' : ''}`}
+          style={{
+            width: isVert ? `${PREVIEW_PHOTO_VERTICAL_WIDTH}px` : '100%',
+            height: isVert ? `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` : `${PREVIEW_PHOTO_HORIZONTAL_HEIGHT}px`,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            marginBottom: isVert ? '1.5em' : '1em',
+            borderRadius: '2px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          }}
+        >
           <img
-            src={photoUrls[0]}
+            src={primaryPhotoUrl}
             alt="Chapter photo"
             className="object-cover"
             style={{
-              width: isVert ? '260px' : '100%',
-              height: isVert ? '340px' : '200px',
+              width: '100%',
+              height: '100%',
             }}
           />
         </div>
@@ -994,7 +997,7 @@ const ChapterEditor = () => {
     }
     return (
       <PhotoUploadZone
-        photoUrls={photoUrls}
+        photoUrls={hasUploadedPhoto ? [primaryPhotoUrl] : []}
         uploading={uploading}
         onUpload={handlePhotoUpload}
         onRemove={() => removePhoto()}
@@ -1010,71 +1013,124 @@ const ChapterEditor = () => {
     return '#16A34A';
   };
 
-  // Split reference text by word count for the editor's two-page visual.
-  // page1Limit = ~150 words for classic chapters, ~75 for photo chapters
-  // (photo chapters give half of page 1 to the image).
-  const splitRefByWordLimit = (text: string, wordLimit: number) => {
-    if (!text) return { page1: '', page2: '' };
-    // Tokenize while preserving whitespace so we can re-join exactly.
-    // Each non-whitespace token may contain MULTIPLE words when it
-    // contains em-dashes ("character—and" → 2 words), so we count via the
-    // shared countWords helper rather than treating it as 1.
-    const tokens = text.split(/(\s+)/);
-    let words = 0;
-    let splitAt = tokens.length;
-    for (let i = 0; i < tokens.length; i++) {
-      const tok = tokens[i];
-      if (tok && !/^\s+$/.test(tok)) {
-        const inner = countWords(tok);
-        // Split at the whitespace boundary BEFORE this token if including
-        // its words would exceed the limit — never slice through a token.
-        if (words + inner > wordLimit) { splitAt = i; break; }
-        words += inner;
+  const splitForCurrentLayout = (text: string) => (
+    splitTextForLayout(text, PAGE_1_WORD_LIMIT, usesPhotoCapacity)
+  );
+
+  useEffect(() => {
+    if (!chapter) return;
+
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const chapterPayload = {
+      chapter_number: chapter.chapter_number,
+      title: chapter.title,
+      chapter_template: template,
+      content: isLetterChapter ? mergeRefAndContent(referenceText, content) : mergedText,
+      photo_urls: hasUploadedPhoto ? [primaryPhotoUrl] : [],
+      bible_verse_text: bibleVerseText || null,
+      bible_verse_reference: bibleVerseRef || null,
+      quote_text: quoteText || null,
+      quote_attribution: quoteAttribution || null,
+      memories: placedMemories.map(m => ({
+        memory_text: m.memory_text,
+        contributor_name: m.contributor_name,
+      })),
+    };
+
+    const loadExactPreview = async () => {
+      setExactPreviewLoading(true);
+      setExactPreviewError(null);
+      try {
+        const response = await fetch(`${apiBase}/generate-preview-html`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: 'A Book of Wisdom',
+            author: authorName || 'The Author',
+            recipientName,
+            chapters: [chapterPayload],
+          }),
+        });
+        if (!response.ok) throw new Error(`Preview HTML failed (${response.status})`);
+        setExactPreviewHtml(await response.text());
+      } catch (err) {
+        setExactPreviewError(err instanceof Error ? err.message : 'Failed to load exact preview HTML');
+      } finally {
+        setExactPreviewLoading(false);
       }
-    }
-    return {
-      page1: tokens.slice(0, splitAt).join(''),
-      page2: tokens.slice(splitAt).join('').replace(/^\s+/, ''),
     };
+
+    loadExactPreview();
+  }, [chapter, template, mergedText, referenceText, content, hasUploadedPhoto, primaryPhotoUrl, bibleVerseText, bibleVerseRef, quoteText, quoteAttribution, placedMemories, authorName, recipientName, isLetterChapter]);
+
+  const syncExactPreview = () => {
+    const iframe = exactPreviewIframeRef.current;
+    if (!iframe?.contentDocument || !chapter) return;
+
+    const doc = iframe.contentDocument;
+    const chapterKey = String(chapter.chapter_number);
+    const pageNodes = Array.from(doc.querySelectorAll(`.page[data-chapter="${chapterKey}"]`));
+
+    if (pageNodes.length === 0) return;
+
+    const wrapper = doc.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.flexDirection = 'column';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.gap = '32px';
+    wrapper.style.padding = '24px 0';
+    wrapper.style.width = '100%';
+
+    pageNodes.forEach((node) => {
+      wrapper.appendChild(node.cloneNode(true));
+    });
+
+    doc.body.innerHTML = '';
+    doc.body.style.margin = '0';
+    doc.body.style.background = '#faf8f5';
+    doc.body.style.display = 'flex';
+    doc.body.style.justifyContent = 'center';
+    doc.body.style.overflowY = 'auto';
+    doc.documentElement.style.overflowY = 'auto';
+
+    let hideScrollbars = doc.getElementById('preview-scrollbar-hide');
+    if (!hideScrollbars) {
+      hideScrollbars = doc.createElement('style');
+      hideScrollbars.id = 'preview-scrollbar-hide';
+      hideScrollbars.textContent = `
+        html, body { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+      `;
+      doc.head.appendChild(hideScrollbars);
+    }
+    doc.body.appendChild(wrapper);
+    setChapterPreviewPageCount(pageNodes.length);
   };
 
-  // Sentence-aware page-1/page-2 split. We first cap at the word limit,
-  // then snap page 1 back to the last sentence-ending punctuation (. ! ?)
-  // so page 1 never ends mid-sentence. We INCLUDE the trailing whitespace
-  // after the period in page 1: otherwise the next character the author
-  // types lands directly after the period ("there." + "T" → "there.T")
-  // and the period stops being recognised as a sentence end, causing the
-  // snap to jump backward on every keystroke. If the limit lands inside a
-  // single long opening sentence with no period before it, we fall back
-  // to the word boundary (page 1 with 0 words is worse).
-  const splitAtSentenceBoundary = (text: string, wordLimit: number) => {
-    if (!text) return { page1: '', page2: '' };
-    const wordSplit = splitRefByWordLimit(text, wordLimit);
-    if (!wordSplit.page2) return wordSplit; // everything fits — no split needed
-
-    const pageOneEnd = wordSplit.page1.length;
-    // Match . ! ? optionally followed by a closing quote/bracket, then
-    // a whitespace or end-of-string. Walk through every match in `text`
-    // and remember the latest one that lands at or before pageOneEnd.
-    const sentenceEndRe = /[.!?]["')\]]?(?=\s|$)/g;
-    let lastEnd = -1;
-    let m: RegExpExecArray | null;
-    while ((m = sentenceEndRe.exec(text)) !== null) {
-      const endPos = m.index + m[0].length;
-      if (endPos > pageOneEnd) break;
-      lastEnd = endPos;
+  const handleCompanionRequestEdit = () => {
+    if (previewMode) {
+      exitPreview();
+      setCompanionOpen(true);
     }
-    if (lastEnd < 0) return wordSplit;
-
-    // Extend through the whitespace that follows the period so page 1
-    // visibly ends with "...there. " (the space is part of page 1).
-    const ws = /^\s+/.exec(text.slice(lastEnd));
-    const seam = lastEnd + (ws ? ws[0].length : 0);
-    return {
-      page1: text.slice(0, seam),
-      page2: text.slice(seam),
-    };
   };
+
+  const companionSlotEl = bookId && chapterId ? (
+    <CompanionBubble
+      bookId={bookId}
+      chapterId={chapterId}
+      chapterTitle={chapter?.title}
+      onRequestEdit={previewMode ? handleCompanionRequestEdit : undefined}
+      forceOpen={companionOpen}
+      onClose={() => setCompanionOpen(false)}
+      currentContent={content}
+      currentReferenceText={referenceText}
+      onApplyEdit={handleCompanionApplyEdit}
+      onRevert={handleRevertToSaved}
+      variant="badge"
+    />
+  ) : null;
+
+  const exactPreviewHeight = Math.max(1, chapterPreviewPageCount || 1) * PREVIEW_PAGE_HEIGHT + Math.max(0, chapterPreviewPageCount - 1) * 32 + 48;
 
   if (loading) return (
     <div className="min-h-screen bg-[hsl(var(--devotional-bg))]">
@@ -1102,33 +1158,9 @@ const ChapterEditor = () => {
   // sees the exact same break in both views.
   const previewPages = isLetterChapter
     ? { page1: referenceText, page2: content }
-    : splitAtSentenceBoundary(mergedText, PAGE_1_WORD_LIMIT);
+    : splitRefByWordLimit(mergedText, PREVIEW_PAGE_1_WORD_LIMIT);
   const previewRefText = previewPages.page1;
   const previewContent = previewPages.page2;
-
-
-  const handleCompanionRequestEdit = () => {
-    if (previewMode) {
-      exitPreview();
-      setCompanionOpen(true);
-    }
-  };
-
-  const companionSlotEl = bookId && chapterId ? (
-    <CompanionBubble
-      bookId={bookId}
-      chapterId={chapterId}
-      chapterTitle={chapter?.title}
-      onRequestEdit={previewMode ? handleCompanionRequestEdit : undefined}
-      forceOpen={companionOpen}
-      onClose={() => setCompanionOpen(false)}
-      currentContent={content}
-      currentReferenceText={referenceText}
-      onApplyEdit={handleCompanionApplyEdit}
-      onRevert={handleRevertToSaved}
-      variant="badge"
-    />
-  ) : null;
 
   return (
     <div className="min-h-screen bg-[hsl(var(--devotional-bg))]">
@@ -1209,7 +1241,7 @@ const ChapterEditor = () => {
             </Button>
 
             {!previewMode && (
-              <Button variant="ghost" size="sm" onClick={() => save(false)} disabled={saving} className="gap-1.5 text-xs h-8">
+              <Button variant="ghost" size="sm" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload} className="gap-1.5 text-xs h-8">
                 <Save className="h-3 w-3" /> {saving ? 'Saving…' : 'Save Draft'}
               </Button>
             )}
@@ -1302,76 +1334,29 @@ const ChapterEditor = () => {
         )}
 
         {previewMode ? (
-          isLetterChapter ? (
-            <>
-              {/* ═══ LETTER PREVIEW — single right-hand page ═══ */}
-              <PageCanvas previewMode pageNumber={1} companionSlot={companionSlotEl}>
-                <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground/40 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
-                  Letter from the Author
-                </p>
-                <h1 className="text-[32px] font-bold leading-tight text-foreground mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-                  {chapter.title}
-                </h1>
-                <div className="mb-6" />
-                {(previewContent?.trim() || previewRefText) && (
-                  <div className="my-8">{renderParagraphs(previewContent?.trim() ? previewContent : previewRefText, false, true, 'reference')}</div>
-                )}
-              </PageCanvas>
-            </>
-          ) : (
-          <>
-            {/* ═══ PREVIEW PAGE 1 ═══ */}
-            <PageCanvas previewMode pageNumber={1} companionSlot={companionSlotEl}>
-              <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground/40 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
-                Chapter {chapter.chapter_number}
-              </p>
-              <h1 className="text-[32px] font-bold leading-tight text-foreground mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-                {chapter.title}
-              </h1>
-              <div className="mb-6" />
-              {template === 'photo_top' && renderPhotoZone('horizontal')}
-              <DevotionalVerse text={bibleVerseText} reference={bibleVerseRef} onTextChange={() => {}} onRefChange={() => {}} onFindAlternatives={() => {}} editing={false} onToggleEdit={() => {}} previewMode />
-              <DevotionalQuote text={quoteText} attribution={quoteAttribution} onTextChange={() => {}} onAttrChange={() => {}} onFindAlternatives={() => {}} editing={false} onToggleEdit={() => {}} previewMode />
-              {previewRefText && (
-                // Drop cap renders ONLY here — on the very first paragraph
-                // of the chapter. The 'reference' variant is the one true
-                // chapter-body style; we use it on page 2 as well so the
-                // font never changes between pages (per client spec).
-                <div className="my-8">{renderParagraphs(previewRefText, true, false, 'reference')}</div>
-              )}
-              {placedMemories.length > 0 && !previewContent && (
-                <>
-                  {placedMemories.map(m => (
-                    <PlacedMemory key={m.id} text={m.memory_text} fromName={m.contributor_name} />
-                  ))}
-                </>
-              )}
-              {showMemoryPlaceholder && placedMemories.length === 0 && !previewContent && <MemoryPlaceholder recipientName={recipientName} realistic />}
-            </PageCanvas>
-
-            <div style={{ height: '32px' }} />
-
-            {/* ═══ PREVIEW PAGE 2 ═══ */}
-            <PageCanvas previewMode pageNumber={2}>
-              {template === 'photo_second' && renderPhotoZone('vertical')}
-              {previewContent && (
-                // Per client spec (definitive): the gold drop cap appears
-                // ONLY on the very first word of the chapter (page 1).
-                // Never on page 2, never mid-sentence. Same 'reference'
-                // style as page 1 so the body font is identical.
-                <div className="min-h-[300px]">{renderParagraphs(previewContent, false, true, 'reference')}</div>
-              )}
-              {placedMemories.length > 0 && (
-                <>
-                  {placedMemories.map(m => (
-                    <PlacedMemory key={m.id} text={m.memory_text} fromName={m.contributor_name} />
-                  ))}
-                </>
-              )}
-              {showMemoryPlaceholder && placedMemories.length === 0 && <MemoryPlaceholder recipientName={recipientName} realistic />}
-            </PageCanvas>
-          </>
-          )
+          <div className="flex justify-center py-4 px-2 sm:px-4">
+            {exactPreviewLoading && !exactPreviewHtml ? (
+              <div className="text-muted-foreground">Loading exact preview…</div>
+            ) : exactPreviewError ? (
+              <div className="text-sm text-red-500">{exactPreviewError}</div>
+            ) : (
+              <iframe
+                ref={exactPreviewIframeRef}
+                title="Exact chapter preview"
+                srcDoc={exactPreviewHtml}
+                onLoad={syncExactPreview}
+                className="border-0 bg-transparent"
+                style={{
+                  width: '100%',
+                  maxWidth: '100%',
+                  height: 'calc(100vh - 170px)',
+                  display: 'block',
+                  margin: '0 auto',
+                  pointerEvents: 'auto',
+                }}
+              />
+            )}
+          </div>
         ) : isLetterChapter ? (
           /* ═══ LETTER EDIT MODE ═══ */
           <PageCanvas previewMode={false} companionSlot={companionSlotEl}>
@@ -1442,7 +1427,7 @@ const ChapterEditor = () => {
             {/* For recommended photo chapters, show layout selector prominently at the top */}
             {isDesignatedPhotoChapter && !isPhotoTemplate && photoUrls.length === 0 ? (
               <div className="mb-6">
-                <TemplateSelector template={template} onTemplateChange={t => { setTemplate(t); setHasUnsavedChanges(true); }} photoChapterCount={photoChapterCount} maxPhotoChapters={maxPhotoChapters} photoUrl={photoUrls[0] || null} />
+                <TemplateSelector template={template} onTemplateChange={t => { setTemplate(t); setHasUnsavedChanges(true); }} photoChapterCount={photoChapterCount} maxPhotoChapters={maxPhotoChapters} photoUrl={hasUploadedPhoto ? primaryPhotoUrl : null} />
               </div>
             ) : (
               <>
@@ -1460,7 +1445,15 @@ const ChapterEditor = () => {
 
                 {layoutDrawerOpen && (
                   <div id="chapter-layout-selector">
-                    <TemplateSelector template={template} onTemplateChange={t => { setTemplate(t); setHasUnsavedChanges(true); setLayoutDrawerOpen(false); }} photoChapterCount={photoChapterCount} maxPhotoChapters={maxPhotoChapters} photoUrl={photoUrls[0] || null} />
+                    <TemplateSelector template={template} onTemplateChange={t => { setTemplate(t); setHasUnsavedChanges(true); setLayoutDrawerOpen(false); }} photoChapterCount={photoChapterCount} maxPhotoChapters={maxPhotoChapters} photoUrl={hasUploadedPhoto ? primaryPhotoUrl : null} />
+                  </div>
+                )}
+
+                {photoTemplateHelpMessage && (
+                  <div className="mb-6 rounded-sm border border-[#D97706]/30 bg-[#D97706]/5 px-3 py-2">
+                    <p className="text-[0.72rem] text-[#D97706]/90" style={{ fontFamily: 'var(--font-body)' }}>
+                      {photoTemplateHelpMessage}
+                    </p>
                   </div>
                 )}
               </>
@@ -1481,7 +1474,7 @@ const ChapterEditor = () => {
               // text past that boundary flows to the page 2 textarea
               // below the divider.
               const { page1: editPage1, page2: editPage2 } =
-                splitAtSentenceBoundary(mergedText, PAGE_1_WORD_LIMIT);
+                splitForCurrentLayout(mergedText);
 
               // Recombine the two textarea values back into mergedText.
               // The split function leaves a whitespace token at the seam
@@ -1508,12 +1501,11 @@ const ChapterEditor = () => {
               const totalChapterWords = countWords(mergedText);
               const showPageBreak = totalChapterWords > PAGE_1_WORD_LIMIT;
               const _page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
-              // Client spec: paragraph break = 3 words, memory slot = 40 words.
-              const _paragraphBreaks = (mergedText.match(/\n\n+/g) || []).length;
+              // Memory cards consume fixed page space; paragraph breaks should
+              // not reduce available words in this meter.
               const _memoryWordCost = (placedMemories?.length ?? 0) * 40;
               const _page2Words =
                 Math.max(0, totalChapterWords - PAGE_1_WORD_LIMIT) +
-                _paragraphBreaks * 3 +
                 _memoryWordCost;
               const isPage2Over = _page2Words > _page2Budget;
 
@@ -1555,7 +1547,7 @@ const ChapterEditor = () => {
                           // character keeps getting bounced out of page 1
                           // and the user has no idea where their typing
                           // is going.
-                          const after = splitAtSentenceBoundary(merged, PAGE_1_WORD_LIMIT);
+                          const after = splitForCurrentLayout(merged);
                           if (caretInP1 > after.page1.length) {
                             const cursorInP2 = caretInP1 - after.page1.length;
                             requestAnimationFrame(() => {
@@ -1584,7 +1576,7 @@ const ChapterEditor = () => {
                           const caret = start + text.length;
                           // Mirror the onChange overflow handling so a paste
                           // that lands past the boundary also focuses page 2.
-                          const after = splitAtSentenceBoundary(merged, PAGE_1_WORD_LIMIT);
+                          const after = splitForCurrentLayout(merged);
                           if (caret > after.page1.length) {
                             const cursorInP2 = caret - after.page1.length;
                             requestAnimationFrame(() => {
@@ -1626,11 +1618,11 @@ const ChapterEditor = () => {
                     <div className="flex-1 h-px bg-muted-foreground/20" />
                   </div>
 
-                  {template === 'photo_second' && (
-                    <div className="mb-4">
-                      {renderPhotoZone('vertical')}
-                    </div>
-                  )}
+            {template === 'photo_second' && (
+              <div className="mb-4">
+                {renderPhotoZone('vertical')}
+              </div>
+            )}
 
                   {/* ── Page 2 textarea ── */}
                   <div className="my-8 relative">
@@ -1697,11 +1689,9 @@ const ChapterEditor = () => {
               const page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
               const rawText = mergedText;
               const combinedWords = countWords(rawText);
-              const paragraphBreaks = (rawText.match(/\n\n+/g) || []).length;
               const memoryWordCost = (placedMemories?.length ?? 0) * 40;
               const page2Words =
                 Math.max(0, combinedWords - PAGE_1_WORD_LIMIT) +
-                paragraphBreaks * 3 +
                 memoryWordCost;
               const page2Remaining = page2Budget - page2Words;
               if (page2Remaining < 0) {
@@ -1742,18 +1732,16 @@ const ChapterEditor = () => {
             )}
 
             {/* Comprehensive Page 1 & Page 2 status bar */}
-            <div className="flex items-center justify-center gap-6 mt-8 pt-4 border-t border-[hsl(var(--devotional-border))] text-xs font-medium" style={{ fontFamily: 'var(--font-body)' }}>
+            <div className="flex flex-col items-center gap-2 mt-8 pt-4 border-t border-[hsl(var(--devotional-border))] text-xs font-medium" style={{ fontFamily: 'var(--font-body)' }}>
               {(() => {
                 // Calculate states for both Page 1 and Page 2
                 const page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
                 const rawText = mergedText;
                 const combinedWords = countWords(rawText);
-                const paragraphBreaks = (rawText.match(/\n\n+/g) || []).length;
                 const memoryWordCost = (placedMemories?.length ?? 0) * 40;
-                
+                const page2AuthorWordsUsed = Math.max(0, combinedWords - PAGE_1_WORD_LIMIT);
                 const page2Words =
-                  Math.max(0, combinedWords - PAGE_1_WORD_LIMIT) +
-                  paragraphBreaks * 3 +
+                  page2AuthorWordsUsed +
                   memoryWordCost;
                 const remaining = page2Budget - page2Words;
 
@@ -1763,6 +1751,7 @@ const ChapterEditor = () => {
                 const p1Ratio = page1Words / PAGE_1_WORD_LIMIT;
                 const page1Color = isPage1Full ? '#16A34A' : p1Ratio >= 0.9 ? '#D97706' : '#6B7280';
                 const page1Label = `Page 1 · ${page1Words} / ${PAGE_1_WORD_LIMIT} words${isPage1Full ? ' (Full)' : ''}`;
+                const page1Remaining = Math.max(0, PAGE_1_WORD_LIMIT - page1Words);
 
                 // 2. Page 2 Status
                 let page2Label: string;
@@ -1785,13 +1774,37 @@ const ChapterEditor = () => {
 
                 return (
                   <>
-                    <span style={{ color: page1Color }}>
-                      {page1Label}
-                    </span>
-                    <span style={{ color: '#E5E7EB' }}>|</span>
-                    <span style={{ color: page2Color }}>
-                      {page2Label}
-                    </span>
+                    <div className="flex items-center justify-center gap-6">
+                      <span style={{ color: page1Color }}>
+                        {page1Label}
+                      </span>
+                      <span style={{ color: '#E5E7EB' }}>|</span>
+                      <span style={{ color: page2Color }}>
+                        {page2Label}
+                      </span>
+                    </div>
+                    <div className="text-[0.68rem] text-muted-foreground/80 text-center leading-relaxed">
+                      <span>
+                        Page 1 remaining: <strong>{page1Remaining}</strong> words
+                      </span>
+                      <span> · </span>
+                      <span>
+                        Page 2 budget: <strong>{page2Budget}</strong> words
+                      </span>
+                      <span> · </span>
+                      <span>
+                        Page 2 used: <strong>{page2Words}</strong> words
+                      </span>
+                      <span> ({page2AuthorWordsUsed} writing + {memoryWordCost} memory cost)
+                      </span>
+                      <span> · </span>
+                      <span>
+                        Page 2 {remaining < 0 ? 'over by' : 'remaining'}: <strong>{Math.abs(remaining)}</strong> words
+                      </span>
+                    </div>
+                    <div className="text-[0.66rem] text-muted-foreground/70 text-center">
+                      Layout capacity: <strong>{effectiveTemplate}</strong> ({hasUploadedPhoto ? 'photo uploaded' : 'no photo uploaded'}) · quote penalty: <strong>{quotePenalty}</strong> words
+                    </div>
                   </>
                 );
               })()}
@@ -1802,7 +1815,7 @@ const ChapterEditor = () => {
         {/* Bottom actions */}
         {!previewMode && (
           <div className="flex gap-3 pt-8 mx-auto max-w-[600px]" style={{ padding: '32px 60px 64px' }}>
-            <Button variant="outline" size="lg" className="flex-1 gap-2" onClick={() => save(false)} disabled={saving}>
+            <Button variant="outline" size="lg" className="flex-1 gap-2" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload}>
               <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save Draft'}
             </Button>
             {isComplete ? (
@@ -1814,12 +1827,12 @@ const ChapterEditor = () => {
                   setChapter(prev => prev ? { ...prev, status: 'in_progress' } : prev);
                   save(false, 'in_progress');
                 }}
-                disabled={saving}
+                disabled={saving || photoTemplateNeedsUpload}
               >
                 <Check className="h-4 w-4" /> Unmark Complete
               </Button>
             ) : (
-              <Button size="lg" className="flex-1 gap-2" onClick={handleMarkComplete} disabled={saving}>
+              <Button size="lg" className="flex-1 gap-2" onClick={handleMarkComplete} disabled={saving || photoTemplateNeedsUpload}>
                 <CheckCircle className="h-4 w-4" /> Mark Complete
               </Button>
             )}
@@ -1908,18 +1921,19 @@ const ChapterEditor = () => {
               .order('placed_at', { ascending: true, nullsFirst: false })
               .order('created_at', { ascending: true });
             if (data) {
+              const rows = data as MemoryRow[];
               const counts: Record<string, number> = {};
-              data.forEach((m: any) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
+              rows.forEach((m) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
               setMemoryCountsByChapter(counts);
               setPlacedMemories(
-                data
-                  .filter((m: any) => m.chapter_id === chapterId)
-                  .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+                rows
+                  .filter((m) => m.chapter_id === chapterId)
+                  .map((m) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
               );
               setUnplacedMemories(
-                data
-                  .filter((m: any) => !m.chapter_id)
-                  .map((m: any) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
+                rows
+                  .filter((m) => !m.chapter_id)
+                  .map((m) => ({ id: m.id, memory_text: m.memory_text, contributor_name: m.contributor_name }))
               );
               setSuggestionIndex(0);
             }

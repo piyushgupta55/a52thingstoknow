@@ -311,10 +311,10 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     }
 
     const rawTemplate = chapter.chapter_template || 'classic';
-    const template = (rawTemplate === 'all_words') ? 'classic' :
-                     (rawTemplate === 'photo_top') ? 'horizontal_photo' :
-                     (rawTemplate === 'photo_second') ? 'vertical_photo' :
-                     rawTemplate;
+    const parsedTemplate = (rawTemplate === 'all_words') ? 'classic' :
+      (rawTemplate === 'photo_top') ? 'horizontal_photo' :
+      (rawTemplate === 'photo_second') ? 'vertical_photo' :
+      rawTemplate;
 
     let quoteHtml = '';
     if (chapter.quote_text || chapter.bible_verse_text) {
@@ -355,21 +355,32 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     }
 
     const hasPhoto = chapter.photo_urls && chapter.photo_urls.length > 0;
-    const photoClass = (template === 'vertical_photo' || template === 'photo_second') ? 'chapter-photo vertical-photo' : 'chapter-photo';
+    // If no photo exists, treat photo templates as classic for pagination and layout
+    // so we do not reserve image-driven capacity or split too early.
+    const template = (!hasPhoto && (parsedTemplate === 'horizontal_photo' || parsedTemplate === 'vertical_photo'))
+      ? 'classic'
+      : parsedTemplate;
+    const photoClass = template === 'vertical_photo' ? 'chapter-photo vertical-photo' : 'chapter-photo';
     const photoHtml = hasPhoto ? `<img src="${chapter.photo_urls![0]}" class="${photoClass}" />` : '';
 
-    const isPhotoOnPage1 = template === 'horizontal_photo' || template === 'photo_top';
-    const basePage1Limit = isPhotoOnPage1 ? 75 : 135;
-    const PAGE_1_WORD_LIMIT = basePage1Limit;
-
-    const { page1: page1Text, page2: page2Text } = splitAtSentenceBoundary(chapter.content || '', PAGE_1_WORD_LIMIT);
+    const isPhotoOnPage1 = hasPhoto && template === 'horizontal_photo';
+    const basePage1Limit = isPhotoOnPage1 ? 75 : 170;
+    const quoteBlocksCount = Number(Boolean((chapter.bible_verse_text || '').trim())) + Number(Boolean((chapter.quote_text || '').trim()));
+    const quoteWords =
+      countWords(chapter.bible_verse_text || '') +
+      countWords(chapter.bible_verse_reference || '') +
+      countWords(chapter.quote_text || '') +
+      countWords(chapter.quote_attribution || '');
+    const quotePenalty = isPhotoOnPage1 && quoteBlocksCount > 0
+      ? Math.min(30, Math.max(8, Math.round(quoteWords * 0.5) + quoteBlocksCount * 4))
+      : 0;
+    const PAGE_1_WORD_LIMIT = Math.max(35, basePage1Limit - quotePenalty);
+    const { page1: page1Text, page2: page2Text } = splitRefByWordLimit(chapter.content || '', PAGE_1_WORD_LIMIT);
 
     let mergedWisdomHtml = '';
     if (page2Text) {
       const page1Html = formatContent(page1Text);
-      const page2HtmlRaw = formatContent(page2Text, true);
-      // Inject force-page-break class to the first paragraph of page 2
-      const page2Html = page2HtmlRaw.replace(/^(\s*<p[^>]*>)/i, '$1<span class="force-page-break"></span>');
+      const page2Html = formatContent(page2Text, true);
       mergedWisdomHtml = page1Html + '\n' + page2Html;
     } else {
       mergedWisdomHtml = formatContent(chapter.content);
@@ -394,11 +405,11 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       chaptersHtml += `
         <!-- Page 1: Photo Top, Wisdom -->
         <div class="page chapter-content-page page-p1" data-chapter="${chapter.chapter_number}" data-template="${template}" data-has-memories="${chapter.memories && chapter.memories.length > 0}">
-          ${photoHtml}
-          <div class="chapter-header" style="margin-top: 1em;">
+          <div class="chapter-header">
             <div class="chapter-label">Chapter ${chapter.chapter_number}</div>
             <h2 class="chapter-title ${chapter.title.length > 50 ? 'long-title' : ''}">${chapter.title}</h2>
           </div>
+          ${photoHtml}
           <div class="wisdom-text chapter-opening">
             ${quoteHtml}
             ${mergedWisdomHtml}
@@ -406,7 +417,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           ${memoriesHtml}
         </div>
       `;
-    } else if (template === 'vertical_photo' || template === 'photo_second') {
+    } else if (template === 'vertical_photo') {
       chaptersHtml += `
           <!-- Page 1: Title, Quotes, Wisdom, and Photo (split to Page 2) -->
           <div class="page chapter-content-page page-p1" data-chapter="${chapter.chapter_number}" data-template="${template}" data-has-memories="${chapter.memories && chapter.memories.length > 0}">
@@ -764,65 +775,16 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             if (!forceMoveEntireUnit && overflowUnit.type === 'wisdom' && overflowUnit.element.tagName.toLowerCase() === 'p') {
               // Split paragraph
               const splitResult = splitParagraph(overflowUnit.element, maxBottom);
-              if (splitResult) {
-                if (splitResult.pushEntire) {
-                  unitsToMove = units.slice(overflowIndex);
-                } else {
-                  // Widow/Orphan Control
-                  const overflowWordCount = splitResult.remainingText.split(' ').length;
-                  if (overflowWordCount < 40 && !page.hasAttribute('data-rebalanced')) {
-                    console.log("  Widow/Orphan detected (" + overflowWordCount + " words). Attempting rebalance on chapter " + chapterNum);
-                    page.setAttribute('data-rebalanced', 'true');
-                    
-                    // Restore original text
-                    overflowUnit.element.innerText = splitResult.originalText;
-                    
-                    // Apply tightening
-                    const wisdomContainer = page.querySelector('.wisdom-text');
-                    if (wisdomContainer) wisdomContainer.classList.add('rebalance-tight');
-                    
-                    // Allow slight margin bleed for tiny orphans
-                    const bleedAllowance = (overflowWordCount < 15) ? 35 : 10;
-                    
-                    // Re-evaluate with new constraints to find the new overflow point
-                    let newOverflowIndex = -1;
-                    for (let j = 0; j < units.length; j++) {
-                      if (units[j].element.getBoundingClientRect().bottom > maxBottom + bleedAllowance) {
-                        newOverflowIndex = j; break;
-                      }
-                    }
-                    
-                    if (newOverflowIndex === -1) {
-                      console.log("  Rebalance successful. Absorbed orphan completely.");
-                      return; // Successfully absorbed and nothing else overflows!
-                    } else if (newOverflowIndex > overflowIndex) {
-                      console.log("  Rebalance absorbed the orphan, but subsequent units (e.g. memories) overflow.");
-                      // We successfully absorbed the text, but the memories (or next elements) overflow.
-                      // We change the overflow unit to the new one and skip paragraph splitting.
-                      unitsToMove = units.slice(newOverflowIndex);
-                    } else {
-                      console.log("  Rebalance failed to absorb orphan. Proceeding with split.");
-                      // Re-run splitParagraph since we restored the text
-                      const retrySplit = splitParagraph(overflowUnit.element, maxBottom);
-                      if (retrySplit) {
-                        if (retrySplit.pushEntire) {
-                          unitsToMove = units.slice(overflowIndex);
-                        } else {
-                          unitsToMove.push({ type: 'wisdom', element: retrySplit.element });
-                          unitsToMove = unitsToMove.concat(units.slice(overflowIndex + 1));
-                        }
-                      } else {
-                        unitsToMove = unitsToMove.concat(units.slice(overflowIndex + 1));
-                      }
-                    }
+                if (splitResult) {
+                  if (splitResult.pushEntire) {
+                    unitsToMove = units.slice(overflowIndex);
                   } else {
                     unitsToMove.push({ type: 'wisdom', element: splitResult.element });
                     unitsToMove = unitsToMove.concat(units.slice(overflowIndex + 1));
                   }
+                } else {
+                  unitsToMove = unitsToMove.concat(units.slice(overflowIndex + 1));
                 }
-              } else {
-                 unitsToMove = unitsToMove.concat(units.slice(overflowIndex + 1));
-              }
             } else {
               // Move remaining units starting from overflowIndex
               unitsToMove = units.slice(overflowIndex);

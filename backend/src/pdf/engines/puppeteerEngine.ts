@@ -4,6 +4,16 @@ import { PDFDocument } from 'pdf-lib';
 import * as fs from 'fs';
 import * as path from 'path';
 
+const getDebugHtmlDir = () => path.join(process.cwd(), 'debug', 'html');
+
+const writeDebugHtml = (filename: string, html: string) => {
+  const dir = getDebugHtmlDir();
+  fs.mkdirSync(dir, { recursive: true });
+  const filePath = path.join(dir, filename);
+  fs.writeFileSync(filePath, html, 'utf8');
+  return filePath;
+};
+
 export class PuppeteerEngine implements PDFEngine {
   async generate(options: {
     renderHtml: (chapterPages?: Record<string, number>) => Promise<string>;
@@ -27,9 +37,8 @@ export class PuppeteerEngine implements PDFEngine {
       const htmlPass1 = await options.renderHtml();
       
       try {
-        fs.writeFileSync(path.join(process.cwd(), 'debug-pass1.html'), htmlPass1, 'utf8');
-        fs.writeFileSync(path.join(process.cwd(), '../public/debug-pass1.html'), htmlPass1, 'utf8');
-        console.log(`Saved Pass 1 HTML for debugging: ${path.join(process.cwd(), '../public/debug-pass1.html')}`);
+        const debugPath = writeDebugHtml('debug-pass1-latest.html', htmlPass1);
+        console.log(`Saved Pass 1 HTML for debugging: ${debugPath}`);
       } catch (err) {
         console.warn('Could not save debug-pass1.html:', err);
       }
@@ -72,9 +81,8 @@ export class PuppeteerEngine implements PDFEngine {
       const htmlPass2 = await options.renderHtml(layoutInfo.mapping);
 
       try {
-        fs.writeFileSync(path.join(process.cwd(), 'debug-pass2.html'), htmlPass2, 'utf8');
-        fs.writeFileSync(path.join(process.cwd(), '../public/debug-pass2.html'), htmlPass2, 'utf8');
-        console.log(`Saved Pass 2 HTML for debugging: ${path.join(process.cwd(), '../public/debug-pass2.html')}`);
+        const debugPath = writeDebugHtml('debug-pass2-latest.html', htmlPass2);
+        console.log(`Saved Pass 2 HTML for debugging: ${debugPath}`);
       } catch (err) {
         console.warn('Could not save debug-pass2.html:', err);
       }

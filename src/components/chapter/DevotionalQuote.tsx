@@ -69,18 +69,21 @@ const DevotionalQuote = ({ text, attribution, onTextChange, onAttrChange, onFind
   return (
     <div className="py-3 cursor-pointer group" onClick={onToggleEdit}>
       <div 
-        className="pl-3 py-1 transition-all duration-200" 
+        className="transition-all duration-200" 
         style={{ 
           borderLeft: `2.5px solid #C4788A`,
+          margin: '1.3em 0',
+          paddingLeft: '1.5em',
         }}
       >
         <p
           className="italic"
           style={{ 
             fontFamily: 'var(--font-devotional)',
-            fontSize: '14.4px',
+            fontSize: '11pt',
             lineHeight: '1.7',
-            color: '#1D2630B2'
+            color: 'rgba(29, 38, 48, 0.7)',
+            margin: 0,
           }}
         >
           "{text}"
@@ -90,9 +93,9 @@ const DevotionalQuote = ({ text, attribution, onTextChange, onAttrChange, onFind
             <p 
               className="uppercase tracking-[0.12em]" 
               style={{ 
-                fontFamily: 'var(--font-body)',
-                fontSize: '10.4px',
-                color: '#6A758180'
+                fontFamily: 'Source Sans 3, system-ui, sans-serif',
+                fontSize: '8pt',
+                color: 'rgba(106, 117, 129, 0.5)'
               }}
             >
               — {attribution}

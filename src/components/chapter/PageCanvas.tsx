@@ -1,4 +1,12 @@
 import { type ReactNode } from 'react';
+import {
+  PREVIEW_PAGE_FOOTER_HEIGHT,
+  PREVIEW_PAGE_HEIGHT,
+  PREVIEW_PAGE_PADDING_INNER,
+  PREVIEW_PAGE_PADDING_OUTER,
+  PREVIEW_PAGE_PADDING_TOP,
+  PREVIEW_PAGE_WIDTH,
+} from '@/features/preview/geometry';
 
 interface Props {
   children: ReactNode;
@@ -25,18 +33,25 @@ const PageCanvas = ({ children, previewMode = false, pageNumber, wordCount, word
     countColor = '#D97706';
   }
 
+  const isLeftPage = pageNumber !== 2;
+  const paddingLeft = isLeftPage ? PREVIEW_PAGE_PADDING_OUTER : PREVIEW_PAGE_PADDING_INNER;
+  const paddingRight = isLeftPage ? PREVIEW_PAGE_PADDING_INNER : PREVIEW_PAGE_PADDING_OUTER;
+
   return (
     <div
       className="relative mx-auto"
       style={{
-        width: '600px',
+        width: `${PREVIEW_PAGE_WIDTH}px`,
         maxWidth: '100%',
+        minHeight: `${PREVIEW_PAGE_HEIGHT}px`,
+        height: previewMode ? `${PREVIEW_PAGE_HEIGHT}px` : undefined,
         background: '#FFFFFF',
         borderRadius: '4px',
         boxShadow: previewMode
           ? '0 4px 20px rgba(0,0,0,0.12)'
           : '0 2px 12px rgba(0,0,0,0.08)',
-        padding: '54px 60px',
+        padding: `${PREVIEW_PAGE_PADDING_TOP}px ${paddingRight}px ${PREVIEW_PAGE_FOOTER_HEIGHT}px ${paddingLeft}px`,
+        overflow: previewMode ? 'hidden' : 'visible',
       }}
     >
       {companionSlot && (

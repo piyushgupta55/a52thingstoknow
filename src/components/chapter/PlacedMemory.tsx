@@ -23,8 +23,13 @@ const PlacedMemory = ({ text, fromName, onRemove }: Props) => {
       style={{
         backgroundColor: '#F5F0E8',
         fontFamily: "'Caveat', cursive",
-        fontSize: '1.15rem',
+        fontSize: '15px',
         color: 'hsl(210 25% 15% / 0.85)',
+        width: '100%',
+        maxWidth: '28em',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        boxSizing: 'border-box',
       }}
     >
       {onRemove && (

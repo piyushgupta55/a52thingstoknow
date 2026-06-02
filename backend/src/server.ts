@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { generatePDF } from './pdf/generatePDF';
+import { renderBook } from './pdf/templates/shared/layout';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -39,6 +40,23 @@ app.post('/generate-pdf', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error generating PDF:', error);
     res.status(500).json({ error: 'Failed to generate PDF', details: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+// HTML Preview endpoint (same renderer as PDF template)
+app.post('/generate-preview-html', async (req: Request, res: Response) => {
+  try {
+    const bookData = req.body;
+
+    if (!bookData || !bookData.title) {
+      return res.status(400).json({ error: 'Invalid or missing bookData payload' });
+    }
+
+    const html = await renderBook(bookData);
+    res.status(200).send(html);
+  } catch (error) {
+    console.error('Error generating preview HTML:', error);
+    res.status(500).json({ error: 'Failed to generate preview HTML', details: error instanceof Error ? error.message : String(error) });
   }
 });
 

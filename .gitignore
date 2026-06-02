@@ -26,3 +26,8 @@ dist-ssr
 # Test PDFs and temporary scripts
 *.pdf
 test_dpi.ts
+
+# Generated debug HTML
+backend/debug/
+public/debug-pass*.html
+backend/debug-pass*.html
