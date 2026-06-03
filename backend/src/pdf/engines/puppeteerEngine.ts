@@ -116,7 +116,7 @@ export class PuppeteerEngine implements PDFEngine {
           displayHeaderFooter: !isFront,
           headerTemplate: '<span></span>',
           footerTemplate: isFront ? '<span></span>' : `
-            <div style="font-size: 9pt; font-family: 'Lora', 'Georgia', serif; text-align: ${footerAlign}; width: 100%; ${footerPadding} box-sizing: border-box; margin-bottom: 0.35in; color: #666;">
+            <div style="font-size: 9pt; font-family: 'Lora', 'Georgia', serif; text-align: ${footerAlign}; width: 100%; ${footerPadding} padding-top: 0.175in; padding-bottom: 0.175in; box-sizing: border-box; color: #666;">
               ${i}
             </div>
           `,

@@ -165,7 +165,7 @@
 /* Pagination */
 .page-number {
   position: absolute !important;
-  bottom: 0.35in !important;
+  bottom: 0.175in !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   font-family: 'Lora', serif;

@@ -657,6 +657,15 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           return rects.length > 0 ? rects[0].bottom : container.getBoundingClientRect().bottom;
         }
 
+        function getParagraphBottomAtOffset(container, offset) {
+          const range = document.createRange();
+          const startOk = setRangeStartAtOffset(range, container, 0);
+          const endOk = setRangeEndAtOffset(range, container, offset);
+          if (!startOk || !endOk) return container.getBoundingClientRect().bottom;
+          const rects = range.getClientRects();
+          return rects.length > 0 ? rects[rects.length - 1].bottom : container.getBoundingClientRect().bottom;
+        }
+
         // Client-side text splitting to flow overflowing content from page-p1 to page-p2 and dynamically create overflow pages as needed
         window.addEventListener('load', () => {
           document.fonts.ready.then(() => {
@@ -683,8 +692,8 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         function splitPageIfNeeded(page, depth = 0) {
           const chapterNum = page.getAttribute('data-chapter');
           const pageRect = page.getBoundingClientRect();
-          // maxBottom threshold is 770px relative to page top (within 888px high page)
-          const maxBottom = pageRect.top + 770;
+          // Slightly tighter page fit so we reclaim the last line more often.
+          const maxBottom = pageRect.top + 800;
           console.log("splitPageIfNeeded [ch=" + chapterNum + ", depth=" + depth + "]: pageRect.top=" + pageRect.top + ", maxBottom=" + maxBottom);
 
           if (depth > 20) {
@@ -935,23 +944,42 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           }
 
           // Apply Widows/Orphans checks
-          const totalLines = lines.length;
-          const remainingLines = totalLines - fitLineCount;
-
-          if (fitLineCount < 2) {
+          if (fitLineCount < 1) {
             fitLineCount = 0; // Push entire block
-          } else if (remainingLines < 2) {
-            fitLineCount = totalLines - 2; // Pull lines forward
-            if (fitLineCount < 2) fitLineCount = 0;
           }
 
           if (fitLineCount === 0) {
             return { element: p, remainingText: rawText, originalText: rawText, pushEntire: true };
           }
 
+          const totalLines = lines.length;
+          const splitLineIndex = Math.min(fitLineCount - 1, totalLines - 1);
+          const splitLineStart = lines[splitLineIndex].startOffset;
+          const splitLineEnd = lines[splitLineIndex].endOffset;
+
+          let splitOffset = splitLineEnd;
+          if (splitLineIndex < totalLines - 1) {
+            const candidateOffsets = safeSplitOffsets.filter((offset) => offset >= splitLineStart && offset <= splitLineEnd);
+            let low = 0;
+            let high = candidateOffsets.length - 1;
+            let best = splitLineEnd;
+
+            while (low <= high) {
+              const mid = Math.floor((low + high) / 2);
+              const candidate = candidateOffsets[mid];
+              const candidateBottom = getParagraphBottomAtOffset(textFlow, candidate);
+              if (candidateBottom <= maxBottom) {
+                best = candidate;
+                low = mid + 1;
+              } else {
+                high = mid - 1;
+              }
+            }
+
+            splitOffset = best;
+          }
+
           // 5. PERFORM RICH DOM SPLITTING VIA RANGE CLONING
-          const splitOffset = lines[fitLineCount - 1].endOffset;
-          
           // Part 1: Range from start to split point
           const range1 = document.createRange();
           range1.setStart(textFlow, 0);

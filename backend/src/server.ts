@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import * as fs from 'fs';
+import * as path from 'path';
 import { generatePDF } from './pdf/generatePDF';
 import { renderBook } from './pdf/templates/shared/layout';
 
@@ -9,6 +11,33 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors()); // Allow frontend to call the backend
 app.use(express.json({ limit: '50mb' })); // Allow large payloads (e.g. base64 images if any)
+
+const debugHtmlDir = path.join(process.cwd(), 'debug', 'html');
+
+const sendDebugHtml = (filename: string, res: Response) => {
+  const filePath = path.join(debugHtmlDir, filename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('Debug HTML not found');
+  }
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  return res.sendFile(filePath);
+};
+
+app.get('/debug-pass1-latest.html', (_req: Request, res: Response) => {
+  sendDebugHtml('debug-pass1-latest.html', res);
+});
+
+app.get('/debug-pass2-latest.html', (_req: Request, res: Response) => {
+  sendDebugHtml('debug-pass2-latest.html', res);
+});
+
+app.get('/debug/html/:filename', (req: Request, res: Response) => {
+  const { filename } = req.params;
+  if (!/^debug-pass[12]-latest\.html$/.test(filename)) {
+    return res.status(404).send('Debug HTML not found');
+  }
+  return sendDebugHtml(filename, res);
+});
 
 // Healthcheck endpoint
 app.get('/health', (req: Request, res: Response) => {
