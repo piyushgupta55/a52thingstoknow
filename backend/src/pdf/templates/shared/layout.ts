@@ -1020,6 +1020,12 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           const newP = document.createElement('p');
           const part2Flow = document.createElement('span');
           part2Flow.className = 'text-flow';
+          // Preserve the original sentence separator when the split lands
+          // immediately after whitespace. Without this, the overflow page
+          // can start with the next word glued to the previous sentence.
+          if (splitOffset > 0 && /\s/.test(rawText[splitOffset - 1] || '')) {
+            part2Flow.appendChild(document.createTextNode('\u00A0'));
+          }
           part2Flow.appendChild(part2Fragment);
           newP.appendChild(part2Flow);
 
