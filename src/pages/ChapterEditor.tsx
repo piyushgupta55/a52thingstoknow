@@ -28,7 +28,7 @@ import {
   WORD_BUDGETS,
 } from '@/features/chapter-editor/constants';
 import { validatePhoto } from '@/features/chapter-editor/photoValidation';
-import { mergeRefAndContent, splitForCurrentLayout as splitTextForLayout, splitRefByWordLimit } from '@/features/chapter-editor/textSplit';
+import { mergeRefAndContent } from '@/features/chapter-editor/textSplit';
 import {
   PREVIEW_PHOTO_HORIZONTAL_HEIGHT,
   PREVIEW_PHOTO_VERTICAL_HEIGHT,
@@ -36,6 +36,7 @@ import {
   PREVIEW_PAGE_HEIGHT,
   PREVIEW_PAGE_WIDTH,
 } from '@/features/preview/geometry';
+import { extractExactChapterSplit, measureLayout, type LayoutMeasurementResult } from '@/features/preview/layoutMeasurement';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -137,10 +138,12 @@ const ChapterEditor = () => {
   const [printNotice, setPrintNotice] = useState(false);
   const printNoticeTimer = useRef<ReturnType<typeof setTimeout>>();
   const exactPreviewIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const exactPreviewRequestId = useRef(0);
   const [exactPreviewHtml, setExactPreviewHtml] = useState('');
   const [exactPreviewLoading, setExactPreviewLoading] = useState(false);
   const [exactPreviewError, setExactPreviewError] = useState<string | null>(null);
   const [chapterPreviewPageCount, setChapterPreviewPageCount] = useState(0);
+  const [layoutMeasurement, setLayoutMeasurement] = useState<LayoutMeasurementResult | null>(null);
 
   const [referenceContent, setReferenceContent] = useState<string | null>(null);
   const [referenceText, setReferenceText] = useState('');
@@ -215,11 +218,6 @@ const ChapterEditor = () => {
     ? Math.min(30, Math.max(8, Math.round(quoteWords * 0.5) + quoteBlocksCount * 4))
     : 0;
   const PAGE_1_WORD_LIMIT = Math.max(MIN_PAGE_1_WORD_LIMIT, basePage1Limit - quotePenalty);
-  const previewBasePage1Limit = hasUploadedPhoto && template === 'photo_top' ? 75 : 170;
-  const previewQuotePenalty = hasUploadedPhoto && template === 'photo_top' && quoteBlocksCount > 0
-    ? Math.min(30, Math.max(8, Math.round(quoteWords * 0.5) + quoteBlocksCount * 4))
-    : 0;
-  const PREVIEW_PAGE_1_WORD_LIMIT = Math.max(35, previewBasePage1Limit - previewQuotePenalty);
   // Letter chapters use their own `content`-bound textarea; every other
   // chapter edits the single unified `mergedText` buffer.
   const editorText = isLetterChapter ? content : mergedText;
@@ -240,10 +238,6 @@ const ChapterEditor = () => {
   const showMemoryPlaceholder =
     !isLetterChapter && _placedMemoryCount === 0 && page2RemainingTop >= 40;
   const isComplete = chapter?.status === 'complete';
-
-  // Editor + preview share a strict word-boundary split (computed further
-  // down via splitRefByWordLimit) — page 1 holds up to 150 words, overflow
-  // auto-flows to page 2.
 
   // Unified word count — all derived from the single editor buffer so the
   // numbers never shuffle as the author types across the page boundary.
@@ -516,17 +510,10 @@ const ChapterEditor = () => {
     const savedAt = new Date().toISOString();
     const newStatus = statusOverride || (markComplete ? 'complete' : chapter?.status === 'complete' ? 'complete' : 'in_progress');
 
-    // The split into page-1 (reference_text) / page-2 (content) happens
-    // here, ONLY on save — never while the author is typing. We use the
-    // same sentence-aware boundary as preview so saved data matches what
-    // the author sees. Letter chapters edit `content` directly and aren't split.
+    // The split into page-1 (reference_text) / page-2 (content) is kept in
+    // the live editor state and synced to the exact rendered preview DOM.
     let refToSave = referenceText;
     let contentToSave = content;
-    if (!isLetterChapter) {
-      const { page1, page2 } = splitForCurrentLayout(mergedText);
-      refToSave = page1;
-      contentToSave = page2;
-    }
 
     const { error } = await supabase.from('chapters').update({
       bible_verse_text: bibleVerseText || null,
@@ -1013,10 +1000,6 @@ const ChapterEditor = () => {
     return '#16A34A';
   };
 
-  const splitForCurrentLayout = (text: string) => (
-    splitTextForLayout(text, PAGE_1_WORD_LIMIT, usesPhotoCapacity)
-  );
-
   useEffect(() => {
     if (!chapter) return;
 
@@ -1038,6 +1021,7 @@ const ChapterEditor = () => {
     };
 
     const loadExactPreview = async () => {
+      const requestId = ++exactPreviewRequestId.current;
       setExactPreviewLoading(true);
       setExactPreviewError(null);
       try {
@@ -1051,11 +1035,14 @@ const ChapterEditor = () => {
             chapters: [chapterPayload],
           }),
         });
+        if (requestId !== exactPreviewRequestId.current) return;
         if (!response.ok) throw new Error(`Preview HTML failed (${response.status})`);
         setExactPreviewHtml(await response.text());
       } catch (err) {
+        if (requestId !== exactPreviewRequestId.current) return;
         setExactPreviewError(err instanceof Error ? err.message : 'Failed to load exact preview HTML');
       } finally {
+        if (requestId !== exactPreviewRequestId.current) return;
         setExactPreviewLoading(false);
       }
     };
@@ -1104,7 +1091,16 @@ const ChapterEditor = () => {
       doc.head.appendChild(hideScrollbars);
     }
     doc.body.appendChild(wrapper);
+    const exactSplit = extractExactChapterSplit(doc, chapterKey);
     setChapterPreviewPageCount(pageNodes.length);
+    setLayoutMeasurement(measureLayout(doc));
+
+    if (!isLetterChapter) {
+      const nextMerged = mergeRefAndContent(exactSplit.page1, exactSplit.page2);
+      setReferenceText((prev) => (prev === exactSplit.page1 ? prev : exactSplit.page1));
+      setContent((prev) => (prev === exactSplit.page2 ? prev : exactSplit.page2));
+      setMergedText((prev) => (prev === nextMerged ? prev : nextMerged));
+    }
   };
 
   const handleCompanionRequestEdit = () => {
@@ -1145,22 +1141,6 @@ const ChapterEditor = () => {
       <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Chapter not found.</div>
     </div>
   );
-
-  // Page-1 / page-2 are derived from the single buffer at render time. The
-  // split is persisted to state only on save; deriving it here keeps preview
-  // live. We use a paragraph-aware split for PREVIEW so page 1 never ends
-  // mid-sentence (the client's explicit requirement). The editor's
-  // word-budget math still uses the strict 150-word limit elsewhere — only
-  // the visual page break snaps to a paragraph boundary.
-  // Page-1/page-2 split: word-capped AT 150 (or 75 for photo) AND snapped
-  // back to the last sentence-ending punctuation so page 1 never ends
-  // mid-sentence. Editor + preview share the same split so the author
-  // sees the exact same break in both views.
-  const previewPages = isLetterChapter
-    ? { page1: referenceText, page2: content }
-    : splitRefByWordLimit(mergedText, PREVIEW_PAGE_1_WORD_LIMIT);
-  const previewRefText = previewPages.page1;
-  const previewContent = previewPages.page2;
 
   return (
     <div className="min-h-screen bg-[hsl(var(--devotional-bg))]">
@@ -1354,8 +1334,8 @@ const ChapterEditor = () => {
                   margin: '0 auto',
                   pointerEvents: 'auto',
                 }}
-              />
-            )}
+                />
+              )}
           </div>
         ) : isLetterChapter ? (
           /* ═══ LETTER EDIT MODE ═══ */
@@ -1467,14 +1447,8 @@ const ChapterEditor = () => {
 
             {/* ─── Two-textarea editor: Page 1 above, divider, Page 2 below ─── */}
             {(() => {
-              // mergedText is still the single source of truth for word
-              // counting + save. The editor renders TWO textareas: page 1
-              // is capped at the word limit AND snapped to the last
-              // sentence boundary, so it never ends mid-sentence. Any
-              // text past that boundary flows to the page 2 textarea
-              // below the divider.
-              const { page1: editPage1, page2: editPage2 } =
-                splitForCurrentLayout(mergedText);
+              const editPage1 = referenceText;
+              const editPage2 = content;
 
               // Recombine the two textarea values back into mergedText.
               // The split function leaves a whitespace token at the seam
@@ -1499,7 +1473,7 @@ const ChapterEditor = () => {
               };
 
               const totalChapterWords = countWords(mergedText);
-              const showPageBreak = totalChapterWords > PAGE_1_WORD_LIMIT;
+              const showPageBreak = editPage2.trim().length > 0;
               const _page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
               // Memory cards consume fixed page space; paragraph breaks should
               // not reduce available words in this meter.
@@ -1537,28 +1511,10 @@ const ChapterEditor = () => {
                         onChange={e => {
                           const ta = e.target;
                           const newP1 = ta.value;
-                          const caretInP1 = ta.selectionStart;
                           const merged = joinPages(newP1, editPage2);
+                          setReferenceText(newP1);
                           applyMerged(merged);
                           autoResize(ta);
-                          // If the new split moves some of the typed text
-                          // from page 1 to page 2, follow the cursor over
-                          // to the page-2 textarea — otherwise each new
-                          // character keeps getting bounced out of page 1
-                          // and the user has no idea where their typing
-                          // is going.
-                          const after = splitForCurrentLayout(merged);
-                          if (caretInP1 > after.page1.length) {
-                            const cursorInP2 = caretInP1 - after.page1.length;
-                            requestAnimationFrame(() => {
-                              const dest = wisdomTextareaRef.current;
-                              if (!dest) return;
-                              dest.focus();
-                              dest.selectionStart = dest.selectionEnd =
-                                Math.max(0, Math.min(cursorInP2, dest.value.length));
-                              autoResize(dest);
-                            });
-                          }
                         }}
                         onPaste={e => {
                           e.preventDefault();
@@ -1572,27 +1528,13 @@ const ChapterEditor = () => {
                             editPage1.slice(0, start) + text + editPage1.slice(end);
                           const merged = joinPages(newP1, editPage2);
                           if (merged.length > MAX_CONTENT_LENGTH) return;
+                          setReferenceText(newP1);
                           applyMerged(merged);
                           const caret = start + text.length;
-                          // Mirror the onChange overflow handling so a paste
-                          // that lands past the boundary also focuses page 2.
-                          const after = splitForCurrentLayout(merged);
-                          if (caret > after.page1.length) {
-                            const cursorInP2 = caret - after.page1.length;
-                            requestAnimationFrame(() => {
-                              const dest = wisdomTextareaRef.current;
-                              if (!dest) return;
-                              dest.focus();
-                              dest.selectionStart = dest.selectionEnd =
-                                Math.max(0, Math.min(cursorInP2, dest.value.length));
-                              autoResize(dest);
-                            });
-                          } else {
-                            requestAnimationFrame(() => {
-                              ta.selectionStart = ta.selectionEnd = caret;
-                              autoResize(ta);
-                            });
-                          }
+                          requestAnimationFrame(() => {
+                            ta.selectionStart = ta.selectionEnd = caret;
+                            autoResize(ta);
+                          });
                         }}
                         className={textareaClassName}
                         style={textareaStyle}
@@ -1642,7 +1584,9 @@ const ChapterEditor = () => {
                         rows={4}
                         placeholder="Page 2 continues here..."
                         onChange={e => {
-                          applyMerged(joinPages(editPage1, e.target.value));
+                          const nextP2 = e.target.value;
+                          setContent(nextP2);
+                          applyMerged(joinPages(editPage1, nextP2));
                           autoResize(e.target);
                         }}
                         onPaste={e => {
@@ -1657,6 +1601,7 @@ const ChapterEditor = () => {
                             editPage2.slice(0, start) + text + editPage2.slice(end);
                           const merged = joinPages(editPage1, newP2);
                           if (merged.length > MAX_CONTENT_LENGTH) return;
+                          setContent(newP2);
                           applyMerged(merged);
                           const caret = start + text.length;
                           requestAnimationFrame(() => {
@@ -1733,83 +1678,54 @@ const ChapterEditor = () => {
 
             {/* Comprehensive Page 1 & Page 2 status bar */}
             <div className="flex flex-col items-center gap-2 mt-8 pt-4 border-t border-[hsl(var(--devotional-border))] text-xs font-medium" style={{ fontFamily: 'var(--font-body)' }}>
-              {(() => {
-                // Calculate states for both Page 1 and Page 2
-                const page2Budget = Math.max(0, budget - PAGE_1_WORD_LIMIT);
-                const rawText = mergedText;
-                const combinedWords = countWords(rawText);
-                const memoryWordCost = (placedMemories?.length ?? 0) * 40;
-                const page2AuthorWordsUsed = Math.max(0, combinedWords - PAGE_1_WORD_LIMIT);
-                const page2Words =
-                  page2AuthorWordsUsed +
-                  memoryWordCost;
-                const remaining = page2Budget - page2Words;
-
-                // 1. Page 1 Status
-                const page1Words = Math.min(combinedWords, PAGE_1_WORD_LIMIT);
-                const isPage1Full = combinedWords >= PAGE_1_WORD_LIMIT;
-                const p1Ratio = page1Words / PAGE_1_WORD_LIMIT;
-                const page1Color = isPage1Full ? '#16A34A' : p1Ratio >= 0.9 ? '#D97706' : '#6B7280';
-                const page1Label = `Page 1 · ${page1Words} / ${PAGE_1_WORD_LIMIT} words${isPage1Full ? ' (Full)' : ''}`;
-                const page1Remaining = Math.max(0, PAGE_1_WORD_LIMIT - page1Words);
-
-                // 2. Page 2 Status
-                let page2Label: string;
-                let page2Color: string;
-                if (combinedWords < PAGE_1_WORD_LIMIT) {
-                  page2Label = `Page 2 · ${page2Budget} words available`;
-                  page2Color = '#9CA3AF'; // Inactive gray
-                } else {
-                  const isOver = remaining < 0;
-                  page2Color = isOver ? '#EF4444' : '#16A34A';
-                  if (isOver) {
-                    const over = Math.abs(remaining);
-                    page2Label = `Page 2 · ${over} word${over === 1 ? '' : 's'} over`;
-                  } else if (remaining === 0) {
-                    page2Label = 'Page 2 · Full';
-                  } else {
-                    page2Label = `Page 2 · ${remaining} word${remaining === 1 ? '' : 's'} available`;
-                  }
-                }
-
-                return (
-                  <>
-                    <div className="flex items-center justify-center gap-6">
-                      <span style={{ color: page1Color }}>
-                        {page1Label}
+              {layoutMeasurement ? (
+                <>
+                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                    <span style={{ color: '#6B7280' }}>
+                      Measured preview pages: <strong>{layoutMeasurement.pageCount}</strong>
+                    </span>
+                    <span style={{ color: '#E5E7EB' }}>|</span>
+                    <span style={{ color: layoutMeasurement.overflowPageIndexes.length ? '#EF4444' : '#16A34A' }}>
+                      Overflow pages: <strong>{layoutMeasurement.overflowPageIndexes.length}</strong>
+                    </span>
+                  </div>
+                  <div className="text-[0.68rem] text-muted-foreground/80 text-center leading-relaxed">
+                    {layoutMeasurement.pages.slice(0, 2).map((page) => (
+                      <span key={page.pageIndex}>
+                        Page {page.pageIndex + 1}: <strong>{Math.round(page.fillPercent)}%</strong> full
+                        {page.overflows ? ' (overflow)' : ''}
+                        {page.pageIndex < Math.min(1, layoutMeasurement.pages.length - 1) ? ' · ' : ''}
                       </span>
-                      <span style={{ color: '#E5E7EB' }}>|</span>
-                      <span style={{ color: page2Color }}>
-                        {page2Label}
-                      </span>
-                    </div>
-                    <div className="text-[0.68rem] text-muted-foreground/80 text-center leading-relaxed">
-                      <span>
-                        Page 1 remaining: <strong>{page1Remaining}</strong> words
-                      </span>
-                      <span> · </span>
-                      <span>
-                        Page 2 budget: <strong>{page2Budget}</strong> words
-                      </span>
-                      <span> · </span>
-                      <span>
-                        Page 2 used: <strong>{page2Words}</strong> words
-                      </span>
-                      <span> ({page2AuthorWordsUsed} writing + {memoryWordCost} memory cost)
-                      </span>
-                      <span> · </span>
-                      <span>
-                        Page 2 {remaining < 0 ? 'over by' : 'remaining'}: <strong>{Math.abs(remaining)}</strong> words
-                      </span>
-                    </div>
-                    <div className="text-[0.66rem] text-muted-foreground/70 text-center">
-                      Layout capacity: <strong>{effectiveTemplate}</strong> ({hasUploadedPhoto ? 'photo uploaded' : 'no photo uploaded'}) · quote penalty: <strong>{quotePenalty}</strong> words
-                    </div>
-                  </>
-                );
-              })()}
+                    ))}
+                  </div>
+                  <div className="text-[0.66rem] text-muted-foreground/70 text-center">
+                    Exact preview metrics come from the rendered HTML, not a word-budget estimate.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center gap-3">
+                    <span style={{ color: '#6B7280' }}>
+                      Measured preview pages: <strong>{chapterPreviewPageCount > 0 ? chapterPreviewPageCount : '...'}</strong>
+                    </span>
+                  </div>
+                  <div className="text-[0.68rem] text-muted-foreground/70 text-center">
+                    Loading exact layout metrics…
+                  </div>
+                </>
+              )}
             </div>
           </PageCanvas>
+        )}
+
+        {!previewMode && exactPreviewHtml && (
+          <iframe
+            ref={exactPreviewIframeRef}
+            title="Hidden exact chapter preview"
+            srcDoc={exactPreviewHtml}
+            onLoad={syncExactPreview}
+            style={{ position: 'absolute', width: 0, height: 0, border: 0, opacity: 0, pointerEvents: 'none' }}
+          />
         )}
 
         {/* Bottom actions */}
