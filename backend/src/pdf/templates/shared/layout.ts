@@ -374,16 +374,22 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     const quotePenalty = isPhotoOnPage1 && quoteBlocksCount > 0
       ? Math.min(30, Math.max(8, Math.round(quoteWords * 0.5) + quoteBlocksCount * 4))
       : 0;
-    const PAGE_1_WORD_LIMIT = Math.max(35, basePage1Limit - quotePenalty);
-    const { page1: page1Text, page2: page2Text } = splitRefByWordLimit(chapter.content || '', PAGE_1_WORD_LIMIT);
-
     let mergedWisdomHtml = '';
-    if (page2Text) {
-      const page1Html = formatContent(page1Text);
-      const page2Html = formatContent(page2Text, true);
-      mergedWisdomHtml = page1Html + '\n' + page2Html;
-    } else {
+    if (template === 'horizontal_photo') {
+      // Let the DOM-based paginator use the full paragraph flow for photo-top
+      // chapters. Word pre-splitting can leave visible gaps on these pages.
       mergedWisdomHtml = formatContent(chapter.content);
+    } else {
+      const PAGE_1_WORD_LIMIT = Math.max(35, basePage1Limit - quotePenalty);
+      const { page1: page1Text, page2: page2Text } = splitRefByWordLimit(chapter.content || '', PAGE_1_WORD_LIMIT);
+
+      if (page2Text) {
+        const page1Html = formatContent(page1Text);
+        const page2Html = formatContent(page2Text, true);
+        mergedWisdomHtml = page1Html + '\n' + page2Html;
+      } else {
+        mergedWisdomHtml = formatContent(chapter.content);
+      }
     }
 
     if (template === 'classic') {
