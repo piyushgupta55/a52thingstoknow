@@ -1056,43 +1056,51 @@ const ChapterEditor = () => {
 
     const doc = iframe.contentDocument;
     const chapterKey = String(chapter.chapter_number);
-    const pageNodes = Array.from(doc.querySelectorAll(`.page[data-chapter="${chapterKey}"]`));
+    const waitForLayoutFinal = async () => {
+      for (let i = 0; i < 120; i += 1) {
+        if (doc.body?.classList.contains('layout-final')) break;
+        await new Promise(resolve => window.setTimeout(resolve, 50));
+      }
 
-    if (pageNodes.length === 0) return;
+      const pageNodes = Array.from(doc.querySelectorAll(`.page[data-chapter="${chapterKey}"]`));
+      if (pageNodes.length === 0) return;
 
-    const wrapper = doc.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.flexDirection = 'column';
-    wrapper.style.alignItems = 'center';
-    wrapper.style.gap = '32px';
-    wrapper.style.padding = '24px 0';
-    wrapper.style.width = '100%';
+      const wrapper = doc.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.alignItems = 'center';
+      wrapper.style.gap = '32px';
+      wrapper.style.padding = '24px 0';
+      wrapper.style.width = '100%';
 
-    pageNodes.forEach((node) => {
-      wrapper.appendChild(node.cloneNode(true));
-    });
+      pageNodes.forEach((node) => {
+        wrapper.appendChild(node.cloneNode(true));
+      });
 
-    doc.body.innerHTML = '';
-    doc.body.style.margin = '0';
-    doc.body.style.background = '#faf8f5';
-    doc.body.style.display = 'flex';
-    doc.body.style.justifyContent = 'center';
-    doc.body.style.overflowY = 'auto';
-    doc.documentElement.style.overflowY = 'auto';
+      doc.body.innerHTML = '';
+      doc.body.style.margin = '0';
+      doc.body.style.background = '#faf8f5';
+      doc.body.style.display = 'flex';
+      doc.body.style.justifyContent = 'center';
+      doc.body.style.overflowY = 'auto';
+      doc.documentElement.style.overflowY = 'auto';
 
-    let hideScrollbars = doc.getElementById('preview-scrollbar-hide');
-    if (!hideScrollbars) {
-      hideScrollbars = doc.createElement('style');
-      hideScrollbars.id = 'preview-scrollbar-hide';
-      hideScrollbars.textContent = `
-        html, body { scrollbar-width: none; -ms-overflow-style: none; }
-        html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
-      `;
-      doc.head.appendChild(hideScrollbars);
-    }
-    doc.body.appendChild(wrapper);
-    setChapterPreviewPageCount(pageNodes.length);
-    setLayoutMeasurement(measureLayout(doc));
+      let hideScrollbars = doc.getElementById('preview-scrollbar-hide');
+      if (!hideScrollbars) {
+        hideScrollbars = doc.createElement('style');
+        hideScrollbars.id = 'preview-scrollbar-hide';
+        hideScrollbars.textContent = `
+          html, body { scrollbar-width: none; -ms-overflow-style: none; }
+          html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+        `;
+        doc.head.appendChild(hideScrollbars);
+      }
+      doc.body.appendChild(wrapper);
+      setChapterPreviewPageCount(pageNodes.length);
+      setLayoutMeasurement(measureLayout(doc));
+    };
+
+    void waitForLayoutFinal();
   };
 
   const handleCompanionRequestEdit = () => {
@@ -1669,31 +1677,19 @@ const ChapterEditor = () => {
             )}
 
             {/* Comprehensive Page 1 & Page 2 status bar */}
-            <div className="flex flex-col items-center gap-2 mt-8 pt-4 border-t border-[hsl(var(--devotional-border))] text-xs font-medium" style={{ fontFamily: 'var(--font-body)' }}>
+            <div className="mt-8 pt-4 border-t border-[hsl(var(--devotional-border))] text-xs font-medium text-center" style={{ fontFamily: 'var(--font-body)' }}>
               {layoutMeasurement ? (
-                <>
-                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-                    <span style={{ color: '#6B7280' }}>
-                      Measured preview pages: <strong>{layoutMeasurement.pageCount}</strong>
+                <div className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[0.68rem] text-muted-foreground/80 leading-relaxed">
+                  <span className="text-[#6B7280]">
+                    Total Pages: <strong className="text-foreground">{layoutMeasurement.totalPages}</strong>
+                  </span>
+                  {layoutMeasurement.pages.map((page, index) => (
+                    <span key={page.pageIndex}>
+                      <span className="text-[#E5E7EB]">|</span>{' '}
+                      Page {page.pageIndex + 1}: <strong className="text-foreground">{Math.round(page.fillPercent)}%</strong> full
                     </span>
-                    <span style={{ color: '#E5E7EB' }}>|</span>
-                    <span style={{ color: layoutMeasurement.overflowPageIndexes.length ? '#EF4444' : '#16A34A' }}>
-                      Overflow pages: <strong>{layoutMeasurement.overflowPageIndexes.length}</strong>
-                    </span>
-                  </div>
-                  <div className="text-[0.68rem] text-muted-foreground/80 text-center leading-relaxed">
-                    {layoutMeasurement.pages.slice(0, 2).map((page) => (
-                      <span key={page.pageIndex}>
-                        Page {page.pageIndex + 1}: <strong>{Math.round(page.fillPercent)}%</strong> full
-                        {page.overflows ? ' (overflow)' : ''}
-                        {page.pageIndex < Math.min(1, layoutMeasurement.pages.length - 1) ? ' · ' : ''}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="text-[0.66rem] text-muted-foreground/70 text-center">
-                    Exact preview metrics come from the rendered HTML, not a word-budget estimate.
-                  </div>
-                </>
+                  ))}
+                </div>
               ) : (
                 <>
                   <div className="flex items-center justify-center gap-3">

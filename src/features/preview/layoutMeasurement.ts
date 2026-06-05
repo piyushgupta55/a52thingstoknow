@@ -1,6 +1,7 @@
 export interface PageLayoutMeasurement {
   pageIndex: number;
   chapter: string | null;
+  isOverflowPage: boolean;
   fillPercent: number;
   remainingPx: number;
   contentPx: number;
@@ -10,6 +11,9 @@ export interface PageLayoutMeasurement {
 
 export interface LayoutMeasurementResult {
   pageCount: number;
+  overflowPageCount: number;
+  overflowDetected: boolean;
+  totalPages: number;
   pages: PageLayoutMeasurement[];
   overflowPageIndexes: number[];
 }
@@ -32,7 +36,7 @@ const isRenderablePage = (page: HTMLElement) => {
 };
 
 export const measureLayout = (doc: Document): LayoutMeasurementResult => {
-  const pages = Array.from(doc.querySelectorAll<HTMLElement>('.page')).filter(isRenderablePage);
+  const pages = Array.from(doc.querySelectorAll<HTMLElement>('.page'));
   const view = doc.defaultView;
 
   const metrics = pages.map((page, pageIndex) => {
@@ -58,6 +62,7 @@ export const measureLayout = (doc: Document): LayoutMeasurementResult => {
     return {
       pageIndex,
       chapter: page.getAttribute('data-chapter'),
+      isOverflowPage: page.classList.contains('page-overflow'),
       fillPercent,
       remainingPx,
       contentPx,
@@ -66,10 +71,20 @@ export const measureLayout = (doc: Document): LayoutMeasurementResult => {
     } satisfies PageLayoutMeasurement;
   });
 
+  const overflowPageIndexes = metrics
+    .filter((m) => m.isOverflowPage || m.overflows)
+    .map((m) => m.pageIndex);
+  const overflowPageCount = overflowPageIndexes.length;
+  const overflowDetected = overflowPageCount > 0;
+  const totalPages = pages.length;
+
   return {
     pageCount: pages.length,
+    overflowPageCount,
+    overflowDetected,
+    totalPages,
     pages: metrics,
-    overflowPageIndexes: metrics.filter((m) => m.overflows).map((m) => m.pageIndex),
+    overflowPageIndexes,
   };
 };
 
