@@ -36,7 +36,7 @@ import {
   PREVIEW_PAGE_HEIGHT,
   PREVIEW_PAGE_WIDTH,
 } from '@/features/preview/geometry';
-import { extractExactChapterSplit, measureLayout, type LayoutMeasurementResult } from '@/features/preview/layoutMeasurement';
+import { measureLayout, type LayoutMeasurementResult } from '@/features/preview/layoutMeasurement';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -1091,16 +1091,8 @@ const ChapterEditor = () => {
       doc.head.appendChild(hideScrollbars);
     }
     doc.body.appendChild(wrapper);
-    const exactSplit = extractExactChapterSplit(doc, chapterKey);
     setChapterPreviewPageCount(pageNodes.length);
     setLayoutMeasurement(measureLayout(doc));
-
-    if (!isLetterChapter) {
-      const nextMerged = mergeRefAndContent(exactSplit.page1, exactSplit.page2);
-      setReferenceText((prev) => (prev === exactSplit.page1 ? prev : exactSplit.page1));
-      setContent((prev) => (prev === exactSplit.page2 ? prev : exactSplit.page2));
-      setMergedText((prev) => (prev === nextMerged ? prev : nextMerged));
-    }
   };
 
   const handleCompanionRequestEdit = () => {

@@ -987,19 +987,19 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
 
           // 5. PERFORM RICH DOM SPLITTING VIA RANGE CLONING
           // Part 1: Range from start to split point
+          const seamWhitespace = /^\s+/.exec(rawText.slice(splitOffset));
+          const seamOffset = splitOffset + (seamWhitespace ? seamWhitespace[0].length : 0);
           const range1 = document.createRange();
           range1.setStart(textFlow, 0);
-          setRangeEndAtOffset(range1, textFlow, splitOffset);
+          setRangeEndAtOffset(range1, textFlow, seamOffset);
           const part1Fragment = range1.cloneContents();
 
           // Part 2: Range from split point to end
           const range2 = document.createRange();
-          setRangeStartAtOffset(range2, textFlow, splitOffset);
+          setRangeStartAtOffset(range2, textFlow, seamOffset);
           range2.setEnd(textFlow, textFlow.childNodes.length);
           const part2Fragment = range2.cloneContents();
-
-          // Re-serialize text metadata safely (No layout-dependent innerText)
-          const remainingText = rawText.slice(splitOffset);
+          const remainingText = rawText.slice(seamOffset);
 
           // 6. ASSEMBLE OUTPUT CONTAINERS
           // Current Page Paragraph
@@ -1020,12 +1020,6 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           const newP = document.createElement('p');
           const part2Flow = document.createElement('span');
           part2Flow.className = 'text-flow';
-          // Preserve the original sentence separator when the split lands
-          // immediately after whitespace. Without this, the overflow page
-          // can start with the next word glued to the previous sentence.
-          if (splitOffset > 0 && /\s/.test(rawText[splitOffset - 1] || '')) {
-            part2Flow.appendChild(document.createTextNode('\u00A0'));
-          }
           part2Flow.appendChild(part2Fragment);
           newP.appendChild(part2Flow);
 
