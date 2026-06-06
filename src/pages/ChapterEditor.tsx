@@ -140,6 +140,7 @@ const ChapterEditor = () => {
   const [chapterPreviewPageCount, setChapterPreviewPageCount] = useState(0);
   const [layoutMeasurement, setLayoutMeasurement] = useState<LayoutMeasurementResult | null>(null);
   const [exactChapterSplit, setExactChapterSplit] = useState<ExactChapterSplitResult | null>(null);
+  const previewMeasurementRunId = useRef(0);
 
   const [referenceContent, setReferenceContent] = useState<string | null>(null);
   const [referenceText, setReferenceText] = useState('');
@@ -948,53 +949,109 @@ const ChapterEditor = () => {
 
     const doc = iframe.contentDocument;
     const chapterKey = String(chapter.chapter_number);
+
     const waitForLayoutFinal = async () => {
       for (let i = 0; i < 120; i += 1) {
-        if (doc.body?.classList.contains('layout-final')) break;
+        if (doc.body?.classList.contains('layout-final')) return;
         await new Promise(resolve => window.setTimeout(resolve, 50));
       }
-
-      const pageNodes = Array.from(doc.querySelectorAll(`.page[data-chapter="${chapterKey}"]`));
-      if (pageNodes.length === 0) return;
-
-      setExactChapterSplit(extractExactChapterSplit(doc, chapterKey));
-
-      const wrapper = doc.createElement('div');
-      wrapper.style.display = 'flex';
-      wrapper.style.flexDirection = 'column';
-      wrapper.style.alignItems = 'center';
-      wrapper.style.gap = '32px';
-      wrapper.style.padding = '24px 0';
-      wrapper.style.width = '100%';
-
-      pageNodes.forEach((node) => {
-        wrapper.appendChild(node.cloneNode(true));
-      });
-
-      doc.body.innerHTML = '';
-      doc.body.style.margin = '0';
-      doc.body.style.background = '#faf8f5';
-      doc.body.style.display = 'flex';
-      doc.body.style.justifyContent = 'center';
-      doc.body.style.overflowY = 'auto';
-      doc.documentElement.style.overflowY = 'auto';
-
-      let hideScrollbars = doc.getElementById('preview-scrollbar-hide');
-      if (!hideScrollbars) {
-        hideScrollbars = doc.createElement('style');
-        hideScrollbars.id = 'preview-scrollbar-hide';
-        hideScrollbars.textContent = `
-          html, body { scrollbar-width: none; -ms-overflow-style: none; }
-          html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
-        `;
-        doc.head.appendChild(hideScrollbars);
-      }
-      doc.body.appendChild(wrapper);
-      setChapterPreviewPageCount(pageNodes.length);
-      setLayoutMeasurement(measureLayout(doc));
     };
 
-    void waitForLayoutFinal();
+    const waitForStableLayout = async () => {
+      await waitForLayoutFinal();
+      if (doc.fonts?.ready) {
+        try {
+          await doc.fonts.ready;
+        } catch {
+          // Ignore font load failures and measure what rendered.
+        }
+      }
+      await new Promise<void>((resolve) => {
+        const raf = doc.defaultView?.requestAnimationFrame ?? window.requestAnimationFrame;
+        raf(() => raf(() => resolve()));
+      });
+    };
+
+    const waitForCurrentImages = async () => {
+      const images = Array.from(doc.querySelectorAll<HTMLImageElement>('img'));
+      await Promise.all(images.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          const done = () => resolve();
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true });
+        });
+      }));
+    };
+
+    const scheduleMeasurement = () => {
+      const runId = ++previewMeasurementRunId.current;
+      void (async () => {
+        await waitForStableLayout();
+        if (runId !== previewMeasurementRunId.current) return;
+
+        const pageNodes = Array.from(doc.querySelectorAll(`.page[data-chapter="${chapterKey}"]`));
+        if (pageNodes.length === 0) return;
+
+        const wrapper = doc.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.gap = '32px';
+        wrapper.style.padding = '24px 0';
+        wrapper.style.width = '100%';
+
+        pageNodes.forEach((node) => {
+          wrapper.appendChild(node.cloneNode(true));
+        });
+
+        doc.body.innerHTML = '';
+        doc.body.style.margin = '0';
+        doc.body.style.background = '#faf8f5';
+        doc.body.style.display = 'flex';
+        doc.body.style.justifyContent = 'center';
+        doc.body.style.overflowY = 'auto';
+        doc.documentElement.style.overflowY = 'auto';
+
+        let hideScrollbars = doc.getElementById('preview-scrollbar-hide');
+        if (!hideScrollbars) {
+          hideScrollbars = doc.createElement('style');
+          hideScrollbars.id = 'preview-scrollbar-hide';
+          hideScrollbars.textContent = `
+            html, body { scrollbar-width: none; -ms-overflow-style: none; }
+            html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+          `;
+          doc.head.appendChild(hideScrollbars);
+        }
+        doc.body.appendChild(wrapper);
+
+        const finalizeMeasurement = async (runId: number) => {
+          await waitForCurrentImages();
+          await new Promise<void>((resolve) => {
+            const raf = doc.defaultView?.requestAnimationFrame ?? window.requestAnimationFrame;
+            raf(() => raf(() => resolve()));
+          });
+          if (runId !== previewMeasurementRunId.current) return;
+          setExactChapterSplit(extractExactChapterSplit(doc, chapterKey));
+          setChapterPreviewPageCount(pageNodes.length);
+          setLayoutMeasurement(measureLayout(doc));
+        };
+
+        const remeasure = () => {
+          const nextRunId = ++previewMeasurementRunId.current;
+          void finalizeMeasurement(nextRunId);
+        };
+
+        Array.from(doc.querySelectorAll('img')).forEach((img) => {
+          img.addEventListener('load', remeasure, { once: true });
+          img.addEventListener('error', remeasure, { once: true });
+        });
+
+        void finalizeMeasurement(runId);
+      })();
+    };
+
+    scheduleMeasurement();
   };
 
   const handleCompanionRequestEdit = () => {
@@ -1019,9 +1076,6 @@ const ChapterEditor = () => {
       variant="badge"
     />
   ) : null;
-
-  const visibleReferenceText = exactChapterSplit?.page1 ?? referenceText;
-  const visibleContentText = exactChapterSplit?.page2 ?? content;
 
   const exactPreviewHeight = Math.max(1, chapterPreviewPageCount || 1) * PREVIEW_PAGE_HEIGHT + Math.max(0, chapterPreviewPageCount - 1) * 32 + 48;
 
@@ -1359,7 +1413,7 @@ const ChapterEditor = () => {
               >
                 <textarea
                   ref={refTextareaRef}
-                  value={visibleReferenceText}
+                  value={referenceText}
                   rows={6}
                   placeholder="Begin your chapter here..."
                   onChange={e => {
@@ -1378,7 +1432,7 @@ const ChapterEditor = () => {
                     const ta = e.target as HTMLTextAreaElement;
                     const start = ta.selectionStart;
                     const end = ta.selectionEnd;
-                    const next = visibleReferenceText.slice(0, start) + text + visibleReferenceText.slice(end);
+                    const next = referenceText.slice(0, start) + text + referenceText.slice(end);
                     if (next.length > MAX_CONTENT_LENGTH) return;
                     setReferenceText(next);
                     setMergedText(mergeRefAndContent(next, content));
@@ -1411,7 +1465,7 @@ const ChapterEditor = () => {
 
                 <textarea
                   ref={wisdomTextareaRef}
-                  value={visibleContentText}
+                  value={content}
                   rows={6}
                   placeholder="Page 2 continues here..."
                   onChange={e => {
@@ -1430,7 +1484,7 @@ const ChapterEditor = () => {
                     const ta = e.target as HTMLTextAreaElement;
                     const start = ta.selectionStart;
                     const end = ta.selectionEnd;
-                    const next = visibleContentText.slice(0, start) + text + visibleContentText.slice(end);
+                    const next = content.slice(0, start) + text + content.slice(end);
                     if (next.length > MAX_CONTENT_LENGTH) return;
                     setContent(next);
                     setMergedText(mergeRefAndContent(referenceText, next));
