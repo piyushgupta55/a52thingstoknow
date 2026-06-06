@@ -129,59 +129,6 @@ function formatContent(content: string | null | undefined, disableDropcap = fals
 }
 
 
-function countWords(s: string | null | undefined): number {
-  if (!s) return 0;
-  return s
-    .replace(/[—–]/g, ' ')
-    .replace(/\n/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean).length;
-}
-
-function splitRefByWordLimit(text: string, wordLimit: number) {
-  if (!text) return { page1: '', page2: '' };
-  const tokens = text.split(/(\s+)/);
-  let words = 0;
-  let splitAt = tokens.length;
-  for (let i = 0; i < tokens.length; i++) {
-    const tok = tokens[i];
-    if (tok && !/^\s+$/.test(tok)) {
-      const inner = countWords(tok);
-      if (words + inner > wordLimit) { splitAt = i; break; }
-      words += inner;
-    }
-  }
-  return {
-    page1: tokens.slice(0, splitAt).join(''),
-    page2: tokens.slice(splitAt).join('').replace(/^\s+/, ''),
-  };
-}
-
-function splitAtSentenceBoundary(text: string, wordLimit: number) {
-  if (!text) return { page1: '', page2: '' };
-  const wordSplit = splitRefByWordLimit(text, wordLimit);
-  if (!wordSplit.page2) return wordSplit;
-
-  const pageOneEnd = wordSplit.page1.length;
-  const sentenceEndRe = /[.!?]["')\]]?(?=\s|$)/g;
-  let lastEnd = -1;
-  let m: RegExpExecArray | null;
-  while ((m = sentenceEndRe.exec(text)) !== null) {
-    const endPos = m.index + m[0].length;
-    if (endPos > pageOneEnd) break;
-    lastEnd = endPos;
-  }
-  if (lastEnd < 0) return wordSplit;
-
-  const ws = /^\s+/.exec(text.slice(lastEnd));
-  const seam = lastEnd + (ws ? ws[0].length : 0);
-  return {
-    page1: text.slice(0, seam),
-    page2: text.slice(seam),
-  };
-}
-
 export async function renderBook(bookData: BookData, actualChapterPages?: Record<string, number>): Promise<string> {
   // Load core print styles directly to avoid @import path issues in Puppeteer
   const stylesDir = path.join(process.cwd(), 'src/pdf/styles');
@@ -363,34 +310,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     const photoClass = template === 'vertical_photo' ? 'chapter-photo vertical-photo' : 'chapter-photo';
     const photoHtml = hasPhoto ? `<img src="${chapter.photo_urls![0]}" class="${photoClass}" />` : '';
 
-    const isPhotoOnPage1 = hasPhoto && template === 'horizontal_photo';
-    const basePage1Limit = isPhotoOnPage1 ? 75 : 170;
-    const quoteBlocksCount = Number(Boolean((chapter.bible_verse_text || '').trim())) + Number(Boolean((chapter.quote_text || '').trim()));
-    const quoteWords =
-      countWords(chapter.bible_verse_text || '') +
-      countWords(chapter.bible_verse_reference || '') +
-      countWords(chapter.quote_text || '') +
-      countWords(chapter.quote_attribution || '');
-    const quotePenalty = isPhotoOnPage1 && quoteBlocksCount > 0
-      ? Math.min(30, Math.max(8, Math.round(quoteWords * 0.5) + quoteBlocksCount * 4))
-      : 0;
-    let mergedWisdomHtml = '';
-    if (template === 'horizontal_photo') {
-      // Let the DOM-based paginator use the full paragraph flow for photo-top
-      // chapters. Word pre-splitting can leave visible gaps on these pages.
-      mergedWisdomHtml = formatContent(chapter.content);
-    } else {
-      const PAGE_1_WORD_LIMIT = Math.max(35, basePage1Limit - quotePenalty);
-      const { page1: page1Text, page2: page2Text } = splitRefByWordLimit(chapter.content || '', PAGE_1_WORD_LIMIT);
-
-      if (page2Text) {
-        const page1Html = formatContent(page1Text);
-        const page2Html = formatContent(page2Text, true);
-        mergedWisdomHtml = page1Html + '\n' + page2Html;
-      } else {
-        mergedWisdomHtml = formatContent(chapter.content);
-      }
-    }
+    const mergedWisdomHtml = formatContent(chapter.content);
 
     if (template === 'classic') {
       chaptersHtml += `
