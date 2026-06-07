@@ -6,7 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
   BookOpen, PenLine, CheckCircle, Circle, Mail, MessageSquare, Sparkles,
-  Users, LayoutGrid, Send, Inbox, Camera, Play, Library, ShoppingCart, Download
+  Users, LayoutGrid, Send, Inbox, Camera, Play, Library, ShoppingCart, Download,
+  Heart, Plus, Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { saveAs } from 'file-saver';
