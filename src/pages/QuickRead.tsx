@@ -112,17 +112,31 @@ const QuickRead = () => {
 
   const chapterMemories = chapter ? memories.filter(m => m.chapter_id === chapter.id) : [];
 
+  const resolvedBody = useMemo(() => {
+    if (!chapter) return '';
+    const ref = (chapter.reference_text || '').trim();
+    const content = (chapter.content || '').trim();
+    if (ref || content) {
+      return [ref, content].filter(Boolean).join('\n\n');
+    }
+    // Fall back to template default so the read-through matches editor preview
+    const tpl = templates.find(t => t.chapter_number === chapter.chapter_number);
+    const isFemale = book?.recipient_gender === 'Girl/Young Woman';
+    const raw = tpl ? (isFemale ? tpl.reference_content_female : tpl.reference_content_male) : null;
+    return raw ? stripHtml(raw) : '';
+  }, [chapter, templates, book]);
+
   const wordCount = useMemo(() => {
-    if (!chapter) return 0;
-    const text = `${chapter.reference_text || ''} ${chapter.content || ''}`.trim();
+    const text = resolvedBody.trim();
     return text ? text.split(/\s+/).length : 0;
-  }, [chapter]);
+  }, [resolvedBody]);
 
   const isShort = chapter
     ? wordCount < SHORT_CHAPTER_WORD_THRESHOLD
       && (!chapter.photo_urls || chapter.photo_urls.length === 0)
       && chapterMemories.length === 0
     : false;
+
 
   const advance = () => {
     if (index + 1 >= total) {
