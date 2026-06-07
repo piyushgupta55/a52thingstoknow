@@ -266,11 +266,42 @@ const QuickRead = () => {
             </p>
           ) : (
             paragraphs.map((p, i) => (
-              <p key={i} className="text-lg leading-[1.85] mb-5 indent-8" style={{ fontFamily: SERIF }}>
-                {tk(p)}
+              <p
+                key={i}
+                className={`text-lg leading-[1.85] mb-5 ${i === 0 ? '' : 'indent-8'}`}
+                style={{
+                  fontFamily: SERIF,
+                  ...(i === 0
+                    ? {
+                        // Drop cap on first paragraph, matching the book preview
+                        // eslint-disable-next-line
+                      }
+                    : {}),
+                }}
+              >
+                {i === 0 ? (
+                  <>
+                    <span
+                      className="float-left mr-2 font-bold"
+                      style={{
+                        fontFamily: SERIF,
+                        color: GOLD,
+                        fontSize: '3.75rem',
+                        lineHeight: '0.85',
+                        paddingTop: '0.35rem',
+                      }}
+                    >
+                      {tk(p).charAt(0)}
+                    </span>
+                    {tk(p).slice(1)}
+                  </>
+                ) : (
+                  tk(p)
+                )}
               </p>
             ))
           )}
+
         </div>
 
         {chapterMemories.length > 0 && (
