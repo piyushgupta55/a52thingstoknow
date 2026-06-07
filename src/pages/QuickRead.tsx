@@ -45,12 +45,28 @@ interface Book {
 
 const SHORT_CHAPTER_WORD_THRESHOLD = 180;
 
+interface Template {
+  chapter_number: number;
+  reference_content_male: string | null;
+  reference_content_female: string | null;
+}
+
+const stripHtml = (raw: string) =>
+  raw
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/<\/?p[^>]*>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?[^>]+(>|$)/g, '')
+    .replace(/\n\n+/g, '\n\n')
+    .trim();
+
 const QuickRead = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [authorLabel, setAuthorLabel] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -60,9 +76,11 @@ const QuickRead = () => {
     if (!bookId) return;
     (async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
-      const [{ data: chapData }, { data: memData }] = await Promise.all([
+      const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
+      const [{ data: chapData }, { data: memData }, { data: tplData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).gt('chapter_number', 0).order('chapter_number'),
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId),
+        supabase.from('chapter_templates').select('chapter_number, reference_content_male, reference_content_female').eq('gender', tplGender),
       ]);
       if (bookData?.recipient_name) {
         bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -71,9 +89,11 @@ const QuickRead = () => {
       setAuthorLabel(bookData?.from_label || null);
       setChapters((chapData as Chapter[]) || []);
       setMemories((memData as Memory[]) || []);
+      setTemplates((tplData as Template[]) || []);
       setLoading(false);
     })();
   }, [bookId]);
+
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -92,17 +112,31 @@ const QuickRead = () => {
 
   const chapterMemories = chapter ? memories.filter(m => m.chapter_id === chapter.id) : [];
 
+  const resolvedBody = useMemo(() => {
+    if (!chapter) return '';
+    const ref = (chapter.reference_text || '').trim();
+    const content = (chapter.content || '').trim();
+    if (ref || content) {
+      return [ref, content].filter(Boolean).join('\n\n');
+    }
+    // Fall back to template default so the read-through matches editor preview
+    const tpl = templates.find(t => t.chapter_number === chapter.chapter_number);
+    const isFemale = book?.recipient_gender === 'Girl/Young Woman';
+    const raw = tpl ? (isFemale ? tpl.reference_content_female : tpl.reference_content_male) : null;
+    return raw ? stripHtml(raw) : '';
+  }, [chapter, templates, book]);
+
   const wordCount = useMemo(() => {
-    if (!chapter) return 0;
-    const text = `${chapter.reference_text || ''} ${chapter.content || ''}`.trim();
+    const text = resolvedBody.trim();
     return text ? text.split(/\s+/).length : 0;
-  }, [chapter]);
+  }, [resolvedBody]);
 
   const isShort = chapter
     ? wordCount < SHORT_CHAPTER_WORD_THRESHOLD
       && (!chapter.photo_urls || chapter.photo_urls.length === 0)
       && chapterMemories.length === 0
     : false;
+
 
   const advance = () => {
     if (index + 1 >= total) {
@@ -147,8 +181,8 @@ const QuickRead = () => {
     );
   }
 
-  const bodyText = `${chapter.reference_text || ''}${chapter.reference_text && chapter.content ? ' ' : ''}${chapter.content || ''}`.trim();
-  const paragraphs = bodyText.split(/\n\n+/).filter(Boolean);
+  const paragraphs = resolvedBody.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+
 
   const progressPct = Math.round(((index) / total) * 100);
 
@@ -232,11 +266,42 @@ const QuickRead = () => {
             </p>
           ) : (
             paragraphs.map((p, i) => (
-              <p key={i} className="text-lg leading-[1.85] mb-5 indent-8" style={{ fontFamily: SERIF }}>
-                {tk(p)}
+              <p
+                key={i}
+                className={`text-lg leading-[1.85] mb-5 ${i === 0 ? '' : 'indent-8'}`}
+                style={{
+                  fontFamily: SERIF,
+                  ...(i === 0
+                    ? {
+                        // Drop cap on first paragraph, matching the book preview
+                        // eslint-disable-next-line
+                      }
+                    : {}),
+                }}
+              >
+                {i === 0 ? (
+                  <>
+                    <span
+                      className="float-left mr-2 font-bold"
+                      style={{
+                        fontFamily: SERIF,
+                        color: GOLD,
+                        fontSize: '3.75rem',
+                        lineHeight: '0.85',
+                        paddingTop: '0.35rem',
+                      }}
+                    >
+                      {tk(p).charAt(0)}
+                    </span>
+                    {tk(p).slice(1)}
+                  </>
+                ) : (
+                  tk(p)
+                )}
               </p>
             ))
           )}
+
         </div>
 
         {chapterMemories.length > 0 && (
