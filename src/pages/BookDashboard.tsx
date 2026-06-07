@@ -6,7 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
   BookOpen, PenLine, CheckCircle, Circle, Mail, MessageSquare, Sparkles,
-  Users, LayoutGrid, Send, Inbox, Camera, Play, Library, ShoppingCart, Download
+  Users, LayoutGrid, Send, Inbox, Camera, Play, Library, ShoppingCart, Download,
+  Heart, Plus, Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { saveAs } from 'file-saver';
@@ -34,6 +35,9 @@ interface Chapter {
   quote_attribution: string | null;
   bible_verse_text: string | null;
   bible_verse_reference: string | null;
+  content: string | null;
+  reference_text: string | null;
+  review_status: string | null;
 }
 
 interface ChapterTemplate {
@@ -185,6 +189,22 @@ const BookDashboard = () => {
   const photoChaptersDesignated = chapters.filter(c => photoChapterNums.has(c.chapter_number)).length;
   const photosUploaded = chapters.filter(c => photoChapterNums.has(c.chapter_number) && c.photo_urls && c.photo_urls.length > 0).length;
 
+  // Quick Read review tallies
+  const SHORT_WORD_THRESHOLD = 180;
+  const reviewKept = numberedChapters.filter(c => c.review_status === 'keep').length;
+  const reviewAdd = numberedChapters.filter(c => c.review_status === 'add').length;
+  const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite').length;
+  const reviewedCount = reviewKept + reviewAdd + reviewRewrite;
+  const notReviewed = numberedChapters.length - reviewedCount;
+  const shortKept = numberedChapters.filter(c => {
+    if (c.review_status !== 'keep') return false;
+    const text = `${c.reference_text || ''} ${c.content || ''}`.trim();
+    const wc = text ? text.split(/\s+/).length : 0;
+    const hasPhoto = c.photo_urls && c.photo_urls.length > 0;
+    const hasMemory = memories.some(m => m.chapter_id === c.id);
+    return wc < SHORT_WORD_THRESHOLD && !hasPhoto && !hasMemory;
+  }).length;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -215,13 +235,92 @@ const BookDashboard = () => {
               Photo chapters: <span className="font-semibold text-foreground">{photosUploaded}</span> of <span className="font-semibold text-foreground">{photoChaptersDesignated}</span> have photos
             </span>
           </div>
-          {nextChapter && (
-            <Button size="lg" onClick={() => navigate(`/book/${bookId}/chapter/${nextChapter.id}`)}>
-              <PenLine className="h-4 w-4 mr-2" />
-              Continue Writing
+          <div className="flex flex-wrap gap-2">
+            {nextChapter && (
+              <Button size="lg" onClick={() => navigate(`/book/${bookId}/chapter/${nextChapter.id}`)}>
+                <PenLine className="h-4 w-4 mr-2" />
+                Continue Writing
+              </Button>
+            )}
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-primary/40 text-primary hover:bg-primary/5"
+              onClick={() => navigate(`/book/${bookId}/quick-read`)}
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Quick Read
             </Button>
-          )}
+          </div>
         </div>
+
+        {/* Quick Read Review Summary */}
+        {numberedChapters.length > 0 && (
+          <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
+            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                <h2 className="font-heading text-lg font-bold text-foreground">Quick Read Review</h2>
+              </div>
+              <Button
+                size="sm"
+                variant={reviewedCount === 0 ? 'default' : 'outline'}
+                onClick={() => navigate(`/book/${bookId}/quick-read`)}
+              >
+                {reviewedCount === 0 ? 'Start Quick Read' : reviewedCount < numberedChapters.length ? 'Continue Quick Read' : 'Review Again'}
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              {reviewedCount === 0
+                ? `Take a quick pass through all ${numberedChapters.length} chapters — it goes faster than you think.`
+                : reviewedCount === numberedChapters.length
+                  ? `You've reviewed every chapter — beautiful work. Kept ${reviewKept} as-is, ${reviewAdd} to add to, ${reviewRewrite} to rewrite.`
+                  : `You've reviewed ${reviewedCount} chapter${reviewedCount === 1 ? '' : 's'} and kept ${reviewKept} — you're well on your way.`}
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="rounded-lg border border-border p-3 bg-muted/30">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Heart className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs text-muted-foreground">Kept</span>
+                </div>
+                <div className="font-heading text-2xl font-bold text-foreground">{reviewKept}</div>
+                <div className="text-[0.7rem] text-muted-foreground">good to go</div>
+              </div>
+              <div className="rounded-lg border border-border p-3 bg-muted/30">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Plus className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs text-muted-foreground">To add to</span>
+                </div>
+                <div className="font-heading text-2xl font-bold text-foreground">{reviewAdd}</div>
+                <div className="text-[0.7rem] text-muted-foreground">expand later</div>
+              </div>
+              <div className="rounded-lg border border-border p-3 bg-muted/30">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <PenLine className="h-3.5 w-3.5 text-accent" />
+                  <span className="text-xs text-muted-foreground">To rewrite</span>
+                </div>
+                <div className="font-heading text-2xl font-bold text-foreground">{reviewRewrite}</div>
+                <div className="text-[0.7rem] text-muted-foreground">make your own</div>
+              </div>
+              <div className="rounded-lg border border-border p-3 bg-muted/30">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Camera className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs text-muted-foreground">Short ones</span>
+                </div>
+                <div className="font-heading text-2xl font-bold text-foreground">{shortKept}</div>
+                <div className="text-[0.7rem] text-muted-foreground">add a photo or memory</div>
+              </div>
+              <div className="rounded-lg border border-border p-3 bg-muted/30">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Circle className="h-3.5 w-3.5 text-muted-foreground/60" />
+                  <span className="text-xs text-muted-foreground">Not yet</span>
+                </div>
+                <div className="font-heading text-2xl font-bold text-foreground">{notReviewed}</div>
+                <div className="text-[0.7rem] text-muted-foreground">waiting for you</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Status Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

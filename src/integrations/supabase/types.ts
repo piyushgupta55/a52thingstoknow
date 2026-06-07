@@ -241,6 +241,7 @@ export type Database = {
           quote_id: string | null
           quote_text: string | null
           reference_text: string | null
+          review_status: string | null
           status: string
           title: string
           triage: string | null
@@ -263,6 +264,7 @@ export type Database = {
           quote_id?: string | null
           quote_text?: string | null
           reference_text?: string | null
+          review_status?: string | null
           status?: string
           title: string
           triage?: string | null
@@ -285,6 +287,7 @@ export type Database = {
           quote_id?: string | null
           quote_text?: string | null
           reference_text?: string | null
+          review_status?: string | null
           status?: string
           title?: string
           triage?: string | null
