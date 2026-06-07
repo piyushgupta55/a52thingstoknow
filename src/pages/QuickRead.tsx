@@ -45,12 +45,28 @@ interface Book {
 
 const SHORT_CHAPTER_WORD_THRESHOLD = 180;
 
+interface Template {
+  chapter_number: number;
+  reference_content_male: string | null;
+  reference_content_female: string | null;
+}
+
+const stripHtml = (raw: string) =>
+  raw
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/<\/?p[^>]*>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?[^>]+(>|$)/g, '')
+    .replace(/\n\n+/g, '\n\n')
+    .trim();
+
 const QuickRead = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [authorLabel, setAuthorLabel] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -60,9 +76,11 @@ const QuickRead = () => {
     if (!bookId) return;
     (async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
-      const [{ data: chapData }, { data: memData }] = await Promise.all([
+      const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
+      const [{ data: chapData }, { data: memData }, { data: tplData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).gt('chapter_number', 0).order('chapter_number'),
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId),
+        supabase.from('chapter_templates').select('chapter_number, reference_content_male, reference_content_female').eq('gender', tplGender),
       ]);
       if (bookData?.recipient_name) {
         bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -71,9 +89,11 @@ const QuickRead = () => {
       setAuthorLabel(bookData?.from_label || null);
       setChapters((chapData as Chapter[]) || []);
       setMemories((memData as Memory[]) || []);
+      setTemplates((tplData as Template[]) || []);
       setLoading(false);
     })();
   }, [bookId]);
+
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
