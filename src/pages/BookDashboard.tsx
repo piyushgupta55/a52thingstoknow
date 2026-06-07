@@ -189,6 +189,22 @@ const BookDashboard = () => {
   const photoChaptersDesignated = chapters.filter(c => photoChapterNums.has(c.chapter_number)).length;
   const photosUploaded = chapters.filter(c => photoChapterNums.has(c.chapter_number) && c.photo_urls && c.photo_urls.length > 0).length;
 
+  // Quick Read review tallies
+  const SHORT_WORD_THRESHOLD = 180;
+  const reviewKept = numberedChapters.filter(c => c.review_status === 'keep').length;
+  const reviewAdd = numberedChapters.filter(c => c.review_status === 'add').length;
+  const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite').length;
+  const reviewedCount = reviewKept + reviewAdd + reviewRewrite;
+  const notReviewed = numberedChapters.length - reviewedCount;
+  const shortKept = numberedChapters.filter(c => {
+    if (c.review_status !== 'keep') return false;
+    const text = `${c.reference_text || ''} ${c.content || ''}`.trim();
+    const wc = text ? text.split(/\s+/).length : 0;
+    const hasPhoto = c.photo_urls && c.photo_urls.length > 0;
+    const hasMemory = memories.some(m => m.chapter_id === c.id);
+    return wc < SHORT_WORD_THRESHOLD && !hasPhoto && !hasMemory;
+  }).length;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
