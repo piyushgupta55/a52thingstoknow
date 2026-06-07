@@ -181,8 +181,8 @@ const QuickRead = () => {
     );
   }
 
-  const bodyText = `${chapter.reference_text || ''}${chapter.reference_text && chapter.content ? ' ' : ''}${chapter.content || ''}`.trim();
-  const paragraphs = bodyText.split(/\n\n+/).filter(Boolean);
+  const paragraphs = resolvedBody.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+
 
   const progressPct = Math.round(((index) / total) * 100);
 
