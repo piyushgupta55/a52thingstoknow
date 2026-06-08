@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
-import { Heart, Plus, PenLine, X, ChevronLeft } from 'lucide-react';
+import { Heart, Plus, PenLine, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
