@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
-import { Heart, Plus, PenLine, X, ChevronLeft } from 'lucide-react';
+import { Heart, Plus, PenLine, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
@@ -151,8 +151,17 @@ const QuickRead = () => {
     }
   };
 
+  const goPrev = () => {
+    if (index > 0) setIndex(i => i - 1);
+  };
+
+  const goNext = () => {
+    if (index + 1 < total) setIndex(i => i + 1);
+  };
+
   const handleChoice = async (choice: 'keep' | 'add' | 'rewrite') => {
     if (!chapter || saving) return;
+    const wasAlreadyReviewed = !!chapter.review_status;
     setSaving(true);
     const { error } = await supabase
       .from('chapters')
@@ -165,7 +174,9 @@ const QuickRead = () => {
     }
     // Optimistically update local state
     setChapters(prev => prev.map(c => c.id === chapter.id ? { ...c, review_status: choice } : c));
-    advance();
+    if (!wasAlreadyReviewed) {
+      advance();
+    }
   };
 
   if (loading) {
@@ -202,8 +213,26 @@ const QuickRead = () => {
           >
             <ChevronLeft className="h-4 w-4" /> Exit Start Here
           </button>
-          <div className="text-sm" style={{ color: '#5a4632' }}>
-            Chapter <span className="font-semibold">{index + 1}</span> of {total} — going great
+          <div className="flex items-center gap-2 text-sm" style={{ color: '#5a4632' }}>
+            <button
+              onClick={goPrev}
+              disabled={index === 0}
+              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              aria-label="Previous chapter"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span>
+              Chapter <span className="font-semibold">{index + 1}</span> of {total}
+            </span>
+            <button
+              onClick={goNext}
+              disabled={index + 1 >= total}
+              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              aria-label="Next chapter"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
           <button
             onClick={() => navigate(`/book/${bookId}`)}
@@ -336,17 +365,19 @@ const QuickRead = () => {
           <Button
             onClick={() => handleChoice('keep')}
             disabled={saving}
-            className="w-full h-16 text-base md:text-lg justify-start gap-4 shadow-sm hover:shadow-md transition-all"
+            variant="outline"
+            className="w-full h-16 text-base md:text-lg justify-start gap-4 border-2 shadow-sm hover:shadow-md transition-all"
             style={{
-              background: GOLD,
-              color: '#fff',
+              borderColor: GOLD,
+              color: chapter.review_status === 'keep' ? '#fff' : '#2a1f1a',
+              background: chapter.review_status === 'keep' ? GOLD : 'transparent',
               ...(chapter.review_status === 'keep' ? { boxShadow: '0 0 0 3px rgba(255,255,255,0.5), 0 0 0 5px ' + GOLD } : {}),
             }}
           >
-            <Heart className="h-5 w-5" />
+            <Heart className="h-5 w-5" style={{ color: chapter.review_status === 'keep' ? '#fff' : GOLD }} />
             <div className="text-left">
               <div className="font-semibold">Keep this one</div>
-              <div className="text-xs opacity-90 font-normal">It reads beautifully as-is</div>
+              <div className={`text-xs font-normal ${chapter.review_status === 'keep' ? 'opacity-90' : 'opacity-70'}`}>It reads beautifully as-is</div>
             </div>
             {chapter.review_status === 'keep' && (
               <span className="ml-auto text-xs font-semibold opacity-90">Selected</span>
