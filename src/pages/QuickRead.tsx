@@ -365,17 +365,19 @@ const QuickRead = () => {
           <Button
             onClick={() => handleChoice('keep')}
             disabled={saving}
-            className="w-full h-16 text-base md:text-lg justify-start gap-4 shadow-sm hover:shadow-md transition-all"
+            variant="outline"
+            className="w-full h-16 text-base md:text-lg justify-start gap-4 border-2 shadow-sm hover:shadow-md transition-all"
             style={{
-              background: GOLD,
-              color: '#fff',
+              borderColor: GOLD,
+              color: chapter.review_status === 'keep' ? '#fff' : '#2a1f1a',
+              background: chapter.review_status === 'keep' ? GOLD : 'transparent',
               ...(chapter.review_status === 'keep' ? { boxShadow: '0 0 0 3px rgba(255,255,255,0.5), 0 0 0 5px ' + GOLD } : {}),
             }}
           >
-            <Heart className="h-5 w-5" />
+            <Heart className="h-5 w-5" style={{ color: chapter.review_status === 'keep' ? '#fff' : GOLD }} />
             <div className="text-left">
               <div className="font-semibold">Keep this one</div>
-              <div className="text-xs opacity-90 font-normal">It reads beautifully as-is</div>
+              <div className={`text-xs font-normal ${chapter.review_status === 'keep' ? 'opacity-90' : 'opacity-70'}`}>It reads beautifully as-is</div>
             </div>
             {chapter.review_status === 'keep' && (
               <span className="ml-auto text-xs font-semibold opacity-90">Selected</span>
