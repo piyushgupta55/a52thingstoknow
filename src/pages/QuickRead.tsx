@@ -87,9 +87,13 @@ const QuickRead = () => {
       }
       setBook(bookData);
       setAuthorLabel(bookData?.from_label || null);
-      setChapters((chapData as Chapter[]) || []);
+      const loadedChapters = (chapData as Chapter[]) || [];
+      setChapters(loadedChapters);
       setMemories((memData as Memory[]) || []);
       setTemplates((tplData as Template[]) || []);
+      // Resume at the first unreviewed chapter, or Chapter 1 if all reviewed
+      const firstUnreviewed = loadedChapters.findIndex(c => !c.review_status);
+      setIndex(firstUnreviewed >= 0 ? firstUnreviewed : 0);
       setLoading(false);
     })();
   }, [bookId]);
