@@ -196,7 +196,7 @@ const QuickRead = () => {
             className="flex items-center gap-1 text-sm hover:opacity-70 transition-opacity"
             style={{ color: '#5a4632' }}
           >
-            <ChevronLeft className="h-4 w-4" /> Exit Quick Read
+            <ChevronLeft className="h-4 w-4" /> Exit Start Here
           </button>
           <div className="text-sm" style={{ color: '#5a4632' }}>
             Chapter <span className="font-semibold">{index + 1}</span> of {total} — going great
