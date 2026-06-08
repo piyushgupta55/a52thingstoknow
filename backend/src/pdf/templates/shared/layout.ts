@@ -249,7 +249,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             <span class="line"></span>
           </div>
           <div class="letter-signature">
-            <span class="warm-regards">With love and blessings,</span>
+            <span class="warm-regards">I love you,</span>
             <span class="signature-name">${bookData.author}</span>
           </div>
         </div>

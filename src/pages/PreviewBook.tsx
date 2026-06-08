@@ -825,7 +825,7 @@ const PreviewBook = () => {
                 {renderWithLineBreaks(para)}
               </p>
             ))}
-            <p className="mt-5" style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748' }}>With love,</p>
+            <p className="mt-5" style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748' }}>I love you,</p>
             <p className="mt-1 font-semibold" style={{ fontFamily: SERIF, fontSize: '14px', color: '#2D3748' }}>
               {authorName || 'The Author'}
             </p>
