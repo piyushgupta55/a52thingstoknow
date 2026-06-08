@@ -213,7 +213,7 @@ const BookDashboard = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
-            A Book of Wisdom for {book.recipient_name}
+            {book.recipient_name}'s Gift
           </h1>
           <p className="text-muted-foreground mt-1">
             {book.relationship} · {book.occasion}
@@ -249,25 +249,25 @@ const BookDashboard = () => {
               onClick={() => navigate(`/book/${bookId}/quick-read`)}
             >
               <Zap className="h-4 w-4 mr-2" />
-              Quick Read
+              Start Here
             </Button>
           </div>
         </div>
 
-        {/* Quick Read Review Summary */}
+        {/* Start Here Review Summary */}
         {numberedChapters.length > 0 && (
           <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
             <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-primary" />
-                <h2 className="font-heading text-lg font-bold text-foreground">Quick Read Review</h2>
+                <h2 className="font-heading text-lg font-bold text-foreground">Start Here Review</h2>
               </div>
               <Button
                 size="sm"
                 variant={reviewedCount === 0 ? 'default' : 'outline'}
                 onClick={() => navigate(`/book/${bookId}/quick-read`)}
               >
-                {reviewedCount === 0 ? 'Start Quick Read' : reviewedCount < numberedChapters.length ? 'Continue Quick Read' : 'Review Again'}
+                {reviewedCount === 0 ? 'Start Here' : reviewedCount < numberedChapters.length ? 'Continue Review' : 'Review Again'}
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
