@@ -213,8 +213,26 @@ const QuickRead = () => {
           >
             <ChevronLeft className="h-4 w-4" /> Exit Start Here
           </button>
-          <div className="text-sm" style={{ color: '#5a4632' }}>
-            Chapter <span className="font-semibold">{index + 1}</span> of {total} — going great
+          <div className="flex items-center gap-2 text-sm" style={{ color: '#5a4632' }}>
+            <button
+              onClick={goPrev}
+              disabled={index === 0}
+              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              aria-label="Previous chapter"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span>
+              Chapter <span className="font-semibold">{index + 1}</span> of {total}
+            </span>
+            <button
+              onClick={goNext}
+              disabled={index + 1 >= total}
+              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              aria-label="Next chapter"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
           <button
             onClick={() => navigate(`/book/${bookId}`)}
