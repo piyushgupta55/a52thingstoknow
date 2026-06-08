@@ -151,8 +151,17 @@ const QuickRead = () => {
     }
   };
 
+  const goPrev = () => {
+    if (index > 0) setIndex(i => i - 1);
+  };
+
+  const goNext = () => {
+    if (index + 1 < total) setIndex(i => i + 1);
+  };
+
   const handleChoice = async (choice: 'keep' | 'add' | 'rewrite') => {
     if (!chapter || saving) return;
+    const wasAlreadyReviewed = !!chapter.review_status;
     setSaving(true);
     const { error } = await supabase
       .from('chapters')
@@ -165,7 +174,9 @@ const QuickRead = () => {
     }
     // Optimistically update local state
     setChapters(prev => prev.map(c => c.id === chapter.id ? { ...c, review_status: choice } : c));
-    advance();
+    if (!wasAlreadyReviewed) {
+      advance();
+    }
   };
 
   if (loading) {
