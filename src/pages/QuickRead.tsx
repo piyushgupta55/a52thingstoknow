@@ -337,39 +337,60 @@ const QuickRead = () => {
             onClick={() => handleChoice('keep')}
             disabled={saving}
             className="w-full h-16 text-base md:text-lg justify-start gap-4 shadow-sm hover:shadow-md transition-all"
-            style={{ background: GOLD, color: '#fff' }}
+            style={{
+              background: GOLD,
+              color: '#fff',
+              ...(chapter.review_status === 'keep' ? { boxShadow: '0 0 0 3px rgba(255,255,255,0.5), 0 0 0 5px ' + GOLD } : {}),
+            }}
           >
             <Heart className="h-5 w-5" />
             <div className="text-left">
               <div className="font-semibold">Keep this one</div>
               <div className="text-xs opacity-90 font-normal">It reads beautifully as-is</div>
             </div>
+            {chapter.review_status === 'keep' && (
+              <span className="ml-auto text-xs font-semibold opacity-90">Selected</span>
+            )}
           </Button>
           <Button
             onClick={() => handleChoice('add')}
             disabled={saving}
             variant="outline"
             className="w-full h-16 text-base md:text-lg justify-start gap-4 border-2 hover:bg-white"
-            style={{ borderColor: GOLD, color: '#2a1f1a', background: 'transparent' }}
+            style={{
+              borderColor: GOLD,
+              color: '#2a1f1a',
+              background: chapter.review_status === 'add' ? 'rgba(187,169,106,0.15)' : 'transparent',
+            }}
           >
             <Plus className="h-5 w-5" style={{ color: GOLD }} />
             <div className="text-left">
               <div className="font-semibold">Add to it</div>
               <div className="text-xs opacity-70 font-normal">Love it — I'll add my own words later</div>
             </div>
+            {chapter.review_status === 'add' && (
+              <span className="ml-auto text-xs font-semibold" style={{ color: GOLD }}>Selected</span>
+            )}
           </Button>
           <Button
             onClick={() => handleChoice('rewrite')}
             disabled={saving}
             variant="outline"
             className="w-full h-16 text-base md:text-lg justify-start gap-4 border-2 hover:bg-white"
-            style={{ borderColor: PINK, color: '#2a1f1a', background: 'transparent' }}
+            style={{
+              borderColor: PINK,
+              color: '#2a1f1a',
+              background: chapter.review_status === 'rewrite' ? 'rgba(196,120,138,0.15)' : 'transparent',
+            }}
           >
             <PenLine className="h-5 w-5" style={{ color: PINK }} />
             <div className="text-left">
               <div className="font-semibold">Rewrite this</div>
               <div className="text-xs opacity-70 font-normal">I'd like to write my own version later</div>
             </div>
+            {chapter.review_status === 'rewrite' && (
+              <span className="ml-auto text-xs font-semibold" style={{ color: PINK }}>Selected</span>
+            )}
           </Button>
 
           {isShort && (
