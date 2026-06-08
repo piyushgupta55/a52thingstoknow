@@ -133,7 +133,7 @@ const Dashboard = () => {
                   <Trash2 className="h-4 w-4" />
                 </button>
                 <h2 className="font-heading text-lg font-bold text-foreground pr-8">
-                  A Book of Wisdom for {book.recipient_name}
+                  {book.recipient_name}'s Gift
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   {book.relationship} · {book.occasion}
