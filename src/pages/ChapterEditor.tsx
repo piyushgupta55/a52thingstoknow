@@ -375,8 +375,7 @@ const ChapterEditor = () => {
         setPhotoChapterCount(siblings.filter((s) => s.chapter_template === 'photo_top' || s.chapter_template === 'photo_second').length);
       }
       setLoading(false);
-      const thisHasContent = ((chapterData?.content || '') as string).trim().length > 0;
-      setPreviewMode(!thisHasContent);
+      setPreviewMode(false);
       // The merged textarea is sized by the useLayoutEffect below, which
       // fires reliably once the editor is mounted and visible — no fragile
       // setTimeout needed.
