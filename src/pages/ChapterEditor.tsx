@@ -1177,9 +1177,34 @@ const ChapterEditor = () => {
             </Button>
 
             {!previewMode && (
-              <Button variant="ghost" size="sm" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload} className="gap-1.5 text-xs h-8">
-                <Save className="h-3 w-3" /> {saving ? 'Saving…' : 'Save Draft'}
-              </Button>
+              <>
+                <Button variant="ghost" size="sm" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload} className="gap-1.5 text-xs h-8">
+                  <Save className="h-3 w-3" /> {saving ? 'Saving…' : 'Save Draft'}
+                </Button>
+                {isComplete ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-xs h-8"
+                    onClick={() => {
+                      setChapter((prev) => (prev ? { ...prev, status: 'in_progress' } : prev));
+                      save(false, 'in_progress');
+                    }}
+                    disabled={saving || photoTemplateNeedsUpload}
+                  >
+                    <Check className="h-3.5 w-3.5" /> Unmark Complete
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="gap-1.5 text-xs h-8"
+                    onClick={handleMarkComplete}
+                    disabled={saving || photoTemplateNeedsUpload}
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" /> Mark Complete
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
