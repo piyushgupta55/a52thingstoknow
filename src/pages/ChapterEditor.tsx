@@ -1329,61 +1329,96 @@ const ChapterEditor = () => {
             </h1>
             <div className="mb-6" />
 
-            <div className="my-8 relative">
-              <div className="transition-all duration-200 rounded-sm inline-block w-full relative" style={{ borderLeft: '3px solid #C9A84C', background: '#FDFAF4', margin: '0 -8px', padding: '12px 8px 12px 19px' }}>
-                <textarea
-                  ref={wisdomTextareaRef}
-                  placeholder=""
-                  value={content}
-                  onChange={e => {
-                    const ta = e.target;
-                    if (ta.value.length <= MAX_CONTENT_LENGTH) {
-                      setContent(ta.value);
-                      setHasUnsavedChanges(true);
-                    }
-                    autoResize(ta);
-                  }}
-                  onPaste={e => {
-                    e.preventDefault();
-                    // Normalize Windows CRLF to LF so text.length matches what
-                    // the textarea actually stores — otherwise the caret
-                    // overshoots by one position per line break.
-                    const text = e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n');
-                    const ta = e.target as HTMLTextAreaElement;
-                    const start = ta.selectionStart;
-                    const end = ta.selectionEnd;
-                    const newVal = content.slice(0, start) + text + content.slice(end);
-                    if (newVal.length > MAX_CONTENT_LENGTH) return;
-                    setContent(newVal);
-                    setHasUnsavedChanges(true);
-                    const caret = start + text.length;
-                    requestAnimationFrame(() => {
-                      ta.selectionStart = ta.selectionEnd = caret;
-                      autoResize(ta);
-                    });
-                  }}
-                  rows={6}
-                  className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
-                  style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
-                />
-              </div>
-            </div>
+            {(() => {
+              const page1Fill = layoutMeasurement?.pages?.[0]?.fillPercent ?? 0;
+              const totalPages = layoutMeasurement?.totalPages ?? 1;
+              const letterAtLimit = !!layoutMeasurement && (totalPages > 1 || page1Fill >= 100);
+              return (
+                <>
+                  <div className="my-8 relative">
+                    <div className="transition-all duration-200 rounded-sm inline-block w-full relative" style={{ borderLeft: '3px solid #C9A84C', background: '#FDFAF4', margin: '0 -8px', padding: '12px 8px 12px 19px' }}>
+                      <textarea
+                        ref={wisdomTextareaRef}
+                        placeholder=""
+                        value={content}
+                        onChange={e => {
+                          const ta = e.target;
+                          const next = ta.value;
+                          // Always allow shrinking (so users can edit down over-long content)
+                          const isShrinking = next.length <= content.length;
+                          if (next.length <= MAX_CONTENT_LENGTH && (isShrinking || !letterAtLimit)) {
+                            setContent(next);
+                            setHasUnsavedChanges(true);
+                          } else if (!isShrinking && letterAtLimit) {
+                            // Soft-block: revert to previous value
+                            ta.value = content;
+                          }
+                          autoResize(ta);
+                        }}
+                        onBeforeInput={e => {
+                          if (letterAtLimit) {
+                            const ta = e.target as HTMLTextAreaElement;
+                            // Block insertions; allow deletions (deleteContent*) and selection replacement
+                            const it = (e as any).inputType as string | undefined;
+                            const isInsert = !it || it.startsWith('insert');
+                            const hasSelection = ta.selectionStart !== ta.selectionEnd;
+                            if (isInsert && !hasSelection) {
+                              e.preventDefault();
+                            }
+                          }
+                        }}
+                        onPaste={e => {
+                          e.preventDefault();
+                          if (letterAtLimit) return;
+                          const text = e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n');
+                          const ta = e.target as HTMLTextAreaElement;
+                          const start = ta.selectionStart;
+                          const end = ta.selectionEnd;
+                          const newVal = content.slice(0, start) + text + content.slice(end);
+                          if (newVal.length > MAX_CONTENT_LENGTH) return;
+                          setContent(newVal);
+                          setHasUnsavedChanges(true);
+                          const caret = start + text.length;
+                          requestAnimationFrame(() => {
+                            ta.selectionStart = ta.selectionEnd = caret;
+                            autoResize(ta);
+                          });
+                        }}
+                        rows={6}
+                        className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
+                        style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
+                      />
+                    </div>
+                    {letterAtLimit && (
+                      <div
+                        className="mt-3 px-3 py-2 rounded-sm text-[0.78rem] text-foreground/75"
+                        style={{ fontFamily: 'var(--font-body)', background: '#FDFAF4', borderLeft: '3px solid #C9A84C' }}
+                        role="status"
+                        aria-live="polite"
+                      >
+                        You've reached the end of the letter page. There's plenty of room to share more in the 52 chapters ahead.
+                      </div>
+                    )}
+                  </div>
 
-            <div className="mt-8 pt-4 border-t border-[hsl(var(--devotional-border))] text-xs font-medium text-center" style={{ fontFamily: 'var(--font-body)' }}>
-              {layoutMeasurement ? (
-                <div className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[0.68rem] text-muted-foreground/80 leading-relaxed">
-                  <span className="text-[#6B7280]">
-                    Total Pages: <strong className="text-foreground">{layoutMeasurement.totalPages}</strong>
-                  </span>
-                  {layoutMeasurement.pages.map((page) => (
-                    <span key={page.pageIndex}>
-                      <span className="text-[#E5E7EB]">|</span>{' '}
-                      Page {page.pageIndex + 1}: <strong className="text-foreground">{Math.round(page.fillPercent)}%</strong> full
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+                  <div className="mt-8 pt-4 border-t border-[hsl(var(--devotional-border))] text-xs font-medium text-center" style={{ fontFamily: 'var(--font-body)' }}>
+                    {layoutMeasurement ? (
+                      <div className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[0.68rem] text-muted-foreground/80 leading-relaxed">
+                        <span className="text-[#6B7280]">
+                          Total Pages: <strong className="text-foreground">{layoutMeasurement.totalPages}</strong>
+                        </span>
+                        {layoutMeasurement.pages.map((page) => (
+                          <span key={page.pageIndex}>
+                            <span className="text-[#E5E7EB]">|</span>{' '}
+                            Page {page.pageIndex + 1}: <strong className="text-foreground">{Math.round(page.fillPercent)}%</strong> full
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </>
+              );
+            })()}
           </PageCanvas>
         ) : (
           /* ═══ EDIT MODE — SINGLE CARD ═══ */
