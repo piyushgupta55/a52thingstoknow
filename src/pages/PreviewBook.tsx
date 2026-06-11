@@ -781,7 +781,7 @@ const PreviewBook = () => {
           {hasAncestry && (
             <div className="flex items-baseline justify-between py-2 mt-2 pt-3" style={{ borderTop: '1px solid #E5E1D8' }}>
               <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Where You Come From</span>
-              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>{(2 + visibleChapters.length) * 2}</span>
+              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>{(3 + visibleChapters.length) * 2}</span>
             </div>
           )}
         </div>
