@@ -70,6 +70,7 @@ const PreviewBook = () => {
   const spreads: SpreadDef[] = [];
   spreads.push({ type: 'title' });
   spreads.push({ type: 'toc_letter' });
+  spreads.push({ type: 'epigraph' });
   visibleChapters.forEach(ch => spreads.push({ type: 'chapter', chapter: ch }));
   if (hasAncestry) spreads.push({ type: 'ancestry' });
 
