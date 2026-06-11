@@ -45,6 +45,7 @@ export interface ChapterTemplate {
 export type SpreadDef =
   | { type: 'title' }
   | { type: 'toc_letter' }
+  | { type: 'epigraph' }
   | { type: 'chapter'; chapter: Chapter }
   | { type: 'ancestry' };
 
