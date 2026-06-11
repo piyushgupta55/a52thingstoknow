@@ -726,7 +726,7 @@ const PreviewBook = () => {
   const renderTocLetterSpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
     const chapterPageMap = new Map<string, number>();
     visibleChapters.forEach((ch, i) => {
-      chapterPageMap.set(ch.id, (2 + i) * 2);
+      chapterPageMap.set(ch.id, (3 + i) * 2);
     });
 
     const left = (
