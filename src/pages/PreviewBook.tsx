@@ -1074,11 +1074,52 @@ const PreviewBook = () => {
     return [left, right, undefined];
   };
 
+  const renderEpigraphSpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
+    const left = (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+          <div className="w-10 mb-8" style={{ height: '1px', background: GOLD }} />
+          <p
+            className="italic"
+            style={{
+              fontFamily: SERIF,
+              fontSize: '14px',
+              color: '#2D3748',
+              lineHeight: 1.9,
+              maxWidth: '78%',
+            }}
+          >
+            “Getting wisdom is the wisest thing you can do! And whatever else you do, develop good judgment.”
+          </p>
+          <p
+            className="uppercase tracking-[0.2em] mt-8"
+            style={{
+              fontFamily: 'Source Sans 3, system-ui, sans-serif',
+              fontSize: '9px',
+              color: PINK,
+            }}
+          >
+            — Proverbs 4:7 &nbsp;·&nbsp; New Living Translation
+          </p>
+          <div className="w-10 mt-8" style={{ height: '1px', background: GOLD }} />
+        </div>
+        <PageNum num={leftPageNum} />
+      </div>
+    );
+    const right = (
+      <div className="flex flex-col h-full">
+        <div className="flex-1" />
+      </div>
+    );
+    return [left, right, undefined];
+  };
+
   const getCurrentSpreadContent = (): SpreadRender => {
     const spread = spreads[clampedSpread];
     if (!spread) return [null, null, undefined, false, null];
     if (spread.type === 'title') return [...renderTitleSpread(), false, null];
     if (spread.type === 'toc_letter') return [...renderTocLetterSpread(), false, null];
+    if (spread.type === 'epigraph') return [...renderEpigraphSpread(), false, null];
     if (spread.type === 'ancestry') return [...renderAncestrySpread(), false, null];
     return renderChapterSpread(spread.chapter, clampedSpread);
   };
