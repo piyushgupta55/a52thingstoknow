@@ -63,6 +63,8 @@ const stripHtml = (raw: string) =>
 const QuickRead = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const startChapterId = searchParams.get('chapterId');
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -91,12 +93,19 @@ const QuickRead = () => {
       setChapters(loadedChapters);
       setMemories((memData as Memory[]) || []);
       setTemplates((tplData as Template[]) || []);
-      // Resume at the first unreviewed chapter, or Chapter 1 if all reviewed
-      const firstUnreviewed = loadedChapters.findIndex(c => !c.review_status);
-      setIndex(firstUnreviewed >= 0 ? firstUnreviewed : 0);
+      // If launched with ?chapterId=..., start at that chapter. Otherwise
+      // resume at the first unreviewed chapter, or Chapter 1 if all reviewed.
+      let startIdx = -1;
+      if (startChapterId) {
+        startIdx = loadedChapters.findIndex(c => c.id === startChapterId);
+      }
+      if (startIdx < 0) {
+        startIdx = loadedChapters.findIndex(c => !c.review_status);
+      }
+      setIndex(startIdx >= 0 ? startIdx : 0);
       setLoading(false);
     })();
-  }, [bookId]);
+  }, [bookId, startChapterId]);
 
 
   useEffect(() => {
