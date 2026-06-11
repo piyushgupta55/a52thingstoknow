@@ -24,6 +24,7 @@ import AncestrySection from "./pages/AncestrySection";
 import ChapterLibrary from "./pages/ChapterLibrary";
 import BookReview from "./pages/BookReview";
 import QuickRead from "./pages/QuickRead";
+import ReviewPile from "./pages/ReviewPile";
 
 const queryClient = new QueryClient();
 
