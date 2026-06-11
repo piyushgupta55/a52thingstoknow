@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
