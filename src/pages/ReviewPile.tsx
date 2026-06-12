@@ -89,8 +89,9 @@ const ReviewPile = () => {
     if (pile === 'notyet') {
       navigate(`/book/${bookId}/quick-read?chapterId=${c.id}`);
     } else {
-      // ChapterEditor defaults to EDIT tab on load — no extra flag needed.
-      navigate(`/book/${bookId}/chapter/${c.id}`);
+      const returnTo = encodeURIComponent(`/book/${bookId}/pile/${pile}`);
+      const returnLabel = encodeURIComponent(meta?.title || 'pile');
+      navigate(`/book/${bookId}/chapter/${c.id}?returnTo=${returnTo}&returnLabel=${returnLabel}`);
     }
   };
 
