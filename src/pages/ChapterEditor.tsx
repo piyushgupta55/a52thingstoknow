@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
-import { Save, CheckCircle, AlertTriangle, Settings2, Check, Sparkles, MessageCircleHeart } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, Settings2, Check, Sparkles, MessageCircleHeart, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import DevotionalVerse from '@/components/chapter/DevotionalVerse';
@@ -103,6 +103,7 @@ const ChapterEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
+  const returnLabel = searchParams.get('returnLabel');
   const [reviewIssues, setReviewIssues] = useState<ReviewIssue[]>([]);
   const [checkedIssueIds, setCheckedIssueIds] = useState<Record<string, boolean>>({});
   const [reviewBannerDismissed, setReviewBannerDismissed] = useState(false);
@@ -1106,6 +1107,25 @@ const ChapterEditor = () => {
       <div className="sticky top-0 z-20 border-b border-[hsl(var(--devotional-border))]" style={{ background: 'hsla(40, 33%, 97%, 0.95)', backdropFilter: 'blur(8px)' }}>
         <div className="container mx-auto max-w-[720px] px-4 py-2.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
+            {returnTo && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 h-8 px-2 text-xs text-muted-foreground hover:text-foreground flex-shrink-0"
+                onClick={() => {
+                  if (hasUnsavedChanges) {
+                    setPendingNavigation(returnTo);
+                    setShowUnsavedDialog(true);
+                  } else {
+                    navigate(returnTo);
+                  }
+                }}
+                title={returnLabel ? `Back to ${returnLabel}` : 'Back'}
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Back to {returnLabel || 'pile'}</span>
+              </Button>
+            )}
             {recipientName && (
               <div
                 className="text-[0.65rem] uppercase tracking-wider text-muted-foreground/70 truncate max-w-[120px] sm:max-w-[180px] flex-shrink-0"
