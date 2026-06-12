@@ -103,6 +103,7 @@ const ChapterEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
+  const returnLabel = searchParams.get('returnLabel');
   const [reviewIssues, setReviewIssues] = useState<ReviewIssue[]>([]);
   const [checkedIssueIds, setCheckedIssueIds] = useState<Record<string, boolean>>({});
   const [reviewBannerDismissed, setReviewBannerDismissed] = useState(false);
