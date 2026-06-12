@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
-import { Save, CheckCircle, AlertTriangle, Settings2, Check, Sparkles, MessageCircleHeart } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, Settings2, Check, Sparkles, MessageCircleHeart, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import DevotionalVerse from '@/components/chapter/DevotionalVerse';
