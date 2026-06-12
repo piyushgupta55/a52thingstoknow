@@ -43,7 +43,7 @@
   width: 100%;
   height: 1.875in; /* Aligned with frontend preview height of 180px */
   object-fit: cover; /* Rigid scaling rule for both portrait and landscape */
-  object-position: center;
+  object-position: center top;
   border-radius: 2px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Premium framing */
   margin-bottom: 1em;

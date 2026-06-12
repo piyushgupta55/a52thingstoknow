@@ -29,7 +29,7 @@ export const createTestBook = async (userId: string) => {
     chapter_template: 'letter',
     is_photo_chapter: false,
     photo_urls: [],
-    photo_layout: 'horizontal',
+    photo_layout: 'top',
     content: '<p>Welcome to this book. May the thoughts and memories compiled within these pages bring you comfort, joy, and inspiration. It has been a labor of love to gather these words of wisdom, and I hope they serve as a guide for you in your journey ahead.</p><p>As you read through these chapters, remember that wisdom is not a destination but a way of traveling. Enjoy every step.</p>',
   };
 
@@ -42,7 +42,7 @@ export const createTestBook = async (userId: string) => {
       chapter_template: 'classic',
       is_photo_chapter: false,
       photo_urls: [],
-      photo_layout: 'classic',
+      photo_layout: 'top',
       status: 'complete',
       content: `
         <p>Wisdom begins with listening, not speaking. In a world filled with endless noise, the quiet mind becomes a sanctuary for truth. When we take the time to pause and reflect on the moments that define our lives, we discover that the most profound lessons are often found in the quietest spaces.</p>
@@ -60,7 +60,7 @@ export const createTestBook = async (userId: string) => {
       chapter_template: 'horizontal_photo',
       is_photo_chapter: true,
       photo_urls: ['https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1000&auto=format&fit=crop'],
-      photo_layout: 'horizontal',
+      photo_layout: 'top',
       status: 'complete',
       content: `
         <p>There is a unique clarity that comes from standing on the peak of a mountain, looking out over the vast expanse below. The challenges that seemed so large from the valley suddenly appear small and manageable. Nature has a way of restoring our perspective if we are willing to step away and listen.</p>
@@ -78,7 +78,7 @@ export const createTestBook = async (userId: string) => {
       chapter_template: 'vertical_photo',
       is_photo_chapter: true,
       photo_urls: ['https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop'],
-      photo_layout: 'vertical',
+      photo_layout: 'top',
       status: 'complete',
       content: `
         <p>Standing tall amidst the storm is not about being rigid; it is about having roots that run deep enough to hold you steady while the branches bend. The trees in the forest survive high winds because they grow together, their root systems intertwining beneath the soil to form a support network that cannot be broken by any single gust.</p>

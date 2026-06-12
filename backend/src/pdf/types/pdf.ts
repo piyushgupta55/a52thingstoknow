@@ -6,6 +6,7 @@ export interface BookData {
     title: string;
     content: string; // HTML or Markdown depending on layout
     photo_urls?: string[];
+    photo_layout?: string | null;
     memories?: Array<{
       contributor_name: string;
       memory_text: string;

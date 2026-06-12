@@ -30,6 +30,7 @@ export interface Chapter {
   quote_text: string | null;
   quote_attribution: string | null;
   photo_urls: string[];
+  photo_layout?: string | null;
   chapter_template: string;
   is_photo_chapter: boolean;
 }

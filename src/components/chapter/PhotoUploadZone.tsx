@@ -1,4 +1,6 @@
 import { ImagePlus, X } from 'lucide-react';
+import { getPhotoImageStyle, parsePhotoRenderLayout } from '@/features/photoRendering';
+import { PREVIEW_PHOTO_HORIZONTAL_HEIGHT, PREVIEW_PHOTO_VERTICAL_HEIGHT, PREVIEW_PHOTO_VERTICAL_WIDTH } from '@/features/preview/geometry';
 
 interface Props {
   photoUrls: string[];
@@ -11,10 +13,11 @@ interface Props {
 const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = 'horizontal' }: Props) => {
   const photo = photoUrls[0];
   const isVertical = variant === 'vertical';
+  const layout = parsePhotoRenderLayout(null);
 
-  const emptyHeight = isVertical ? '340px' : '200px';
-  const filledHeight = isVertical ? '340px' : '200px';
-  const emptyWidth = isVertical ? '260px' : '100%';
+  const emptyHeight = isVertical ? `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` : `${PREVIEW_PHOTO_HORIZONTAL_HEIGHT}px`;
+  const filledHeight = emptyHeight;
+  const emptyWidth = isVertical ? `${PREVIEW_PHOTO_VERTICAL_WIDTH}px` : '100%';
 
   const emptyLabel = isVertical
     ? 'Add a vertical photo — portrait orientation works best'
@@ -23,17 +26,19 @@ const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = '
   return (
     <div className={`mb-6 ${isVertical ? 'flex justify-center' : ''}`}>
       {photo ? (
-        <div
-          className="relative overflow-hidden rounded-sm"
-          style={{ width: isVertical ? '280px' : '100%', height: filledHeight }}
-        >
-          <img src={photo} alt="Chapter photo" className="w-full h-full object-cover" />
-          <button
-            onClick={() => onRemove(0)}
-            className="absolute top-3 right-3 bg-foreground/60 text-background rounded-full p-1.5 hover:bg-foreground/80 transition-colors"
+        <div className="space-y-3">
+          <div
+            className="relative overflow-hidden rounded-sm"
+            style={{ width: isVertical ? `${PREVIEW_PHOTO_VERTICAL_WIDTH}px` : '100%', height: filledHeight }}
           >
-            <X className="h-3 w-3" />
-          </button>
+            <img src={photo} alt="Chapter photo" className="w-full h-full object-cover" style={getPhotoImageStyle(layout)} />
+            <button
+              onClick={() => onRemove(0)}
+              className="absolute top-3 right-3 bg-foreground/60 text-background rounded-full p-1.5 hover:bg-foreground/80 transition-colors"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
         </div>
       ) : (
         <label

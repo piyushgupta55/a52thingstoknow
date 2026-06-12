@@ -24,6 +24,7 @@ import {
 } from '@/features/chapter-editor/constants';
 import { validatePhoto } from '@/features/chapter-editor/photoValidation';
 import { mergeRefAndContent } from '@/features/chapter-editor/textSplit';
+import { getPhotoImageStyle, parsePhotoRenderLayout, serializePhotoRenderLayout } from '@/features/photoRendering';
 import {
   PREVIEW_PHOTO_HORIZONTAL_HEIGHT,
   PREVIEW_PHOTO_VERTICAL_HEIGHT,
@@ -122,6 +123,7 @@ const ChapterEditor = () => {
   // display. referenceText/content are derived from this only on save.
   const [mergedText, setMergedText] = useState('');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [photoLayout, setPhotoLayout] = useState<string>(serializePhotoRenderLayout(parsePhotoRenderLayout(null)));
   const [template, setTemplate] = useState<ChapterTemplate>('all_words');
   const [uploading, setUploading] = useState(false);
   const [verseId, setVerseId] = useState<string | null>(null);
@@ -160,7 +162,7 @@ const ChapterEditor = () => {
   const [searchPanelOpen, setSearchPanelOpen] = useState(false);
   const [searchPanelType, setSearchPanelType] = useState<'verse' | 'quote'>('verse');
 
-  const [allChapters, setAllChapters] = useState<{ id: string; chapter_number: number; title: string; status: string; created_at: string; updated_at: string; content: string | null; verse_id: string | null; quote_id: string | null; bible_verse_text: string | null; quote_text: string | null; chapter_template: string; photo_urls?: string[] }[]>([]);
+  const [allChapters, setAllChapters] = useState<{ id: string; chapter_number: number; title: string; status: string; created_at: string; updated_at: string; content: string | null; verse_id: string | null; quote_id: string | null; bible_verse_text: string | null; quote_text: string | null; chapter_template: string; photo_layout?: string | null; photo_urls?: string[] }[]>([]);
   const [photoChapterNums, setPhotoChapterNums] = useState<Set<number>>(new Set());
   const [memoryCountsByChapter, setMemoryCountsByChapter] = useState<Record<string, number>>({});
   const [placedMemories, setPlacedMemories] = useState<{ id: string; memory_text: string; contributor_name: string }[]>([]);
@@ -271,7 +273,7 @@ const ChapterEditor = () => {
     const load = async () => {
       const [{ data: chapterData }, { data: allCh }, { data: bookData }, { data: memoriesData }, { data: capData }, { data: allTpls }] = await Promise.all([
         supabase.from('chapters').select('*').eq('id', chapterId).single(),
-        supabase.from('chapters').select('id, chapter_number, title, status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls').eq('book_id', bookId).order('chapter_number'),
+        supabase.from('chapters').select('id, chapter_number, title, status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls, photo_layout').eq('book_id', bookId).order('chapter_number'),
         supabase.from('books').select('recipient_name, recipient_gender, user_id, author_label').eq('id', bookId).single(),
         supabase.from('memories').select('id, chapter_id, memory_text, contributor_name, placed_at, created_at').eq('book_id', bookId).order('placed_at', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
         supabase.from('app_settings').select('value').eq('key', 'photo_chapter_cap').single(),
@@ -296,6 +298,7 @@ const ChapterEditor = () => {
         setQuoteAttribution(chapterData.quote_attribution || '');
         setContent(chapterData.content || '');
         setPhotoUrls(chapterData.photo_urls || []);
+        setPhotoLayout(chapterData.photo_layout || serializePhotoRenderLayout(parsePhotoRenderLayout(null)));
         setTemplate((chapterData.chapter_template as ChapterTemplate) || 'all_words');
         setVerseId(chapterData.verse_id || null);
         setQuoteId(chapterData.quote_id || null);
@@ -465,6 +468,7 @@ const ChapterEditor = () => {
       content: contentToSave || null,
       reference_text: refToSave || null,
       photo_urls: hasUploadedPhoto ? [primaryPhotoUrl] : [],
+      photo_layout: serializePhotoRenderLayout(parsePhotoRenderLayout(null)),
       chapter_template: template,
       verse_id: verseId,
       quote_id: quoteId,
@@ -480,7 +484,7 @@ const ChapterEditor = () => {
       setReferenceText(refToSave);
       setContent(contentToSave);
       setChapter(prev => prev ? { ...prev, status: newStatus } : prev);
-      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: contentToSave || null } : c));
+      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: contentToSave || null, photo_layout: serializePhotoRenderLayout(parsePhotoRenderLayout(null)) } : c));
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
       // Update last saved snapshot for revert
@@ -856,6 +860,7 @@ const ChapterEditor = () => {
     if (previewMode) {
       if (!hasUploadedPhoto) return null;
       const isVert = variant === 'vertical';
+      const layout = parsePhotoRenderLayout(photoLayout);
       return (
         <div
           className={`rounded-sm overflow-hidden mb-6 ${isVert ? 'flex justify-center' : ''}`}
@@ -868,15 +873,11 @@ const ChapterEditor = () => {
             borderRadius: '2px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
           }}
-        >
+          >
           <img
             src={primaryPhotoUrl}
             alt="Chapter photo"
-            className="object-cover"
-            style={{
-              width: '100%',
-              height: '100%',
-            }}
+            style={getPhotoImageStyle(layout)}
           />
         </div>
       );
@@ -908,6 +909,7 @@ const ChapterEditor = () => {
       chapter_template: template,
       content: isLetterChapter ? mergeRefAndContent(referenceText, content) : mergedText,
       photo_urls: hasUploadedPhoto ? [primaryPhotoUrl] : [],
+      photo_layout: serializePhotoRenderLayout(parsePhotoRenderLayout(null)),
       bible_verse_text: bibleVerseText || null,
       bible_verse_reference: bibleVerseRef || null,
       quote_text: quoteText || null,
@@ -947,7 +949,7 @@ const ChapterEditor = () => {
     };
 
     loadExactPreview();
-  }, [chapter, template, mergedText, referenceText, content, hasUploadedPhoto, primaryPhotoUrl, bibleVerseText, bibleVerseRef, quoteText, quoteAttribution, placedMemories, authorName, recipientName, isLetterChapter]);
+  }, [chapter, template, mergedText, referenceText, content, hasUploadedPhoto, primaryPhotoUrl, photoLayout, bibleVerseText, bibleVerseRef, quoteText, quoteAttribution, placedMemories, authorName, recipientName, isLetterChapter]);
 
   const syncExactPreview = () => {
     const iframe = exactPreviewIframeRef.current;
@@ -1105,8 +1107,8 @@ const ChapterEditor = () => {
 
       {/* Toolbar */}
       <div className="sticky top-0 z-20 border-b border-[hsl(var(--devotional-border))]" style={{ background: 'hsla(40, 33%, 97%, 0.95)', backdropFilter: 'blur(8px)' }}>
-        <div className="container mx-auto max-w-screen-xl px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3 min-w-0 flex-1 flex-wrap">
+        <div className="container mx-auto max-w-screen-xl px-4 py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
             {returnTo && (
               <Button
                 variant="outline"
@@ -1175,7 +1177,7 @@ const ChapterEditor = () => {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-start sm:justify-end">
             {/* Unsaved-changes indicator — visible in edit mode */}
             {!previewMode && hasUnsavedChanges && (
               <span

@@ -24,6 +24,7 @@ import {
   PREVIEW_SPREAD_WIDTH,
 } from '@/features/preview/geometry';
 import type { Book, Chapter, ChapterTemplate, Memory, SpreadDef, SpreadRender } from '@/features/preview/types';
+import { getPhotoImageStyle, parsePhotoRenderLayout } from '@/features/photoRendering';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const GOLD = '#BBA96A';
@@ -198,6 +199,7 @@ const PreviewBook = () => {
         chapter_template: 'letter',
         content: normalizeContent(letter.reference_text, letter.content),
         photo_urls: [],
+        photo_layout: letter.photo_layout,
         memories: [],
       });
     }
@@ -213,6 +215,7 @@ const PreviewBook = () => {
         chapter_template: ch.chapter_template,
         content: normalizeContent(ch.reference_text, ch.content),
         photo_urls: (ch.photo_urls || []).filter(Boolean),
+        photo_layout: ch.photo_layout,
         bible_verse_text: ch.bible_verse_text,
         bible_verse_reference: ch.bible_verse_reference,
         quote_text: ch.quote_text,
@@ -860,6 +863,7 @@ const PreviewBook = () => {
       .replace(/\n\n+/g, '\n\n')
       .trim();
     const hasPhoto = ch.photo_urls && ch.photo_urls.length > 0 && ch.photo_urls[0] && ch.photo_urls[0].trim() !== '';
+    const photoLayout = parsePhotoRenderLayout(ch.photo_layout);
     const hasAuthorWisdom = fullText.length > 0;
     const chapterLeftPageNum = spreadIndex * 2;
     const chapterRightPageNum = chapterLeftPageNum + 1;
@@ -899,7 +903,7 @@ const PreviewBook = () => {
         <div className="flex flex-col h-full">
           <div className="flex justify-center items-center mb-4 flex-shrink-0" style={{ height: `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` }}>
             <div className="rounded overflow-hidden shadow-md" style={{ width: `${PREVIEW_PHOTO_VERTICAL_WIDTH}px`, height: `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` }}>
-              <img src={ch.photo_urls[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+              <img src={ch.photo_urls[0]} alt="" className="w-full h-full" style={getPhotoImageStyle(photoLayout)} />
             </div>
           </div>
           <div className="flex-1 mt-3" style={{ overflow: 'hidden' }}>
@@ -954,8 +958,8 @@ const PreviewBook = () => {
           </div>
 
           {hasPhoto && (ch.chapter_template === 'photo_top' || ch.chapter_template === 'horizontal_photo') ? (
-            <div className="rounded overflow-hidden" style={{ breakInside: 'avoid', margin: '1.2em 0 0.8em' }}>
-              <img src={ch.photo_urls[0]} alt="" className="w-full" style={{ height: `${PREVIEW_PHOTO_HORIZONTAL_HEIGHT}px`, objectFit: 'cover', objectPosition: 'center top' }} />
+            <div className="rounded overflow-hidden" style={{ breakInside: 'avoid', margin: '1.2em 0 0.8em', height: `${PREVIEW_PHOTO_HORIZONTAL_HEIGHT}px` }}>
+              <img src={ch.photo_urls[0]} alt="" className="w-full h-full" style={getPhotoImageStyle(photoLayout)} />
             </div>
           ) : null}
 

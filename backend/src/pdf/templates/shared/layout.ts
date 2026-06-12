@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import type { BookData } from '../../types/pdf';
+import { getPhotoImageStyle, parsePhotoRenderLayout } from './photoRendering';
 // supabase import removed - not needed for screenshots
 
 interface DropcapConfig {
@@ -307,8 +308,14 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     const template = (!hasPhoto && (parsedTemplate === 'horizontal_photo' || parsedTemplate === 'vertical_photo'))
       ? 'classic'
       : parsedTemplate;
+    const photoLayout = parsePhotoRenderLayout(chapter.photo_layout);
     const photoClass = template === 'vertical_photo' ? 'chapter-photo vertical-photo' : 'chapter-photo';
-    const photoHtml = hasPhoto ? `<img src="${chapter.photo_urls![0]}" class="${photoClass}" />` : '';
+    const photoStyle = getPhotoImageStyle(photoLayout);
+    const photoStyleString = Object.entries(photoStyle)
+      .filter(([key, value]) => value !== undefined && key !== 'width' && key !== 'height')
+      .map(([key, value]) => `${key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}: ${String(value)}`)
+      .join('; ');
+    const photoHtml = hasPhoto ? `<img src="${chapter.photo_urls![0]}" class="${photoClass}" style="${photoStyleString}" />` : '';
 
     const mergedWisdomHtml = formatContent(chapter.content);
 
