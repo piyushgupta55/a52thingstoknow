@@ -191,13 +191,13 @@ const BookDashboard = () => {
 
   // Quick Read review tallies
   const SHORT_WORD_THRESHOLD = 180;
-  const reviewKept = numberedChapters.filter(c => c.review_status === 'keep').length;
-  const reviewAdd = numberedChapters.filter(c => c.review_status === 'add').length;
-  const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite').length;
+  const reviewKept = numberedChapters.filter(c => c.review_status === 'keep' && c.status !== 'complete').length;
+  const reviewAdd = numberedChapters.filter(c => c.review_status === 'add' && c.status !== 'complete').length;
+  const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite' && c.status !== 'complete').length;
   const reviewedCount = reviewKept + reviewAdd + reviewRewrite;
-  const notReviewed = numberedChapters.length - reviewedCount;
+  const notReviewed = numberedChapters.filter(c => !c.review_status && c.status !== 'complete').length;
   const shortKept = numberedChapters.filter(c => {
-    if (c.review_status !== 'keep') return false;
+    if (c.review_status !== 'keep' || c.status === 'complete') return false;
     const text = `${c.reference_text || ''} ${c.content || ''}`.trim();
     const wc = text ? text.split(/\s+/).length : 0;
     const hasPhoto = c.photo_urls && c.photo_urls.length > 0;
