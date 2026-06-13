@@ -135,7 +135,7 @@ const ReviewPile = () => {
           <p className="text-muted-foreground">Loading…</p>
         ) : list.length === 0 ? (
           <div className="bg-card rounded-xl border border-border p-8 text-center">
-            <p className="text-muted-foreground">No chapters in this pile yet.</p>
+            <p className="text-muted-foreground">All done here — nothing left in this pile.</p>
           </div>
         ) : (
           <ul className="bg-card rounded-xl border border-border divide-y divide-border overflow-hidden shadow-sm">
