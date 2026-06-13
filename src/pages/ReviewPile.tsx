@@ -64,14 +64,14 @@ const ReviewPile = () => {
     if (!meta) return [] as Chapter[];
     switch (pile) {
       case 'kept':
-        return chapters.filter(c => c.review_status === 'keep');
+        return chapters.filter(c => c.review_status === 'keep' && c.status !== 'complete');
       case 'add':
-        return chapters.filter(c => c.review_status === 'add');
+        return chapters.filter(c => c.review_status === 'add' && c.status !== 'complete');
       case 'rewrite':
-        return chapters.filter(c => c.review_status === 'rewrite');
+        return chapters.filter(c => c.review_status === 'rewrite' && c.status !== 'complete');
       case 'short':
         return chapters.filter(c => {
-          if (c.review_status !== 'keep') return false;
+          if (c.review_status !== 'keep' || c.status === 'complete') return false;
           const text = `${c.reference_text || ''} ${c.content || ''}`.trim();
           const wc = text ? text.split(/\s+/).length : 0;
           const hasPhoto = c.photo_urls && c.photo_urls.length > 0;
@@ -79,7 +79,7 @@ const ReviewPile = () => {
           return wc < SHORT_WORD_THRESHOLD && !hasPhoto && !hasMemory;
         });
       case 'notyet':
-        return chapters.filter(c => !c.review_status);
+        return chapters.filter(c => !c.review_status && c.status !== 'complete');
       default:
         return [];
     }
