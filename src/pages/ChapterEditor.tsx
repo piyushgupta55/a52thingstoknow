@@ -430,6 +430,34 @@ const ChapterEditor = () => {
     save(true);
   };
 
+  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!primaryPhotoUrl) {
+      setImageAspectRatio(null);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      setImageAspectRatio(img.naturalWidth / img.naturalHeight);
+    };
+    img.src = primaryPhotoUrl;
+  }, [primaryPhotoUrl]);
+
+  const FRAME_ASPECT_RATIO = 2.7 / 3.54; // 0.7627
+  const isHorizontalCrop = imageAspectRatio ? imageAspectRatio > FRAME_ASPECT_RATIO : true;
+  const currentLayout = parsePhotoRenderLayout(photoLayout);
+  const currentPreset = currentLayout.preset || 'center';
+
+  const handlePresetChange = (preset: string) => {
+    const nextLayout = {
+      ...currentLayout,
+      preset
+    };
+    setPhotoLayout(serializePhotoRenderLayout(nextLayout));
+    setHasUnsavedChanges(true);
+  };
+
   const save = async (markComplete = false, statusOverride?: string) => {
     if (!chapterId) return;
     if (photoTemplateNeedsUpload) {
@@ -468,7 +496,7 @@ const ChapterEditor = () => {
       content: contentToSave || null,
       reference_text: refToSave || null,
       photo_urls: hasUploadedPhoto ? [primaryPhotoUrl] : [],
-      photo_layout: serializePhotoRenderLayout(parsePhotoRenderLayout(null)),
+      photo_layout: photoLayout,
       chapter_template: template,
       verse_id: verseId,
       quote_id: quoteId,
@@ -484,7 +512,7 @@ const ChapterEditor = () => {
       setReferenceText(refToSave);
       setContent(contentToSave);
       setChapter(prev => prev ? { ...prev, status: newStatus } : prev);
-      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: contentToSave || null, photo_layout: serializePhotoRenderLayout(parsePhotoRenderLayout(null)) } : c));
+      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout } : c));
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
       // Update last saved snapshot for revert
@@ -889,6 +917,7 @@ const ChapterEditor = () => {
         onUpload={handlePhotoUpload}
         onRemove={() => removePhoto()}
         variant={variant}
+        photoLayout={photoLayout}
       />
     );
   };
@@ -909,7 +938,7 @@ const ChapterEditor = () => {
       chapter_template: template,
       content: isLetterChapter ? mergeRefAndContent(referenceText, content) : mergedText,
       photo_urls: hasUploadedPhoto ? [primaryPhotoUrl] : [],
-      photo_layout: serializePhotoRenderLayout(parsePhotoRenderLayout(null)),
+      photo_layout: photoLayout,
       bible_verse_text: bibleVerseText || null,
       bible_verse_reference: bibleVerseRef || null,
       quote_text: quoteText || null,
@@ -1487,7 +1516,31 @@ const ChapterEditor = () => {
               </>
             )}
 
-            {template === 'photo_top' && renderPhotoZone('horizontal')}
+            {template === 'photo_top' && (
+              <div className="mb-4">
+                {renderPhotoZone('horizontal')}
+                {!previewMode && hasUploadedPhoto && (
+                  <div className="flex flex-col items-center gap-2 mt-2 p-3 bg-secondary/20 rounded-md border border-[hsl(var(--devotional-border))]">
+                    <span className="text-[0.7rem] uppercase tracking-wider text-muted-foreground font-semibold">
+                      Image Position Preset
+                    </span>
+                    <div className="flex gap-2">
+                      {['top', 'center', 'bottom'].map((preset) => (
+                        <Button
+                          key={preset}
+                          variant={currentPreset === preset ? 'default' : 'outline'}
+                          size="sm"
+                          className="capitalize text-xs px-3 py-1 h-7 rounded-sm"
+                          onClick={() => handlePresetChange(preset)}
+                        >
+                          {preset}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <DevotionalVerse text={bibleVerseText} reference={bibleVerseRef} onTextChange={v => { setBibleVerseText(v); setVerseId(null); setHasUnsavedChanges(true); }} onRefChange={v => { setBibleVerseRef(v); setHasUnsavedChanges(true); }} onFindAlternatives={() => handleFindAlternatives('verse')} editing={editingVerse} onToggleEdit={() => setEditingVerse(!editingVerse)} previewMode={false} />
 
@@ -1547,6 +1600,26 @@ const ChapterEditor = () => {
                 {template === 'photo_second' && (
                   <div className="mb-4">
                     {renderPhotoZone('vertical')}
+                    {!previewMode && hasUploadedPhoto && (
+                      <div className="flex flex-col items-center gap-2 mt-2 p-3 bg-secondary/20 rounded-md border border-[hsl(var(--devotional-border))]">
+                        <span className="text-[0.7rem] uppercase tracking-wider text-muted-foreground font-semibold">
+                          Image Position Preset
+                        </span>
+                        <div className="flex gap-2">
+                          {(isHorizontalCrop ? ['left', 'center', 'right'] : ['top', 'center', 'bottom']).map((preset) => (
+                            <Button
+                              key={preset}
+                              variant={currentPreset === preset ? 'default' : 'outline'}
+                              size="sm"
+                              className="capitalize text-xs px-3 py-1 h-7 rounded-sm"
+                              onClick={() => handlePresetChange(preset)}
+                            >
+                              {preset}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

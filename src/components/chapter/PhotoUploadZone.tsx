@@ -8,12 +8,14 @@ interface Props {
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemove: (index: number) => void;
   variant?: 'horizontal' | 'vertical';
+  photoLayout?: string | null;
 }
 
-const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = 'horizontal' }: Props) => {
+const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = 'horizontal', photoLayout }: Props) => {
   const photo = photoUrls[0];
   const isVertical = variant === 'vertical';
-  const layout = parsePhotoRenderLayout(null);
+  const layout = parsePhotoRenderLayout(photoLayout);
+
 
   const emptyHeight = isVertical ? `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` : `${PREVIEW_PHOTO_HORIZONTAL_HEIGHT}px`;
   const filledHeight = emptyHeight;
