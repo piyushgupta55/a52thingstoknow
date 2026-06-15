@@ -4,7 +4,7 @@ export interface PhotoRenderLayout {
   focusX: number;
   focusY: number;
   scale: number;
-  fit: 'cover';
+  fit: 'contain' | 'cover';
   preset?: string;
 }
 
@@ -12,7 +12,7 @@ export const DEFAULT_PHOTO_RENDER_LAYOUT: PhotoRenderLayout = {
   focusX: 50,
   focusY: 50,
   scale: 1,
-  fit: 'cover',
+  fit: 'contain',
 };
 
 export const PHOTO_FOCUS_PRESETS: Record<PhotoFocus, Pick<PhotoRenderLayout, 'focusX' | 'focusY'>> = {

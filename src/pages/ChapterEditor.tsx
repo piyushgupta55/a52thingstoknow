@@ -1519,26 +1519,6 @@ const ChapterEditor = () => {
             {template === 'photo_top' && (
               <div className="mb-4">
                 {renderPhotoZone('horizontal')}
-                {!previewMode && hasUploadedPhoto && (
-                  <div className="flex flex-col items-center gap-2 mt-2 p-3 bg-secondary/20 rounded-md border border-[hsl(var(--devotional-border))]">
-                    <span className="text-[0.7rem] uppercase tracking-wider text-muted-foreground font-semibold">
-                      Image Position Preset
-                    </span>
-                    <div className="flex gap-2">
-                      {['top', 'center', 'bottom'].map((preset) => (
-                        <Button
-                          key={preset}
-                          variant={currentPreset === preset ? 'default' : 'outline'}
-                          size="sm"
-                          className="capitalize text-xs px-3 py-1 h-7 rounded-sm"
-                          onClick={() => handlePresetChange(preset)}
-                        >
-                          {preset}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -1600,26 +1580,6 @@ const ChapterEditor = () => {
                 {template === 'photo_second' && (
                   <div className="mb-4">
                     {renderPhotoZone('vertical')}
-                    {!previewMode && hasUploadedPhoto && (
-                      <div className="flex flex-col items-center gap-2 mt-2 p-3 bg-secondary/20 rounded-md border border-[hsl(var(--devotional-border))]">
-                        <span className="text-[0.7rem] uppercase tracking-wider text-muted-foreground font-semibold">
-                          Image Position Preset
-                        </span>
-                        <div className="flex gap-2">
-                          {(isHorizontalCrop ? ['left', 'center', 'right'] : ['top', 'center', 'bottom']).map((preset) => (
-                            <Button
-                              key={preset}
-                              variant={currentPreset === preset ? 'default' : 'outline'}
-                              size="sm"
-                              className="capitalize text-xs px-3 py-1 h-7 rounded-sm"
-                              onClick={() => handlePresetChange(preset)}
-                            >
-                              {preset}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
 
