@@ -175,12 +175,7 @@ const PreviewBook = () => {
   useEffect(() => {
     if (loading || !book) return;
 
-    const apiBase = import.meta.env.VITE_API_URL as string | undefined;
-    if (!apiBase) {
-      setExactPreviewLoading(false);
-      setExactPreviewError(null);
-      return;
-    }
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://pdf-render-service-33np.onrender.com';
     const normalizeContent = (referenceText: string | null, content: string | null) => {
       const ref = (referenceText || '').trim();
       const body = (content || '').trim();

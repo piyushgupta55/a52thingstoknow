@@ -925,13 +925,7 @@ const ChapterEditor = () => {
   useEffect(() => {
     if (!chapter) return;
 
-    const apiBase = import.meta.env.VITE_API_URL as string | undefined;
-    if (!apiBase) {
-      // Exact preview helper only runs in local dev; skip silently in hosted envs.
-      setExactPreviewLoading(false);
-      setExactPreviewError(null);
-      return;
-    }
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://pdf-render-service-33np.onrender.com';
     const chapterPayload = {
       chapter_number: chapter.chapter_number,
       title: chapter.title,
