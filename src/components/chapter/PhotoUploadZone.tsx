@@ -33,7 +33,7 @@ const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = '
             className="relative overflow-hidden rounded-sm"
             style={{ width: isVertical ? `${PREVIEW_PHOTO_VERTICAL_WIDTH}px` : '100%', height: filledHeight }}
           >
-            <img src={photo} alt="Chapter photo" className="w-full h-full object-cover" style={getPhotoImageStyle(layout)} />
+            <img src={photo} alt="Chapter photo" className="w-full h-full object-contain" style={getPhotoImageStyle(layout)} />
             <button
               onClick={() => onRemove(0)}
               className="absolute top-3 right-3 bg-foreground/60 text-background rounded-full p-1.5 hover:bg-foreground/80 transition-colors"

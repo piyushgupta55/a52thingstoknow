@@ -28,14 +28,16 @@ export const parsePhotoRenderLayout = (value: string | null | undefined): PhotoR
     if (parsed && typeof parsed === 'object') {
       return {
         ...DEFAULT_PHOTO_RENDER_LAYOUT,
-        ...parsed
+        ...parsed,
+        fit: 'contain' // Force fit to contain to override any saved 'cover' value
       };
     }
   } catch (e) {
     if (value === 'left' || value === 'right' || value === 'top' || value === 'bottom' || value === 'center') {
       return {
         ...DEFAULT_PHOTO_RENDER_LAYOUT,
-        preset: value
+        preset: value,
+        fit: 'contain' // Force fit to contain
       };
     }
   }

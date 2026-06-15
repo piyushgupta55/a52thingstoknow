@@ -12,6 +12,11 @@ const port = process.env.PORT || 3000;
 app.use(cors()); // Allow frontend to call the backend
 app.use(express.json({ limit: '50mb' })); // Allow large payloads (e.g. base64 images if any)
 
+// Root endpoint
+app.get('/', (req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok', service: 'pdf-backend', message: 'PDF Backend Service is running' });
+});
+
 const debugHtmlDir = path.join(process.cwd(), 'debug', 'html');
 
 const sendDebugHtml = (filename: string, res: Response) => {
