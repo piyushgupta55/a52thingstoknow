@@ -1371,9 +1371,20 @@ const ChapterEditor = () => {
             <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground/40 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
               Letter from the Author
             </p>
-            <h1 className="text-[32px] font-bold leading-tight text-foreground mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-              {chapter.title}
-            </h1>
+            <input
+              type="text"
+              value={chapter.title}
+              onChange={e => {
+                const v = e.target.value;
+                setChapter(prev => prev ? { ...prev, title: v } : prev);
+                setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: v } : c));
+                setHasUnsavedChanges(true);
+              }}
+              placeholder="Chapter title"
+              aria-label="Chapter title"
+              className="w-full border-0 bg-transparent outline-none focus:bg-[#FDFAF4] rounded-sm px-1 -mx-1 text-[32px] font-bold leading-tight text-foreground mb-1"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            />
             <div className="mb-6" />
 
             {(() => {
