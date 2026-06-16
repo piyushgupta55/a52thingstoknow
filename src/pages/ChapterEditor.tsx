@@ -287,10 +287,11 @@ const ChapterEditor = () => {
       // Map chapter_number -> authoritative title from templates (gender-specific)
       const titleByNumber = new Map<number, string>(genderTpls.map((t) => [t.chapter_number, t.title]));
       if (chapterData) {
-        // Override stale chapter title with authoritative gender-specific template title
-        const authoritativeTitle = chapterData.chapter_number > 0
-          ? (titleByNumber.get(chapterData.chapter_number) || chapterData.title)
-          : chapterData.title;
+        // Use the chapter's own title (user-editable). Fall back to the
+        // gender-specific template title only when the chapter has no title.
+        const authoritativeTitle = chapterData.title
+          || (chapterData.chapter_number > 0 ? titleByNumber.get(chapterData.chapter_number) : '')
+          || '';
         setChapter({ ...chapterData, title: authoritativeTitle } as ChapterData);
         setBibleVerseText(chapterData.bible_verse_text || '');
         setBibleVerseRef(chapterData.bible_verse_reference || '');
@@ -370,7 +371,7 @@ const ChapterEditor = () => {
       }
       if (allCh) {
         const withCorrectTitles = allCh.map((c) =>
-          c.chapter_number > 0
+          c.chapter_number > 0 && !c.title
             ? { ...c, title: titleByNumber.get(c.chapter_number) || c.title }
             : c
         );
@@ -489,6 +490,7 @@ const ChapterEditor = () => {
     }
 
     const { error } = await supabase.from('chapters').update({
+      title: chapter?.title ?? null,
       bible_verse_text: bibleVerseText || null,
       bible_verse_reference: bibleVerseRef || null,
       quote_text: quoteText || null,
@@ -512,7 +514,7 @@ const ChapterEditor = () => {
       setReferenceText(refToSave);
       setContent(contentToSave);
       setChapter(prev => prev ? { ...prev, status: newStatus } : prev);
-      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout } : c));
+      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: chapter?.title ?? c.title, status: newStatus, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout } : c));
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
       // Update last saved snapshot for revert
@@ -1369,9 +1371,20 @@ const ChapterEditor = () => {
             <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground/40 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
               Letter from the Author
             </p>
-            <h1 className="text-[32px] font-bold leading-tight text-foreground mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-              {chapter.title}
-            </h1>
+            <input
+              type="text"
+              value={chapter.title}
+              onChange={e => {
+                const v = e.target.value;
+                setChapter(prev => prev ? { ...prev, title: v } : prev);
+                setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: v } : c));
+                setHasUnsavedChanges(true);
+              }}
+              placeholder="Chapter title"
+              aria-label="Chapter title"
+              className="w-full border-0 bg-transparent outline-none focus:bg-[#FDFAF4] rounded-sm px-1 -mx-1 text-[32px] font-bold leading-tight text-foreground mb-1"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            />
             <div className="mb-6" />
 
             {(() => {
@@ -1471,9 +1484,20 @@ const ChapterEditor = () => {
             <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground/40 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
               Chapter {chapter.chapter_number}
             </p>
-            <h1 className="text-[32px] font-bold leading-tight text-foreground mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-              {chapter.title}
-            </h1>
+            <input
+              type="text"
+              value={chapter.title}
+              onChange={e => {
+                const v = e.target.value;
+                setChapter(prev => prev ? { ...prev, title: v } : prev);
+                setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: v } : c));
+                setHasUnsavedChanges(true);
+              }}
+              placeholder="Chapter title"
+              aria-label="Chapter title"
+              className="w-full border-0 bg-transparent outline-none focus:bg-[#FDFAF4] rounded-sm px-1 -mx-1 text-[32px] font-bold leading-tight text-foreground mb-1"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            />
 
             {/* For recommended photo chapters, show layout selector prominently at the top */}
             {isDesignatedPhotoChapter && !isPhotoTemplate && photoUrls.length === 0 ? (
