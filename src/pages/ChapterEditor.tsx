@@ -371,7 +371,7 @@ const ChapterEditor = () => {
       }
       if (allCh) {
         const withCorrectTitles = allCh.map((c) =>
-          c.chapter_number > 0
+          c.chapter_number > 0 && !c.title
             ? { ...c, title: titleByNumber.get(c.chapter_number) || c.title }
             : c
         );
