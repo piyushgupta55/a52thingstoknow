@@ -514,7 +514,7 @@ const ChapterEditor = () => {
       setReferenceText(refToSave);
       setContent(contentToSave);
       setChapter(prev => prev ? { ...prev, status: newStatus } : prev);
-      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, status: newStatus, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout } : c));
+      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: chapter?.title ?? c.title, status: newStatus, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout } : c));
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
       // Update last saved snapshot for revert
