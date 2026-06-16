@@ -490,6 +490,7 @@ const ChapterEditor = () => {
     }
 
     const { error } = await supabase.from('chapters').update({
+      title: chapter?.title ?? null,
       bible_verse_text: bibleVerseText || null,
       bible_verse_reference: bibleVerseRef || null,
       quote_text: quoteText || null,
