@@ -287,10 +287,11 @@ const ChapterEditor = () => {
       // Map chapter_number -> authoritative title from templates (gender-specific)
       const titleByNumber = new Map<number, string>(genderTpls.map((t) => [t.chapter_number, t.title]));
       if (chapterData) {
-        // Override stale chapter title with authoritative gender-specific template title
-        const authoritativeTitle = chapterData.chapter_number > 0
-          ? (titleByNumber.get(chapterData.chapter_number) || chapterData.title)
-          : chapterData.title;
+        // Use the chapter's own title (user-editable). Fall back to the
+        // gender-specific template title only when the chapter has no title.
+        const authoritativeTitle = chapterData.title
+          || (chapterData.chapter_number > 0 ? titleByNumber.get(chapterData.chapter_number) : '')
+          || '';
         setChapter({ ...chapterData, title: authoritativeTitle } as ChapterData);
         setBibleVerseText(chapterData.bible_verse_text || '');
         setBibleVerseRef(chapterData.bible_verse_reference || '');
