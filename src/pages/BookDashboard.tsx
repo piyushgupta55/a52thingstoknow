@@ -65,6 +65,10 @@ const BookDashboard = () => {
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
   const [loading, setLoading] = useState(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [reorderMode, setReorderMode] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
 
   const handleGenerateTestPDF = async () => {
     setIsGeneratingPDF(true);
