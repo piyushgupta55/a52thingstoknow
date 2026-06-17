@@ -184,7 +184,15 @@ const ChapterEditor = () => {
   const lastSavedRef = useRef({ referenceText: '', content: '' });
   const refTextareaRef = useRef<HTMLTextAreaElement>(null);
   const wisdomTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollPositionRef = useRef(0);
+
+  const autoResizeTitle = useCallback(() => {
+    const el = titleTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, []);
 
   const isPhotoTemplate = template === 'photo_top' || template === 'photo_second';
   const primaryPhotoUrl = (photoUrls[0] || '').trim();
@@ -197,6 +205,10 @@ const ChapterEditor = () => {
     : null;
   const isLetterChapter = chapter?.chapter_number === 0;
   const isComplete = chapter?.status === 'complete';
+
+  useLayoutEffect(() => {
+    autoResizeTitle();
+  }, [chapter?.title, autoResizeTitle]);
 
   const enterPreview = () => {
     setPreviewMode(true);
@@ -1371,8 +1383,8 @@ const ChapterEditor = () => {
             <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground/40 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
               Letter from the Author
             </p>
-            <input
-              type="text"
+            <textarea
+              ref={titleTextareaRef}
               value={chapter.title}
               onChange={e => {
                 const v = e.target.value;
@@ -1382,9 +1394,14 @@ const ChapterEditor = () => {
               }}
               placeholder="Chapter title"
               aria-label="Chapter title"
-              className="w-full border-0 bg-transparent outline-none focus:bg-[#FDFAF4] rounded-sm px-1 -mx-1 text-[32px] font-bold leading-tight text-foreground mb-1"
+              maxLength={50}
+              rows={1}
+              className="w-full border-0 bg-transparent outline-none focus:bg-[#FDFAF4] rounded-sm px-1 -mx-1 text-[32px] font-bold leading-tight text-foreground mb-1 resize-none overflow-hidden"
               style={{ fontFamily: 'var(--font-heading)' }}
             />
+            <div className="text-[11px] text-muted-foreground/60 text-right -mt-1 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
+              {chapter.title.length}/50
+            </div>
             <div className="mb-6" />
 
             {(() => {
@@ -1484,8 +1501,8 @@ const ChapterEditor = () => {
             <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground/40 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
               Chapter {chapter.chapter_number}
             </p>
-            <input
-              type="text"
+            <textarea
+              ref={titleTextareaRef}
               value={chapter.title}
               onChange={e => {
                 const v = e.target.value;
@@ -1495,9 +1512,14 @@ const ChapterEditor = () => {
               }}
               placeholder="Chapter title"
               aria-label="Chapter title"
-              className="w-full border-0 bg-transparent outline-none focus:bg-[#FDFAF4] rounded-sm px-1 -mx-1 text-[32px] font-bold leading-tight text-foreground mb-1"
+              maxLength={50}
+              rows={1}
+              className="w-full border-0 bg-transparent outline-none focus:bg-[#FDFAF4] rounded-sm px-1 -mx-1 text-[32px] font-bold leading-tight text-foreground mb-1 resize-none overflow-hidden"
               style={{ fontFamily: 'var(--font-heading)' }}
             />
+            <div className="text-[11px] text-muted-foreground/60 text-right -mt-1 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
+              {chapter.title.length}/50
+            </div>
 
             {/* For recommended photo chapters, show layout selector prominently at the top */}
             {isDesignatedPhotoChapter && !isPhotoTemplate && photoUrls.length === 0 ? (
