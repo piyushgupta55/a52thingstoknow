@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   BookOpen, PenLine, CheckCircle, Circle, Mail, MessageSquare, Sparkles,
   Users, LayoutGrid, Send, Inbox, Camera, Play, Library, ShoppingCart, Download,
-  Heart, Plus, Zap
+  Heart, Plus, Zap, GripVertical, ArrowUpDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { saveAs } from 'file-saver';
