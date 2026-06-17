@@ -184,7 +184,15 @@ const ChapterEditor = () => {
   const lastSavedRef = useRef({ referenceText: '', content: '' });
   const refTextareaRef = useRef<HTMLTextAreaElement>(null);
   const wisdomTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollPositionRef = useRef(0);
+
+  const autoResizeTitle = useCallback(() => {
+    const el = titleTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, []);
 
   const isPhotoTemplate = template === 'photo_top' || template === 'photo_second';
   const primaryPhotoUrl = (photoUrls[0] || '').trim();
