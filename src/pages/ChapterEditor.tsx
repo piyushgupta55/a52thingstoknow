@@ -1394,13 +1394,13 @@ const ChapterEditor = () => {
               }}
               placeholder="Chapter title"
               aria-label="Chapter title"
-              maxLength={50}
+              maxLength={45}
               rows={1}
               className="w-full border-0 bg-transparent outline-none focus:bg-[#FDFAF4] rounded-sm px-1 -mx-1 text-[32px] font-bold leading-tight text-foreground mb-1 resize-none overflow-hidden"
               style={{ fontFamily: 'var(--font-heading)' }}
             />
             <div className="text-[11px] text-muted-foreground/60 text-right -mt-1 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
-              {chapter.title.length}/50
+              {chapter.title.length}/45
             </div>
             <div className="mb-6" />
 
@@ -1512,13 +1512,13 @@ const ChapterEditor = () => {
               }}
               placeholder="Chapter title"
               aria-label="Chapter title"
-              maxLength={50}
+              maxLength={45}
               rows={1}
               className="w-full border-0 bg-transparent outline-none focus:bg-[#FDFAF4] rounded-sm px-1 -mx-1 text-[32px] font-bold leading-tight text-foreground mb-1 resize-none overflow-hidden"
               style={{ fontFamily: 'var(--font-heading)' }}
             />
             <div className="text-[11px] text-muted-foreground/60 text-right -mt-1 mb-2" style={{ fontFamily: 'var(--font-body)' }}>
-              {chapter.title.length}/50
+              {chapter.title.length}/45
             </div>
 
             {/* For recommended photo chapters, show layout selector prominently at the top */}
