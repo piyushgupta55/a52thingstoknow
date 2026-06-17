@@ -42,6 +42,7 @@ interface Chapter {
 
 interface ChapterTemplate {
   chapter_number: number;
+  title?: string;
   is_photo_chapter: boolean;
 }
 
