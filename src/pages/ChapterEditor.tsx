@@ -206,6 +206,10 @@ const ChapterEditor = () => {
   const isLetterChapter = chapter?.chapter_number === 0;
   const isComplete = chapter?.status === 'complete';
 
+  useLayoutEffect(() => {
+    autoResizeTitle();
+  }, [chapter?.title, autoResizeTitle]);
+
   const enterPreview = () => {
     setPreviewMode(true);
     setEditingVerse(false);
