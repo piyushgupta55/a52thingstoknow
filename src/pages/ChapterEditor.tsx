@@ -1394,7 +1394,7 @@ const ChapterEditor = () => {
               }}
               placeholder="Chapter title"
               aria-label="Chapter title"
-              maxLength={50}
+              maxLength={45}
               rows={1}
               className="w-full border-0 bg-transparent outline-none focus:bg-[#FDFAF4] rounded-sm px-1 -mx-1 text-[32px] font-bold leading-tight text-foreground mb-1 resize-none overflow-hidden"
               style={{ fontFamily: 'var(--font-heading)' }}
