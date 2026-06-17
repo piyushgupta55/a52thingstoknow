@@ -142,6 +142,60 @@ const BookDashboard = () => {
     }
   };
 
+  const persistReorder = async (newOrder: Chapter[]) => {
+    // newOrder is numbered chapters (excluding Letter ch 0) in new sequence; position i => chapter_number i+1
+    if (!bookId) return;
+    setSavingOrder(true);
+    try {
+      const titleByNumber = new Map<number, string>(
+        (photoTemplates || []).map((t: any) => [t.chapter_number as number, t.title as string])
+      );
+
+      // Backfill any missing titles BEFORE renumbering, so content (incl. title) travels with the chapter.
+      const withTitles = newOrder.map(c => ({
+        ...c,
+        title: c.title && c.title.trim().length > 0
+          ? c.title
+          : (titleByNumber.get(c.chapter_number) || c.title || ''),
+      }));
+
+      // Two-pass update to avoid the (book_id, chapter_number) unique-constraint collision.
+      // Pass 1: move all to a temporary high range (offset 1000).
+      for (const c of withTitles) {
+        const { error } = await supabase
+          .from('chapters')
+          .update({ chapter_number: 1000 + c.chapter_number, title: c.title })
+          .eq('id', c.id);
+        if (error) throw error;
+      }
+      // Pass 2: assign final positions (1..N).
+      for (let i = 0; i < withTitles.length; i++) {
+        const c = withTitles[i];
+        const finalNum = i + 1;
+        const { error } = await supabase
+          .from('chapters')
+          .update({ chapter_number: finalNum })
+          .eq('id', c.id);
+        if (error) throw error;
+      }
+
+      // Reflect locally
+      setChapters(prev => {
+        const idToNew = new Map(withTitles.map((c, i) => [c.id, { num: i + 1, title: c.title }]));
+        return prev.map(c => {
+          const upd = idToNew.get(c.id);
+          return upd ? { ...c, chapter_number: upd.num, title: upd.title } : c;
+        });
+      });
+      toast.success('Chapter order saved');
+    } catch (e: any) {
+      console.error('Reorder failed', e);
+      toast.error(e.message || 'Could not save the new order');
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
   useEffect(() => {
     if (!bookId) return;
     const fetchData = async () => {
