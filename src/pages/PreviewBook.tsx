@@ -182,7 +182,10 @@ const PreviewBook = () => {
   useEffect(() => {
     if (loading || !book) return;
 
-    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://pdf-render-service-33np.onrender.com';
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiBase = isLocalhost
+      ? ((import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3000')
+      : 'https://pdf-render-service-33np.onrender.com';
     const normalizeContent = (referenceText: string | null, content: string | null) => {
       const ref = (referenceText || '').trim();
       const body = (content || '').trim();
@@ -319,7 +322,13 @@ const PreviewBook = () => {
     doc.body.style.background = '#ffffff';
     doc.body.style.display = 'flex';
     doc.body.style.flexDirection = isCompactPreview ? 'column' : 'row';
-    doc.body.style.justifyContent = isCompactPreview ? 'center' : (isInsideFrontCoverSpread ? 'flex-end' : 'center');
+    const hasRightPage = !isInsideFrontCoverSpread && end < pages.length;
+    doc.body.style.justifyContent = isCompactPreview 
+      ? 'center' 
+      : (isInsideFrontCoverSpread 
+          ? 'flex-end' 
+          : (hasRightPage ? 'center' : 'flex-start')
+        );
     doc.body.style.alignItems = isCompactPreview ? 'center' : 'flex-start';
     doc.body.style.overflow = 'hidden';
 

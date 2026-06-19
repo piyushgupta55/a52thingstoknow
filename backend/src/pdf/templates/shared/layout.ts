@@ -150,7 +150,8 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
   let tocItemsHtml = '';
   const chapterPages: { [key: number]: number } = {};
   
-  let currentContentPageNum = 3; // TOC is page 2, first content starts on page 3
+  const hasLetter = bookData.chapters.some(c => c.chapter_number === 0);
+  let currentContentPageNum = hasLetter ? 3 : 5; // TOC is page 2, first content starts on page 3 if letter exists, page 5 if not (spacer at 3, epigraph at 4)
   
   // Placeholder loadMemories - no external data needed for screenshots
   const loadMemories = async () => { /* no-op */ };
@@ -213,6 +214,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
   `;
 
   let chaptersHtml = '';
+  let letterHtml = '';
   for (let i = 0; i < bookData.chapters.length; i++) {
     const chapter = bookData.chapters[i];
     const startPage = chapterPages[i];
@@ -241,7 +243,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       const recipientName = (bookData as any).recipientName || 'your loved one';
       const greetingHtml = `<p class="mb-4 italic" style="font-family: 'Lora', serif; font-size: 14px; color: #2D3748; line-height: 1.8; font-style: italic; margin-bottom: 1em;">Dear ${recipientName},</p>`;
 
-      chaptersHtml += `
+      letterHtml = `
         <!-- Page 1: Introduction Letter (no static overflow placeholder) -->
         <div class="page chapter-content-page page-p1" data-chapter="${chapter.chapter_number}">
           <div class="intro-header">
@@ -420,6 +422,11 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     `;
   }
 
+  const blankPageHtml = `
+    <!-- Page 3: Blank Spacer Page (Recto / Right page) to align Proverbs Page to Verso -->
+    <div class="page blank-page" data-chapter="spacer" style="background: white;"></div>
+  `;
+
   const quotePageHtml = `
     <!-- Page 4: Epigraph/Quote (Verso / Left page) -->
     <div class="page epigraph-page" data-chapter="epigraph">
@@ -462,6 +469,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         </div>
       </div>
       ${tocHtml}
+      ${letterHtml || blankPageHtml}
       ${quotePageHtml}
       ${chaptersHtml}
 
@@ -1008,7 +1016,11 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         function cleanEmptyPages() {
           const allPages = document.querySelectorAll('.page');
           allPages.forEach(page => {
-            if (page.classList.contains('title-page') || page.classList.contains('toc-page') || page.classList.contains('page-p1')) {
+            if (page.classList.contains('title-page') || 
+                page.classList.contains('toc-page') || 
+                page.classList.contains('page-p1') || 
+                page.classList.contains('epigraph-page') || 
+                page.classList.contains('blank-page')) {
               return;
             }
             
