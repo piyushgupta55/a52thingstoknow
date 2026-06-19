@@ -789,6 +789,13 @@ const PreviewBook = () => {
               <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>{(3 + visibleChapters.length) * 2}</span>
             </div>
           )}
+
+          {hasFamilyHistory && (
+            <div className="flex items-baseline justify-between py-2" style={{ borderBottom: '1px solid #F0EDE6' }}>
+              <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Family History</span>
+              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>{(3 + visibleChapters.length + (hasAncestry ? 1 : 0)) * 2}</span>
+            </div>
+          )}
         </div>
         <PageNum num={leftPageNum} />
       </div>
@@ -1120,6 +1127,64 @@ const PreviewBook = () => {
     return [left, right, undefined];
   };
 
+  const renderFamilyHistorySpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
+    // Split paragraphs roughly in half across the two-page spread.
+    const paragraphs = familyHistoryText.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+    const totalWords = paragraphs.reduce((sum, p) => sum + p.split(/\s+/).filter(Boolean).length, 0);
+    const half = totalWords / 2;
+    let running = 0;
+    let splitIdx = paragraphs.length;
+    for (let i = 0; i < paragraphs.length; i++) {
+      running += paragraphs[i].split(/\s+/).filter(Boolean).length;
+      if (running >= half) { splitIdx = i + 1; break; }
+    }
+    const leftParas = paragraphs.slice(0, splitIdx);
+    const rightParas = paragraphs.slice(splitIdx);
+
+    const paraStyle: React.CSSProperties = {
+      fontFamily: SERIF,
+      fontSize: '12px',
+      color: '#2D3748',
+      lineHeight: 1.8,
+      marginBottom: '1em',
+      textAlign: 'justify',
+      textJustify: 'inter-word',
+      hyphens: 'auto',
+      WebkitHyphens: 'auto',
+    };
+
+    const left = (
+      <div className="flex flex-col h-full">
+        <p className="text-center uppercase tracking-[0.25em] mb-1" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
+          Our Family Story
+        </p>
+        <h2 className="text-center font-bold mb-2" style={{ fontFamily: SERIF, fontSize: '20px', color: '#2D3748' }}>
+          Family History
+        </h2>
+        <div className="w-8 mx-auto mb-4" style={{ height: '1px', background: GOLD }} />
+        <div className="flex-1 overflow-hidden pr-1">
+          {leftParas.map((para, i) => (
+            <p key={i} style={paraStyle}>{renderWithLineBreaks(para)}</p>
+          ))}
+        </div>
+        <PageNum num={leftPageNum} />
+      </div>
+    );
+
+    const right = (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-hidden pr-1">
+          {rightParas.map((para, i) => (
+            <p key={i} style={paraStyle}>{renderWithLineBreaks(para)}</p>
+          ))}
+        </div>
+        <PageNum num={rightPageNum} />
+      </div>
+    );
+
+    return [left, right, undefined];
+  };
+
   const getCurrentSpreadContent = (): SpreadRender => {
     const spread = spreads[clampedSpread];
     if (!spread) return [null, null, undefined, false, null];
@@ -1127,6 +1192,7 @@ const PreviewBook = () => {
     if (spread.type === 'toc_letter') return [...renderTocLetterSpread(), false, null];
     if (spread.type === 'epigraph') return [...renderEpigraphSpread(), false, null];
     if (spread.type === 'ancestry') return [...renderAncestrySpread(), false, null];
+    if (spread.type === 'family_history') return [...renderFamilyHistorySpread(), false, null];
     return renderChapterSpread(spread.chapter, clampedSpread);
   };
 
