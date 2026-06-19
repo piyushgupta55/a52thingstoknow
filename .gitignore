@@ -32,6 +32,3 @@ backend/debug/
 public/debug-pass*.html
 backend/debug-pass*.html
 
-# Environment variables
-.env
-
