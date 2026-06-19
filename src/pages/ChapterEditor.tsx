@@ -908,7 +908,7 @@ const ChapterEditor = () => {
           className={`rounded-sm overflow-hidden mb-6 ${isVert ? 'flex justify-center' : ''}`}
           style={{
             width: isVert ? `${PREVIEW_PHOTO_VERTICAL_WIDTH}px` : '100%',
-            height: isVert ? `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` : `${PREVIEW_PHOTO_HORIZONTAL_HEIGHT}px`,
+            height: 'auto',
             marginLeft: 'auto',
             marginRight: 'auto',
             marginBottom: isVert ? '1.5em' : '1em',
@@ -919,6 +919,7 @@ const ChapterEditor = () => {
           <img
             src={primaryPhotoUrl}
             alt="Chapter photo"
+            className="w-full h-auto block"
             style={getPhotoImageStyle(layout)}
           />
         </div>

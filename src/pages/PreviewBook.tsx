@@ -910,9 +910,9 @@ const PreviewBook = () => {
       );
       const right = (
         <div className="flex flex-col h-full">
-          <div className="flex justify-center items-center mb-4 flex-shrink-0" style={{ height: `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` }}>
-            <div className="rounded overflow-hidden shadow-md" style={{ width: `${PREVIEW_PHOTO_VERTICAL_WIDTH}px`, height: `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` }}>
-              <img src={ch.photo_urls[0]} alt="" className="w-full h-full object-contain" style={getPhotoImageStyle(photoLayout)} />
+          <div className="flex justify-center items-center mb-4 flex-shrink-0" style={{ height: 'auto' }}>
+            <div className="rounded overflow-hidden shadow-md" style={{ width: `${PREVIEW_PHOTO_VERTICAL_WIDTH}px`, height: 'auto' }}>
+              <img src={ch.photo_urls[0]} alt="" className="w-full h-auto block" style={getPhotoImageStyle(photoLayout)} />
             </div>
           </div>
           <div className="flex-1 mt-3" style={{ overflow: 'hidden' }}>
@@ -967,8 +967,8 @@ const PreviewBook = () => {
           </div>
 
           {hasPhoto && (ch.chapter_template === 'photo_top' || ch.chapter_template === 'horizontal_photo') ? (
-            <div className="rounded overflow-hidden" style={{ breakInside: 'avoid', margin: '1.2em 0 0.8em', height: `${PREVIEW_PHOTO_HORIZONTAL_HEIGHT}px` }}>
-              <img src={ch.photo_urls[0]} alt="" className="w-full h-full object-contain" style={getPhotoImageStyle(photoLayout)} />
+            <div className="rounded overflow-hidden" style={{ breakInside: 'avoid', margin: '1.2em 0 0.8em', height: 'auto' }}>
+              <img src={ch.photo_urls[0]} alt="" className="w-full h-auto block" style={getPhotoImageStyle(photoLayout)} />
             </div>
           ) : null}
 

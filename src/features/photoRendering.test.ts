@@ -13,18 +13,21 @@ describe('photoRendering', () => {
     expect(parsePhotoRenderLayout(saved)).toMatchObject({ focusX: 50, focusY: 80, scale: 1, fit: 'contain' });
   });
 
-  it('produces identical crop styles for all renderers', () => {
+  it('produces identical styles for all renderers', () => {
     expect(getPhotoImageStyle(parsePhotoRenderLayout('top'))).toMatchObject({
       width: '100%',
-      height: '100%',
-      objectFit: 'contain',
-      objectPosition: '50% 0%',
+      height: 'auto',
+      display: 'block',
     });
     expect(getPhotoImageStyle(parsePhotoRenderLayout('center'))).toMatchObject({
-      objectPosition: '50% 50%',
+      width: '100%',
+      height: 'auto',
+      display: 'block',
     });
     expect(getPhotoImageStyle(parsePhotoRenderLayout('bottom'))).toMatchObject({
-      objectPosition: '50% 100%',
+      width: '100%',
+      height: 'auto',
+      display: 'block',
     });
   });
 });

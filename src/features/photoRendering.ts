@@ -58,20 +58,10 @@ export const getPhotoFocusLabel = (layout: PhotoRenderLayout): PhotoFocus => {
 };
 
 export const getPhotoImageStyle = (layout: PhotoRenderLayout & { preset?: string }) => {
-  let objectPosition = `${layout.focusX}% ${layout.focusY}%`;
-  if (layout.preset === 'left') objectPosition = '0% 50%';
-  else if (layout.preset === 'right') objectPosition = '100% 50%';
-  else if (layout.preset === 'top') objectPosition = '50% 0%';
-  else if (layout.preset === 'bottom') objectPosition = '50% 100%';
-  else if (layout.preset === 'center') objectPosition = '50% 50%';
-
   return {
     width: '100%',
-    height: '100%',
-    objectFit: layout.fit,
-    objectPosition,
-    transform: layout.scale === 1 ? undefined : `scale(${layout.scale})`,
-    transformOrigin: 'center center',
+    height: 'auto',
+    display: 'block',
   };
 };
 

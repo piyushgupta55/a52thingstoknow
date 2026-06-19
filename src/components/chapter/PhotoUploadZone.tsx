@@ -18,7 +18,6 @@ const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = '
 
 
   const emptyHeight = isVertical ? `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` : `${PREVIEW_PHOTO_HORIZONTAL_HEIGHT}px`;
-  const filledHeight = emptyHeight;
   const emptyWidth = isVertical ? `${PREVIEW_PHOTO_VERTICAL_WIDTH}px` : '100%';
 
   const emptyLabel = isVertical
@@ -31,9 +30,9 @@ const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = '
         <div className="space-y-3">
           <div
             className="relative overflow-hidden rounded-sm"
-            style={{ width: isVertical ? `${PREVIEW_PHOTO_VERTICAL_WIDTH}px` : '100%', height: filledHeight }}
+            style={{ width: isVertical ? `${PREVIEW_PHOTO_VERTICAL_WIDTH}px` : '100%', height: 'auto' }}
           >
-            <img src={photo} alt="Chapter photo" className="w-full h-full object-contain" style={getPhotoImageStyle(layout)} />
+            <img src={photo} alt="Chapter photo" className="w-full h-auto block" style={getPhotoImageStyle(layout)} />
             <button
               onClick={() => onRemove(0)}
               className="absolute top-3 right-3 bg-foreground/60 text-background rounded-full p-1.5 hover:bg-foreground/80 transition-colors"
