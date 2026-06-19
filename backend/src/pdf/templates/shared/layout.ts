@@ -173,7 +173,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     
     // Increment page numbers based on assumed chapter lengths
     if (chapter.chapter_number === 0) {
-      currentContentPageNum += 1; // Letter is usually 1 page
+      currentContentPageNum += 3; // Letter (1 page) + Proverbs Quote page offset (2 pages)
     } else {
       currentContentPageNum += 2; // Regular chapters are a 2-page spread
     }
@@ -389,6 +389,27 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     `;
   }
 
+  const quotePageHtml = `
+    <!-- Page 4: Epigraph/Quote (Verso / Left page) -->
+    <div class="page epigraph-page" data-chapter="epigraph">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 0 0.8in; box-sizing: border-box;">
+        <div style="width: 40px; height: 1px; background-color: var(--gold, #c9a14a); margin-bottom: 2em;"></div>
+        <p style="font-family: 'Lora', serif; font-size: 14pt; font-style: italic; color: #2D3748; line-height: 1.9; margin-bottom: 1.5em; text-align: center; margin-top: 0; margin-left: 0; margin-right: 0;">
+          “Getting wisdom is the wisest thing you can do! And whatever else you do, develop good judgment.”
+        </p>
+        <p style="font-family: 'Source Sans 3', system-ui, sans-serif; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.15em; color: #C4788A; text-align: center; margin: 0;">
+          — Proverbs 4:7 (NLT)
+        </p>
+        <div style="width: 40px; height: 1px; background-color: var(--gold, #c9a14a); margin-top: 2em;"></div>
+      </div>
+      <div class="page-number">4</div>
+    </div>
+    <!-- Page 5: Blank Page (Recto / Right page) to keep Chapter 1 starting on Left page -->
+    <div class="page blank-page" data-chapter="epigraph">
+      <div class="page-number">5</div>
+    </div>
+  `;
+
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -415,6 +436,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         </div>
       </div>
       ${tocHtml}
+      ${quotePageHtml}
       ${chaptersHtml}
 
       <script>
