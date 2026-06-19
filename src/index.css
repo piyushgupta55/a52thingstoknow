@@ -201,6 +201,7 @@
 .chapter-photo.vertical-photo {
   width: 2.7in;
   height: auto;
+  max-height: 3.6in; /* Override the 2.2in ceiling for vertical photos */
   object-fit: contain !important;
   margin: 0 auto 1.5em auto;
   display: block;
