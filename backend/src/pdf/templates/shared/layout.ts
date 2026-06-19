@@ -192,6 +192,19 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     currentContentPageNum += 2;
   }
 
+  let familyHistoryStartPage = currentContentPageNum;
+  if (bookData.familyHistoryText) {
+    const displayFhPageNum = actualChapterPages ? (actualChapterPages['family_history'] ?? familyHistoryStartPage) : familyHistoryStartPage;
+    tocItemsHtml += `
+      <div class="toc-item">
+        <span class="toc-chapter-title">Family History</span>
+        <span class="toc-leader"></span>
+        <span class="toc-page-number" data-toc-chapter="family_history">${displayFhPageNum}</span>
+      </div>
+    `;
+    currentContentPageNum += 2;
+  }
+
   const tocHtml = `
     <div class="page toc-page">
       <h2 class="toc-title">Table of Contents</h2>
@@ -384,6 +397,24 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       </div>
       <!-- Page 2: Overflow target -->
       <div class="page chapter-content-page page-p2" data-chapter="ancestry">
+        <div class="wisdom-text"></div>
+      </div>
+    `;
+  }
+
+  if (bookData.familyHistoryText) {
+    chaptersHtml += `
+      <!-- Page 1: Family History -->
+      <div class="page chapter-content-page page-p1" data-chapter="family_history">
+        <div class="chapter-header">
+          <h2 class="chapter-title">Family History</h2>
+        </div>
+        <div class="wisdom-text chapter-opening">
+          ${formatContent(bookData.familyHistoryText, true)}
+        </div>
+      </div>
+      <!-- Page 2: Overflow target -->
+      <div class="page chapter-content-page page-p2" data-chapter="family_history">
         <div class="wisdom-text"></div>
       </div>
     `;

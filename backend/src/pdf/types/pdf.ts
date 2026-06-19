@@ -20,4 +20,5 @@ export interface BookData {
   }>;
   ancestryText?: string | null;
   ancestryPdfUrl?: string | null;
+  familyHistoryText?: string | null;
 }
