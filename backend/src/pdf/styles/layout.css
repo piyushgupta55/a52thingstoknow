@@ -42,6 +42,7 @@
 .chapter-photo {
   width: 100%;
   height: auto;
+  max-height: 2.2in; /* Safe ceiling to prevent shifting elements off-page */
   object-fit: contain !important; /* Rigid scaling rule for both portrait and landscape */
   object-position: center top;
   border-radius: 2px;
@@ -371,11 +372,11 @@
 
 /* Phase 7: Dynamic Whitespace Reclaiming for short chapter openers */
 .chapter-content-page.short-text-page {
-  justify-content: center !important;
-  padding-top: 0 !important;
+  justify-content: flex-start !important;
+  padding-top: 0.45in !important;
 }
 
 .chapter-content-page.short-text-page .chapter-photo {
-  max-height: 3.5in; /* Shrink photo to reclaim space and feel more elegant */
-  margin-bottom: 2em;
+  max-height: 2.2in; /* Safe ceiling to prevent shifting elements off-page */
+  margin-bottom: 1.5em;
 }

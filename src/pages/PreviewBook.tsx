@@ -968,7 +968,7 @@ const PreviewBook = () => {
 
           {hasPhoto && (ch.chapter_template === 'photo_top' || ch.chapter_template === 'horizontal_photo') ? (
             <div className="rounded overflow-hidden" style={{ breakInside: 'avoid', margin: '1.2em 0 0.8em', height: 'auto' }}>
-              <img src={ch.photo_urls[0]} alt="" className="w-full h-auto block" style={getPhotoImageStyle(photoLayout)} />
+              <img src={ch.photo_urls[0]} alt="" className="chapter-photo w-full h-auto block" style={getPhotoImageStyle(photoLayout)} />
             </div>
           ) : null}
 

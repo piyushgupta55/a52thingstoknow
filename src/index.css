@@ -188,6 +188,7 @@
 .chapter-photo {
   width: 100%;
   height: auto;
+  max-height: 2.2in; /* Safe ceiling to prevent shifting elements off-page */
   object-fit: contain !important;
   object-position: center top;
   border-radius: 2px;
