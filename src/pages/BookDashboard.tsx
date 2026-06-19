@@ -63,6 +63,7 @@ const BookDashboard = () => {
   const [photoTemplates, setPhotoTemplates] = useState<ChapterTemplate[]>([]);
   const [authorName, setAuthorName] = useState('');
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
+  const [familyHistoryStatus, setFamilyHistoryStatus] = useState<string>('not_started');
   const [loading, setLoading] = useState(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
@@ -201,13 +202,15 @@ const BookDashboard = () => {
     const fetchData = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
-      const [{ data: chapData }, { data: memData }, { data: tplData }, { data: ancData }] = await Promise.all([
+      const [{ data: chapData }, { data: memData }, { data: tplData }, { data: ancData }, { data: fhData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('memories').select('*').eq('book_id', bookId),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter').eq('gender', tplGender),
         supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle(),
+        supabase.from('book_family_history').select('status').eq('book_id', bookId).maybeSingle(),
       ]);
       if (ancData?.status) setAncestryStatus(ancData.status);
+      if (fhData?.status) setFamilyHistoryStatus(fhData.status);
       if (bookData && bookData.recipient_name) {
         bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       }
@@ -702,6 +705,28 @@ const BookDashboard = () => {
                     >
                       <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
                       <span className={`truncate ${isComplete ? 'font-medium' : ''}`}>Where You Come From</span>
+                      {isComplete && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
+                      {isInProgress && <PenLine className="h-3.5 w-3.5 text-accent ml-auto flex-shrink-0" />}
+                      {!isComplete && !isInProgress && (
+                        <span className="text-[0.65rem] italic text-muted-foreground/30 ml-auto flex-shrink-0">not started</span>
+                      )}
+                    </button>
+                  );
+                })()}
+
+                {(() => {
+                  const isComplete = familyHistoryStatus === 'complete';
+                  const isInProgress = familyHistoryStatus === 'in_progress';
+                  return (
+                    <button
+                      onClick={() => navigate(`/book/${bookId}/family-history`)}
+                      disabled={reorderMode}
+                      className={`flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors hover:bg-muted/50 ${
+                        isComplete ? 'text-foreground' : isInProgress ? 'text-foreground/70' : 'text-muted-foreground/40'
+                      } ${reorderMode ? 'opacity-50' : ''}`}
+                    >
+                      <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
+                      <span className={`truncate ${isComplete ? 'font-medium' : ''}`}>Family History</span>
                       {isComplete && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
                       {isInProgress && <PenLine className="h-3.5 w-3.5 text-accent ml-auto flex-shrink-0" />}
                       {!isComplete && !isInProgress && (

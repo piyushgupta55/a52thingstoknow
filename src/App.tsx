@@ -21,6 +21,7 @@ import MemoryManager from "./pages/MemoryManager";
 import MemoryInvite from "./pages/MemoryInvite";
 import HelpFaq from "./pages/HelpFaq";
 import AncestrySection from "./pages/AncestrySection";
+import FamilyHistorySection from "./pages/FamilyHistorySection";
 import ChapterLibrary from "./pages/ChapterLibrary";
 import BookReview from "./pages/BookReview";
 import QuickRead from "./pages/QuickRead";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/invite/:token" element={<MemoryInvite />} />
             <Route path="/help" element={<ProtectedRoute><HelpFaq /></ProtectedRoute>} />
             <Route path="/book/:bookId/ancestry" element={<ProtectedRoute><AncestrySection /></ProtectedRoute>} />
+            <Route path="/book/:bookId/family-history" element={<ProtectedRoute><FamilyHistorySection /></ProtectedRoute>} />
             <Route path="/book/:bookId/library" element={<ProtectedRoute><ChapterLibrary /></ProtectedRoute>} />
             <Route path="/book/:bookId/review" element={<ProtectedRoute><BookReview /></ProtectedRoute>} />
             <Route path="/book/:bookId/quick-read" element={<ProtectedRoute><QuickRead /></ProtectedRoute>} />
