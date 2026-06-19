@@ -173,7 +173,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     
     // Increment page numbers based on assumed chapter lengths
     if (chapter.chapter_number === 0) {
-      currentContentPageNum += 3; // Letter (1 page) + Proverbs Quote page offset (2 pages)
+      currentContentPageNum += 2; // Letter (1 page) + Proverbs Quote page offset (1 page)
     } else {
       currentContentPageNum += 2; // Regular chapters are a 2-page spread
     }
@@ -402,11 +402,6 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         </p>
         <div style="width: 40px; height: 1px; background-color: var(--gold, #c9a14a); margin-top: 2em;"></div>
       </div>
-      <div class="page-number">4</div>
-    </div>
-    <!-- Page 5: Blank Page (Recto / Right page) to keep Chapter 1 starting on Left page -->
-    <div class="page blank-page" data-chapter="epigraph">
-      <div class="page-number">5</div>
     </div>
   `;
 

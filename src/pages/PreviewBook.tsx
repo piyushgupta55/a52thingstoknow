@@ -1116,7 +1116,7 @@ const PreviewBook = () => {
           </p>
           <div className="w-10 mt-8" style={{ height: '1px', background: GOLD }} />
         </div>
-        <PageNum num={leftPageNum} />
+        <div style={{ height: '24px' }} className="mt-auto" />
       </div>
     );
     const right = (
