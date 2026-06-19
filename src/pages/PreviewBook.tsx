@@ -39,6 +39,7 @@ const PreviewBook = () => {
   const [authorName, setAuthorName] = useState('');
   const [memories, setMemories] = useState<Memory[]>([]);
   const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; pdf_filename: string | null } | null>(null);
+  const [familyHistory, setFamilyHistory] = useState<{ content: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
   const [showLeftPageFade, setShowLeftPageFade] = useState(false);
@@ -68,12 +69,16 @@ const PreviewBook = () => {
     .trim();
   const hasAncestry = ancestryText.length > 0 || !!ancestry?.pdf_url;
 
+  const familyHistoryText = (familyHistory?.content || '').trim();
+  const hasFamilyHistory = familyHistoryText.length > 0;
+
   const spreads: SpreadDef[] = [];
   spreads.push({ type: 'title' });
   spreads.push({ type: 'toc_letter' });
   spreads.push({ type: 'epigraph' });
   visibleChapters.forEach(ch => spreads.push({ type: 'chapter', chapter: ch }));
   if (hasAncestry) spreads.push({ type: 'ancestry' });
+  if (hasFamilyHistory) spreads.push({ type: 'family_history' });
 
   const totalSpreads = spreads.length;
   const clampedSpread = Math.min(currentSpread, totalSpreads - 1);
@@ -86,11 +91,12 @@ const PreviewBook = () => {
     const load = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
-      const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }] = await Promise.all([
+      const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }, { data: fhData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content_male, reference_content_female').eq('gender', tplGender),
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId),
         supabase.from('book_ancestry').select('content, pdf_url, pdf_filename').eq('book_id', bookId).maybeSingle(),
+        supabase.from('book_family_history').select('content').eq('book_id', bookId).maybeSingle(),
       ]);
       if (bookData && bookData.recipient_name) {
         bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -100,6 +106,7 @@ const PreviewBook = () => {
       setTemplates(tplData || []);
       setMemories(memData || []);
       setAncestry(ancData || null);
+      setFamilyHistory(fhData || null);
       if (bookData?.user_id) {
         const { data: userData } = await supabase.auth.getUser();
         const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
