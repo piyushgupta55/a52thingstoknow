@@ -111,9 +111,9 @@ const BookDashboard = () => {
       console.log('BookData Payload:', JSON.stringify(bookData, null, 2));
 
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const API_URL = isLocalhost 
-        ? (import.meta.env.VITE_API_URL || 'http://localhost:3000') 
-        : 'https://pdf-render-service-33np.onrender.com';
+      const API_URL = import.meta.env.VITE_API_URL || (
+        isLocalhost ? 'http://localhost:3000' : 'https://pdf-render-service-33np.onrender.com'
+      );
       const pdfEndpoint = `${API_URL}/generate-pdf`;
 
       const response = await fetch(pdfEndpoint, {

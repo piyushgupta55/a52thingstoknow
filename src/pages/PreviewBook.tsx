@@ -183,9 +183,9 @@ const PreviewBook = () => {
     if (loading || !book) return;
 
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const apiBase = isLocalhost
-      ? ((import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3000')
-      : 'https://pdf-render-service-33np.onrender.com';
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || (
+      isLocalhost ? 'http://localhost:3000' : 'https://pdf-render-service-33np.onrender.com'
+    );
     const normalizeContent = (referenceText: string | null, content: string | null) => {
       const ref = (referenceText || '').trim();
       const body = (content || '').trim();
