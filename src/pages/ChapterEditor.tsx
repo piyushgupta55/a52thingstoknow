@@ -903,25 +903,20 @@ const ChapterEditor = () => {
       if (!hasUploadedPhoto) return null;
       const isVert = variant === 'vertical';
       const layout = parsePhotoRenderLayout(photoLayout);
+      const photoClass = isVert ? 'chapter-photo vertical-photo' : 'chapter-photo';
       return (
-        <div
-          className={`rounded-sm overflow-hidden mb-6 ${isVert ? 'flex justify-center' : ''}`}
-          style={{
-            width: isVert ? `${PREVIEW_PHOTO_VERTICAL_WIDTH}px` : '100%',
-            height: 'auto',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            marginBottom: isVert ? '1.5em' : '1em',
-            borderRadius: '2px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          }}
+        <div className="mb-6 flex justify-center">
+          <div
+            className="relative overflow-hidden rounded-sm"
+            style={{ width: 'fit-content', height: 'auto' }}
           >
-          <img
-            src={primaryPhotoUrl}
-            alt="Chapter photo"
-            className="w-full h-auto block"
-            style={getPhotoImageStyle(layout)}
-          />
+            <img
+              src={primaryPhotoUrl}
+              alt="Chapter photo"
+              className={photoClass}
+              style={getPhotoImageStyle(layout)}
+            />
+          </div>
         </div>
       );
     }
