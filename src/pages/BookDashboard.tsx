@@ -64,6 +64,8 @@ const BookDashboard = () => {
   const [authorName, setAuthorName] = useState('');
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
   const [familyHistoryStatus, setFamilyHistoryStatus] = useState<string>('not_started');
+  const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null } | null>(null);
+  const [familyHistory, setFamilyHistory] = useState<{ content: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
@@ -82,6 +84,9 @@ const BookDashboard = () => {
         title: "52 Things to Know",
         recipientName: book?.recipient_name || '',
         author: book?.from_label || authorName || 'The Author',
+        ancestryText: ancestry?.content || undefined,
+        ancestryPdfUrl: ancestry?.pdf_url || undefined,
+        familyHistoryText: familyHistory?.content || undefined,
         chapters: chapters
           .filter((ch: any) => ch.chapter_number === 0 || ch.status === 'complete')
           .sort((a, b) => a.chapter_number - b.chapter_number)
@@ -110,10 +115,7 @@ const BookDashboard = () => {
 
       console.log('BookData Payload:', JSON.stringify(bookData, null, 2));
 
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const API_URL = import.meta.env.VITE_API_URL || (
-        isLocalhost ? 'http://localhost:3000' : 'https://pdf-render-service-33np.onrender.com'
-      );
+      const API_URL = import.meta.env.VITE_API_URL || 'https://pdf-render-service-33np.onrender.com';
       const pdfEndpoint = `${API_URL}/generate-pdf`;
 
       const response = await fetch(pdfEndpoint, {
@@ -209,11 +211,17 @@ const BookDashboard = () => {
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('memories').select('*').eq('book_id', bookId),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter').eq('gender', tplGender),
-        supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle(),
-        supabase.from('book_family_history').select('status').eq('book_id', bookId).maybeSingle(),
+        supabase.from('book_ancestry').select('status, content, pdf_url').eq('book_id', bookId).maybeSingle(),
+        supabase.from('book_family_history').select('status, content').eq('book_id', bookId).maybeSingle(),
       ]);
-      if (ancData?.status) setAncestryStatus(ancData.status);
-      if (fhData?.status) setFamilyHistoryStatus(fhData.status);
+      if (ancData) {
+        setAncestryStatus(ancData.status || 'not_started');
+        setAncestry(ancData);
+      }
+      if (fhData) {
+        setFamilyHistoryStatus(fhData.status || 'not_started');
+        setFamilyHistory(fhData);
+      }
       if (bookData && bookData.recipient_name) {
         bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       }

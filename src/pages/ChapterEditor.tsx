@@ -935,10 +935,7 @@ const ChapterEditor = () => {
   useEffect(() => {
     if (!chapter) return;
 
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || (
-      isLocalhost ? 'http://localhost:3000' : 'https://pdf-render-service-33np.onrender.com'
-    );
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://pdf-render-service-33np.onrender.com';
     const chapterPayload = {
       chapter_number: chapter.chapter_number,
       title: chapter.title,
