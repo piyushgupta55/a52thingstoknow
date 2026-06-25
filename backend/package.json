@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
-    "build": "tsc",
+    "build": "tsc && cp -r src/pdf/styles dist/pdf/",
     "dev": "ts-node-dev src/server.ts"
   },
   "dependencies": {

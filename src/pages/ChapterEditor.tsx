@@ -993,16 +993,21 @@ const ChapterEditor = () => {
 
     const waitForLayoutFinal = async () => {
       for (let i = 0; i < 120; i += 1) {
-        if (doc.body?.classList.contains('layout-final')) return;
+        if (doc.readyState === 'complete' && doc.body?.classList.contains('layout-final')) return;
         await new Promise(resolve => window.setTimeout(resolve, 50));
       }
     };
 
     const waitForStableLayout = async () => {
       await waitForLayoutFinal();
-      if (doc.fonts?.ready) {
+      if (doc.fonts) {
         try {
           await doc.fonts.ready;
+          await Promise.all([
+            doc.fonts.load('1em Lora'),
+            doc.fonts.load('700 1em Lora'),
+            doc.fonts.load('italic 1em Lora')
+          ]);
         } catch {
           // Ignore font load failures and measure what rendered.
         }
@@ -1068,10 +1073,7 @@ const ChapterEditor = () => {
 
         const finalizeMeasurement = async (runId: number) => {
           await waitForCurrentImages();
-          await new Promise<void>((resolve) => {
-            const raf = doc.defaultView?.requestAnimationFrame ?? window.requestAnimationFrame;
-            raf(() => raf(() => resolve()));
-          });
+          await waitForStableLayout();
           if (runId !== previewMeasurementRunId.current) return;
           setExactChapterSplit(extractExactChapterSplit(doc, chapterKey));
           setChapterPreviewPageCount(pageNodes.length);

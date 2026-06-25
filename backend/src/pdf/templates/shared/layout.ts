@@ -132,7 +132,10 @@ function formatContent(content: string | null | undefined, disableDropcap = fals
 
 export async function renderBook(bookData: BookData, actualChapterPages?: Record<string, number>): Promise<string> {
   // Load core print styles directly to avoid @import path issues in Puppeteer
-  const stylesDir = path.join(process.cwd(), 'src/pdf/styles');
+  let stylesDir = path.join(__dirname, '../../styles');
+  if (!fs.existsSync(stylesDir)) {
+    stylesDir = path.join(process.cwd(), 'src/pdf/styles');
+  }
   let printStyles = '';
   try {
     const baseCss = fs.readFileSync(path.join(stylesDir, 'base.css'), 'utf8');
@@ -656,8 +659,36 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         }
 
         // Client-side text splitting to flow overflowing content from page-p1 to page-p2 and dynamically create overflow pages as needed
+        function waitForFontsAndRaf() {
+          // 1. Wait for document fonts API to report ready
+          // 2. Explicitly load the key font variants used for layout measurement
+          // 3. Wait two rAF frames for the browser to apply final layout after fonts settle
+          // This eliminates the race condition where fonts haven't yet caused their
+          // final layout reflow before splitPageIfNeeded measures DOM positions.
+          const fontLoadPromises = [];
+          const keyFonts = [
+            { weight: '400', style: 'normal' },
+            { weight: '500', style: 'normal' },
+            { weight: '600', style: 'normal' },
+            { weight: '700', style: 'normal' },
+            { weight: '400', style: 'italic' },
+            { weight: '500', style: 'italic' },
+          ];
+          keyFonts.forEach(({ weight, style }) => {
+            try {
+              fontLoadPromises.push(document.fonts.load(style + ' ' + weight + ' 14px Lora'));
+            } catch (e) { /* ignore */ }
+          });
+
+          return Promise.all([document.fonts.ready, ...fontLoadPromises])
+            .then(() => new Promise((resolve) => {
+              // Two rAF frames to let the browser finalize layout after font swap
+              requestAnimationFrame(() => requestAnimationFrame(resolve));
+            }));
+        }
+
         window.addEventListener('load', () => {
-          document.fonts.ready.then(() => {
+          waitForFontsAndRaf().then(() => {
             try {
               splitAllChaptersOverflow();
               cleanEmptyPages();
