@@ -25,6 +25,7 @@ import {
 } from '@/features/preview/geometry';
 import type { Book, Chapter, ChapterTemplate, Memory, SpreadDef, SpreadRender } from '@/features/preview/types';
 import { getPhotoImageStyle, parsePhotoRenderLayout } from '@/features/photoRendering';
+import { normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const GOLD = '#BBA96A';
@@ -186,9 +187,10 @@ const PreviewBook = () => {
     const normalizeContent = (referenceText: string | null, content: string | null) => {
       const ref = (referenceText || '').trim();
       const body = (content || '').trim();
-      if (!ref) return body;
-      if (!body) return ref;
-      return /\s$/.test(ref) || /^\s/.test(body) ? `${ref}${body}` : `${ref} ${body}`;
+      if (!ref) return normalizeWhitespace(body);
+      if (!body) return normalizeWhitespace(ref);
+      const merged = /\s$/.test(ref) || /^\s/.test(body) ? `${ref}${body}` : `${ref} ${body}`;
+      return normalizeWhitespace(merged);
     };
 
     const letter = chapters.find(c => c.chapter_number === 0);

@@ -23,7 +23,7 @@ import {
   MAX_CONTENT_LENGTH,
 } from '@/features/chapter-editor/constants';
 import { validatePhoto } from '@/features/chapter-editor/photoValidation';
-import { mergeRefAndContent } from '@/features/chapter-editor/textSplit';
+import { mergeRefAndContent, normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 import { getPhotoImageStyle, parsePhotoRenderLayout, serializePhotoRenderLayout } from '@/features/photoRendering';
 import {
   PREVIEW_PHOTO_HORIZONTAL_HEIGHT,
@@ -320,12 +320,15 @@ const ChapterEditor = () => {
         if (chapterData.chapter_number === 0) {
           setIsDesignatedPhotoChapter(false);
           setReferenceContent(null);
-          setReferenceText(chapterData.reference_text || '');
+          const normalizedRefText = normalizeWhitespace(chapterData.reference_text || '');
+          const normalizedContentText = normalizeWhitespace(chapterData.content || '');
+          setReferenceText(normalizedRefText);
           // Letter editor binds to `content`; keep mergedText coherent.
-          setMergedText(chapterData.content || '');
+          setContent(normalizedContentText);
+          setMergedText(normalizedContentText);
           setTemplate('letter' as ChapterTemplate);
-          initialRef.current = { referenceText: chapterData.reference_text || '', content: chapterData.content || '' };
-          lastSavedRef.current = { referenceText: chapterData.reference_text || '', content: chapterData.content || '' };
+          initialRef.current = { referenceText: normalizedRefText, content: normalizedContentText };
+          lastSavedRef.current = { referenceText: normalizedRefText, content: normalizedContentText };
         } else {
           const isFemale = bookData?.recipient_gender === 'Girl/Young Woman';
           const tplGender = isFemale ? 'female' : 'male';
@@ -350,12 +353,16 @@ const ChapterEditor = () => {
                   })
                 : '');
           const contentVal = chapterData.content || '';
-          setReferenceText(refVal);
+          const normalizedRefVal = normalizeWhitespace(refVal);
+          const normalizedContentVal = normalizeWhitespace(contentVal);
+          
+          setReferenceText(normalizedRefVal);
+          setContent(normalizedContentVal);
           // Seed the unified editor buffer from the saved split.
-          setMergedText(mergeRefAndContent(refVal, contentVal));
+          setMergedText(mergeRefAndContent(normalizedRefVal, normalizedContentVal));
 
-          initialRef.current = { referenceText: chapterData.reference_text || rawRef || '', content: chapterData.content || '' };
-          lastSavedRef.current = { referenceText: chapterData.reference_text || rawRef || '', content: chapterData.content || '' };
+          initialRef.current = { referenceText: normalizedRefVal, content: normalizedContentVal };
+          lastSavedRef.current = { referenceText: normalizedRefVal, content: normalizedContentVal };
         }
       }
       if (bookData) {
@@ -500,6 +507,9 @@ const ChapterEditor = () => {
         contentToSave = mergedText;
       }
     }
+
+    refToSave = normalizeWhitespace(refToSave);
+    contentToSave = normalizeWhitespace(contentToSave);
 
     const { error } = await supabase.from('chapters').update({
       title: chapter?.title ?? null,
@@ -940,7 +950,7 @@ const ChapterEditor = () => {
       chapter_number: chapter.chapter_number,
       title: chapter.title,
       chapter_template: template,
-      content: isLetterChapter ? mergeRefAndContent(referenceText, content) : mergedText,
+      content: normalizeWhitespace(isLetterChapter ? mergeRefAndContent(referenceText, content) : mergedText),
       photo_urls: hasUploadedPhoto ? [primaryPhotoUrl] : [],
       photo_layout: photoLayout,
       bible_verse_text: bibleVerseText || null,
@@ -1457,7 +1467,13 @@ const ChapterEditor = () => {
                             autoResize(ta);
                           });
                         }}
-                        rows={6}
+                         rows={6}
+                        onBlur={e => {
+                          const normalized = normalizeWhitespace(e.target.value);
+                          setContent(normalized);
+                          setMergedText(normalized);
+                          autoResize(e.target);
+                        }}
                         className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
                         style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
                       />
@@ -1602,6 +1618,12 @@ const ChapterEditor = () => {
                       autoResize(ta);
                     });
                   }}
+                  onBlur={e => {
+                    const normalized = normalizeWhitespace(e.target.value);
+                    setReferenceText(normalized);
+                    setMergedText(mergeRefAndContent(normalized, content));
+                    autoResize(e.target);
+                  }}
                   className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
                   style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
                 />
@@ -1653,6 +1675,12 @@ const ChapterEditor = () => {
                       ta.selectionStart = ta.selectionEnd = caret;
                       autoResize(ta);
                     });
+                  }}
+                  onBlur={e => {
+                    const normalized = normalizeWhitespace(e.target.value);
+                    setContent(normalized);
+                    setMergedText(mergeRefAndContent(referenceText, normalized));
+                    autoResize(e.target);
                   }}
                   className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
                   style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
