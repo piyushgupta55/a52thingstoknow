@@ -447,6 +447,7 @@ const ChapterEditor = () => {
       });
       return;
     }
+
     save(true);
   };
 
@@ -500,16 +501,43 @@ const ChapterEditor = () => {
       const doc = iframe?.contentDocument;
       if (doc && chapter) {
         const exactSplit = extractExactChapterSplit(doc, String(chapter.chapter_number));
-        refToSave = exactSplit.page1;
-        contentToSave = exactSplit.page2;
+        refToSave = normalizeWhitespace(exactSplit.page1);
+        contentToSave = normalizeWhitespace(exactSplit.page2);
+
+        // Sync screen values silently
+        setReferenceText(refToSave);
+        setContent(contentToSave);
+        setMergedText(mergeRefAndContent(refToSave, contentToSave));
+
+        setTimeout(() => {
+          if (refTextareaRef.current) autoResize(refTextareaRef.current);
+          if (wisdomTextareaRef.current) autoResize(wisdomTextareaRef.current);
+        }, 50);
       } else {
-        refToSave = referenceText;
-        contentToSave = mergedText;
+        refToSave = normalizeWhitespace(referenceText);
+        contentToSave = normalizeWhitespace(mergedText);
       }
+    } else {
+      contentToSave = normalizeWhitespace(content);
+      setContent(contentToSave);
+      setMergedText(contentToSave);
+
+      setTimeout(() => {
+        if (wisdomTextareaRef.current) autoResize(wisdomTextareaRef.current);
+      }, 50);
     }
 
-    refToSave = normalizeWhitespace(refToSave);
-    contentToSave = normalizeWhitespace(contentToSave);
+    if (!isLetterChapter && markComplete) {
+      if (!refToSave.trim() || !contentToSave.trim()) {
+        toast({
+          title: 'Missing Page Content',
+          description: 'You only wrote one page of content. Before saving, you need to add content on page 2 also.',
+          variant: 'destructive',
+        });
+        setSaving(false);
+        return;
+      }
+    }
 
     const { error } = await supabase.from('chapters').update({
       title: chapter?.title ?? null,
@@ -1746,34 +1774,39 @@ const ChapterEditor = () => {
             title="Hidden exact chapter preview"
             srcDoc={exactPreviewHtml}
             onLoad={syncExactPreview}
-            style={{ position: 'absolute', width: 0, height: 0, border: 0, opacity: 0, pointerEvents: 'none' }}
+            style={{ position: 'absolute', width: '1024px', height: '768px', left: '-9999px', top: '-9999px', border: 0, opacity: 0, pointerEvents: 'none' }}
           />
         )}
 
         {/* Bottom actions */}
         {!previewMode && (
-          <div className="flex gap-3 pt-8 mx-auto max-w-[600px]" style={{ padding: '32px 60px 64px' }}>
-            <Button variant="outline" size="lg" className="flex-1 gap-2" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload}>
-              <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save Draft'}
-            </Button>
-            {isComplete ? (
-              <Button
-                size="lg"
-                variant="outline"
-                className="flex-1 gap-2"
-                onClick={() => { 
-                  setChapter(prev => prev ? { ...prev, status: 'in_progress' } : prev);
-                  save(false, 'in_progress');
-                }}
-                disabled={saving || photoTemplateNeedsUpload}
-              >
-                <Check className="h-4 w-4" /> Unmark Complete
+          <div className="flex flex-col items-center gap-3 pt-8 mx-auto max-w-[600px]" style={{ padding: '32px 60px 64px' }}>
+            <div className="flex w-full gap-3">
+              <Button variant="outline" size="lg" className="flex-1 gap-2" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload}>
+                <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save Draft'}
               </Button>
-            ) : (
-              <Button size="lg" className="flex-1 gap-2" onClick={handleMarkComplete} disabled={saving || photoTemplateNeedsUpload}>
-                <CheckCircle className="h-4 w-4" /> Mark Complete
-              </Button>
-            )}
+              {isComplete ? (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => { 
+                    setChapter(prev => prev ? { ...prev, status: 'in_progress' } : prev);
+                    save(false, 'in_progress');
+                  }}
+                  disabled={saving || photoTemplateNeedsUpload}
+                >
+                  <Check className="h-4 w-4" /> Unmark Complete
+                </Button>
+              ) : (
+                <Button size="lg" className="flex-1 gap-2" onClick={handleMarkComplete} disabled={saving || photoTemplateNeedsUpload}>
+                  <CheckCircle className="h-4 w-4" /> Mark Complete
+                </Button>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground/75 italic text-center mt-1" style={{ fontFamily: 'var(--font-body)' }}>
+              Please save draft before marking complete to ensure correct formatting and accurate page preview.
+            </p>
           </div>
         )}
       </div>
