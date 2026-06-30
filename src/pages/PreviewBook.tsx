@@ -49,6 +49,7 @@ const PreviewBook = () => {
   const [exactPreviewLoading, setExactPreviewLoading] = useState(false);
   const [exactPreviewError, setExactPreviewError] = useState<string | null>(null);
   const [exactPageCount, setExactPageCount] = useState(0);
+  const [exactChapterPageMap, setExactChapterPageMap] = useState<Map<string, number>>(new Map());
   const [isCompactPreview, setIsCompactPreview] = useState(false);
   const [compactPageIndex, setCompactPageIndex] = useState(0);
   const exactHasInsideFrontCover = true;
@@ -184,9 +185,23 @@ const PreviewBook = () => {
     if (loading || !book) return;
 
     const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://pdf-render-service-33np.onrender.com';
-    const normalizeContent = (referenceText: string | null, content: string | null) => {
-      const ref = (referenceText || '').trim();
+    const normalizeContent = (referenceText: string | null, content: string | null, chapterNumber: number) => {
+      let ref = (referenceText || '').trim();
       const body = (content || '').trim();
+      if (!ref && !body) {
+        const tpl = templates.find(t => t.chapter_number === chapterNumber);
+        if (tpl) {
+          const isFemale = book.recipient_gender === 'Girl/Young Woman';
+          const rawRef = isFemale ? tpl.reference_content_female : tpl.reference_content_male;
+          if (rawRef) {
+            ref = replaceTokens(rawRef, {
+              recipientName: book.recipient_name || 'your loved one',
+              recipientGender: book.recipient_gender || '',
+              authorLabel: book.author_label || null,
+            }).trim();
+          }
+        }
+      }
       if (!ref) return normalizeWhitespace(body);
       if (!body) return normalizeWhitespace(ref);
       const merged = /\s$/.test(ref) || /^\s/.test(body) ? `${ref}${body}` : `${ref} ${body}`;
@@ -201,7 +216,7 @@ const PreviewBook = () => {
         chapter_number: 0,
         title: letter.title || 'Letter from the Author',
         chapter_template: 'letter',
-        content: normalizeContent(letter.reference_text, letter.content),
+        content: normalizeContent(letter.reference_text, letter.content, 0),
         photo_urls: [],
         photo_layout: letter.photo_layout,
         memories: [],
@@ -217,7 +232,7 @@ const PreviewBook = () => {
         chapter_number: ch.chapter_number,
         title: ch.title,
         chapter_template: ch.chapter_template,
-        content: normalizeContent(ch.reference_text, ch.content),
+        content: normalizeContent(ch.reference_text, ch.content, ch.chapter_number),
         photo_urls: (ch.photo_urls || []).filter(Boolean),
         photo_layout: ch.photo_layout,
         bible_verse_text: ch.bible_verse_text,
@@ -362,6 +377,19 @@ const PreviewBook = () => {
     setExactPageCount(prev => (prev === pages.length ? prev : pages.length));
     const totalSpreads = Math.max(1, Math.ceil(Math.max(0, pages.length - 1) / 2)) + (exactHasInsideFrontCover ? 1 : 0);
     setCurrentSpread(prev => Math.min(prev, totalSpreads - 1));
+
+    const nextMapping = new Map<string, number>();
+    pages.forEach((page, idx) => {
+      const chapter = page.getAttribute('data-chapter');
+      if (chapter && !nextMapping.has(chapter)) {
+        nextMapping.set(chapter, idx + 1);
+        const tocPageNumSpan = doc.querySelector(`.toc-page-number[data-toc-chapter="${chapter}"]`);
+        if (tocPageNumSpan) {
+          tocPageNumSpan.textContent = String(idx + 1);
+        }
+      }
+    });
+    setExactChapterPageMap(nextMapping);
   };
 
   if (loading) {
@@ -740,7 +768,8 @@ const PreviewBook = () => {
   const renderTocLetterSpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
     const chapterPageMap = new Map<string, number>();
     visibleChapters.forEach((ch, i) => {
-      chapterPageMap.set(ch.id, (3 + i) * 2);
+      const exactPageNum = exactChapterPageMap.get(ch.chapter_number.toString());
+      chapterPageMap.set(ch.id, exactPageNum ?? (3 + i) * 2);
     });
 
     const left = (
@@ -795,14 +824,18 @@ const PreviewBook = () => {
           {hasAncestry && (
             <div className="flex items-baseline justify-between py-2 mt-2 pt-3" style={{ borderTop: '1px solid #E5E1D8' }}>
               <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Where You Come From</span>
-              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>{(3 + visibleChapters.length) * 2}</span>
+              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>
+                {exactChapterPageMap.get('ancestry') ?? (3 + visibleChapters.length) * 2}
+              </span>
             </div>
           )}
 
           {hasFamilyHistory && (
             <div className="flex items-baseline justify-between py-2" style={{ borderBottom: '1px solid #F0EDE6' }}>
               <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Family History</span>
-              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>{(3 + visibleChapters.length + (hasAncestry ? 1 : 0)) * 2}</span>
+              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>
+                {exactChapterPageMap.get('family_history') ?? (3 + visibleChapters.length + (hasAncestry ? 1 : 0)) * 2}
+              </span>
             </div>
           )}
         </div>

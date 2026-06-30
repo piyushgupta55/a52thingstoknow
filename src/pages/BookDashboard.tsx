@@ -14,6 +14,7 @@ import { saveAs } from 'file-saver';
 import TutorialVideos from '@/components/TutorialVideos';
 import Navbar from '@/components/Navbar';
 import { normalizeWhitespace } from '@/features/chapter-editor/textSplit';
+import { replaceTokens } from '@/lib/tokenReplacer';
 
 interface Book {
   id: string;
@@ -45,6 +46,8 @@ interface ChapterTemplate {
   chapter_number: number;
   title?: string;
   is_photo_chapter: boolean;
+  reference_content_male?: string | null;
+  reference_content_female?: string | null;
 }
 
 interface Memory {
@@ -95,8 +98,22 @@ const BookDashboard = () => {
             title: ch.title,
             content: (() => {
               if (ch.chapter_number === 0) return normalizeWhitespace(ch.content || '');
-              const refText = ch.reference_text || '';
-              const mainContent = ch.content || '';
+              let refText = ch.reference_text || '';
+              let mainContent = ch.content || '';
+              if (!refText && !mainContent) {
+                const tpl = photoTemplates.find(t => t.chapter_number === ch.chapter_number);
+                if (tpl) {
+                  const isFemale = book?.recipient_gender === 'Girl/Young Woman';
+                  const rawRef = isFemale ? tpl.reference_content_female : tpl.reference_content_male;
+                  if (rawRef) {
+                    refText = replaceTokens(rawRef, {
+                      recipientName: book?.recipient_name || 'your loved one',
+                      recipientGender: book?.recipient_gender || '',
+                      authorLabel: book?.author_label || null,
+                    });
+                  }
+                }
+              }
               const needsSpace = refText.length > 0 && mainContent.length > 0 && !/\s$/.test(refText) && !/^\s/.test(mainContent);
               return normalizeWhitespace(refText + (needsSpace ? ' ' : '') + mainContent);
             })(),
@@ -211,7 +228,7 @@ const BookDashboard = () => {
       const [{ data: chapData }, { data: memData }, { data: tplData }, { data: ancData }, { data: fhData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('memories').select('*').eq('book_id', bookId),
-        supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter').eq('gender', tplGender),
+        supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content_male, reference_content_female').eq('gender', tplGender),
         supabase.from('book_ancestry').select('status, content, pdf_url').eq('book_id', bookId).maybeSingle(),
         supabase.from('book_family_history').select('status, content').eq('book_id', bookId).maybeSingle(),
       ]);

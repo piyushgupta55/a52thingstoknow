@@ -212,7 +212,9 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
   const tocHtml = `
     <div class="page toc-page">
       <h2 class="toc-title">Table of Contents</h2>
-      ${tocItemsHtml}
+      <div class="toc-container">
+        ${tocItemsHtml}
+      </div>
     </div>
   `;
 
@@ -712,9 +714,10 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         function splitPageIfNeeded(page, depth = 0) {
           const chapterNum = page.getAttribute('data-chapter');
           const pageRect = page.getBoundingClientRect();
-          // Slightly tighter page fit so we reclaim the last line more often.
-          const maxBottom = pageRect.top + 800;
-          console.log("splitPageIfNeeded [ch=" + chapterNum + ", depth=" + depth + "]: pageRect.top=" + pageRect.top + ", maxBottom=" + maxBottom);
+          const scale = (pageRect.height / 828) || 1;
+          // Slightly tighter page fit so we reclaim the last line more often, scaled to match the viewport transform.
+          const maxBottom = pageRect.top + (800 * scale);
+          console.log("splitPageIfNeeded [ch=" + chapterNum + ", depth=" + depth + "]: pageRect.top=" + pageRect.top + ", maxBottom=" + maxBottom + ", scale=" + scale);
 
           if (depth > 20) {
             console.error("Infinite recursion safety trigger on chapter " + chapterNum + ". Stopping split.");
