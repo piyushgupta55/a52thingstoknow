@@ -773,69 +773,80 @@ const PreviewBook = () => {
     });
 
     const left = (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full" style={{ paddingLeft: '15px', paddingRight: '15px' }}>
         <div className="flex-1 overflow-y-auto">
-          <p className="text-center uppercase tracking-[0.25em] mb-1" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
+          <p className="text-center uppercase tracking-[0.25em] mb-1" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF', marginTop: '10px' }}>
             A Book of Wisdom
           </p>
-          <h2 className="text-center font-bold mb-1" style={{ fontFamily: SERIF, fontSize: '18px', color: '#2D3748' }}>
-            52 Things to Know
+          <h2 className="text-center font-bold mb-1 uppercase" style={{ fontFamily: SERIF, fontSize: '18px', color: '#2D3748', letterSpacing: '0.08em' }}>
+            Table of Contents
           </h2>
-          <p className="text-center mb-5" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280' }}>
+          <p className="text-center mb-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280' }}>
             For {book.recipient_name}
           </p>
-          <div className="w-8 mx-auto mb-4" style={{ height: '1px', background: GOLD }} />
-
-          {hasLetterWritten && (
-            <div className="flex items-baseline justify-between py-2" style={{ borderBottom: '1px solid #E5E1D8' }}>
-              <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Letter from the Author</span>
-              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>3</span>
-            </div>
-          )}
+          
+          <div className="toc-separator" style={{ display: 'flex', alignItems: 'center', justify: 'center', gap: '1em', marginTop: '8px', marginBottom: '24px' }}>
+            <span className="line" style={{ height: '1px', backgroundColor: GOLD, width: '80px' }}></span>
+            <span className="diamond" style={{ color: GOLD, fontSize: '8px', lineHeight: 1 }}>✦</span>
+            <span className="line" style={{ height: '1px', backgroundColor: GOLD, width: '80px' }}></span>
+          </div>
 
           {visibleChapters.length === 0 && !hasLetterWritten ? (
             <p className="text-center mt-8 italic" style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF' }}>
               Your book will take shape as you write.
             </p>
           ) : (
-            visibleChapters.map(ch => {
-              const isComplete = ch.status === 'complete';
-              const isPhoto = photoNums.has(ch.chapter_number);
-              const pageNum = chapterPageMap.get(ch.id);
-              return (
-                <div key={ch.id} className="flex items-baseline justify-between py-1.5" style={{ borderBottom: '1px solid #F0EDE6' }}>
-                  <span className="truncate pr-2" style={{ fontFamily: SERIF, fontSize: '11px', color: isComplete ? '#2D3748' : '#6B7280' }}>
-                    <span className="inline-block w-4 text-right mr-1.5 tabular-nums" style={{ fontSize: '10px', color: '#9CA3AF' }}>{ch.chapter_number}.</span>
-                    {getChapterTitle(ch)}
-                  </span>
-                  <span className="flex items-center gap-1 flex-shrink-0" style={{ fontFamily: SERIF, fontSize: '10px' }}>
-                    {isComplete ? (
-                      <span style={{ color: GOLD }}>{pageNum}</span>
-                    ) : (
-                      <span className="italic" style={{ color: '#9CA3AF' }}>(in progress)</span>
-                    )}
-                    {isPhoto && <Camera className="h-2.5 w-2.5" style={{ color: GOLD }} />}
+            <div style={{ columnCount: 2, columnGap: '0.6in', height: 'auto' }}>
+              {hasLetterWritten && (
+                <div className="flex justify-between" style={{ marginBottom: '0.6em', alignItems: 'last baseline', breakInside: 'avoid' }}>
+                  <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748', maxWidth: '72%', whiteSpace: 'normal' }}>Letter from the Author</span>
+                  <span style={{ flexGrow: 1, backgroundImage: `radial-gradient(circle, #b3b3b3 0.8px, transparent 1px)`, backgroundPosition: 'bottom 0.22em left', backgroundSize: '7px 1px', backgroundRepeat: 'repeat-x', height: '1.2em', margin: '0 0.5em', alignSelf: 'stretch' }} />
+                  <span style={{ fontFamily: SERIF, fontSize: '10px', fontWeight: 700, color: '#2D3748', minWidth: '1.5em', textAlign: 'right', flexShrink: 0 }}>3</span>
+                </div>
+              )}
+
+              {visibleChapters.map(ch => {
+                const isComplete = ch.status === 'complete';
+                const isPhoto = photoNums.has(ch.chapter_number);
+                const pageNum = chapterPageMap.get(ch.id);
+                return (
+                  <div key={ch.id} className="flex justify-between" style={{ marginBottom: '0.6em', alignItems: 'last baseline', breakInside: 'avoid' }}>
+                    <span style={{ fontFamily: SERIF, fontSize: '11px', color: isComplete ? '#2D3748' : '#6B7280', maxWidth: '72%', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                      <span className="inline-block w-4 text-right mr-1.5 tabular-nums" style={{ fontSize: '10px', color: '#9CA3AF' }}>{ch.chapter_number}.</span>
+                      {getChapterTitle(ch)}
+                    </span>
+                    <span style={{ flexGrow: 1, backgroundImage: `radial-gradient(circle, #b3b3b3 0.8px, transparent 1px)`, backgroundPosition: 'bottom 0.22em left', backgroundSize: '7px 1px', backgroundRepeat: 'repeat-x', height: '1.2em', margin: '0 0.5em', alignSelf: 'stretch' }} />
+                    <span className="flex items-center gap-1 flex-shrink-0" style={{ fontFamily: SERIF, fontSize: '10px', fontWeight: 700, minWidth: '1.5em', justifyContent: 'flex-end' }}>
+                      {isComplete ? (
+                        <span style={{ color: '#2D3748' }}>{pageNum}</span>
+                      ) : (
+                        <span className="italic font-normal" style={{ color: '#9CA3AF', fontSize: '9px' }}>(in progress)</span>
+                      )}
+                      {isPhoto && <Camera className="h-2.5 w-2.5" style={{ color: GOLD }} />}
+                    </span>
+                  </div>
+                );
+              })}
+
+              {hasAncestry && (
+                <div className="flex justify-between" style={{ marginBottom: '0.6em', alignItems: 'last baseline', breakInside: 'avoid' }}>
+                  <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748', maxWidth: '72%', whiteSpace: 'normal' }}>Where You Come From</span>
+                  <span style={{ flexGrow: 1, backgroundImage: `radial-gradient(circle, #b3b3b3 0.8px, transparent 1px)`, backgroundPosition: 'bottom 0.22em left', backgroundSize: '7px 1px', backgroundRepeat: 'repeat-x', height: '1.2em', margin: '0 0.5em', alignSelf: 'stretch' }} />
+                  <span style={{ fontFamily: SERIF, fontSize: '10px', fontWeight: 700, color: '#2D3748', minWidth: '1.5em', textAlign: 'right', flexShrink: 0 }}>
+                    {exactChapterPageMap.get('ancestry') ?? (3 + visibleChapters.length) * 2}
                   </span>
                 </div>
-              );
-            })
-          )}
+              )}
 
-          {hasAncestry && (
-            <div className="flex items-baseline justify-between py-2 mt-2 pt-3" style={{ borderTop: '1px solid #E5E1D8' }}>
-              <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Where You Come From</span>
-              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>
-                {exactChapterPageMap.get('ancestry') ?? (3 + visibleChapters.length) * 2}
-              </span>
-            </div>
-          )}
-
-          {hasFamilyHistory && (
-            <div className="flex items-baseline justify-between py-2" style={{ borderBottom: '1px solid #F0EDE6' }}>
-              <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748' }}>Family History</span>
-              <span style={{ fontFamily: SERIF, fontSize: '10px', color: GOLD }}>
-                {exactChapterPageMap.get('family_history') ?? (3 + visibleChapters.length + (hasAncestry ? 1 : 0)) * 2}
-              </span>
+              {hasFamilyHistory && (
+                <div className="flex justify-between" style={{ marginBottom: '0.6em', alignItems: 'last baseline', breakInside: 'avoid' }}>
+                  <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748', maxWidth: '72%', whiteSpace: 'normal' }}>Family History</span>
+                  <span style={{ flexGrow: 1, backgroundImage: `radial-gradient(circle, #b3b3b3 0.8px, transparent 1px)`, backgroundPosition: 'bottom 0.22em left', backgroundSize: '7px 1px', backgroundRepeat: 'repeat-x', height: '1.2em', margin: '0 0.5em', alignSelf: 'stretch' }} />
+                  <span style={{ fontFamily: SERIF, fontSize: '10px', fontWeight: 700, color: '#2D3748', minWidth: '1.5em', textAlign: 'right', flexShrink: 0 }}>
+                    {exactChapterPageMap.get('family_history') ?? (3 + visibleChapters.length + (hasAncestry ? 1 : 0)) * 2}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
