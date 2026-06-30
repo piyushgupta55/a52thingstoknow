@@ -785,7 +785,7 @@ const PreviewBook = () => {
             For {book.recipient_name}
           </p>
           
-          <div className="toc-separator" style={{ display: 'flex', alignItems: 'center', justify: 'center', gap: '1em', marginTop: '8px', marginBottom: '24px' }}>
+          <div className="toc-separator" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1em', marginTop: '8px', marginBottom: '24px' }}>
             <span className="line" style={{ height: '1px', backgroundColor: GOLD, width: '80px' }}></span>
             <span className="diamond" style={{ color: GOLD, fontSize: '8px', lineHeight: 1 }}>✦</span>
             <span className="line" style={{ height: '1px', backgroundColor: GOLD, width: '80px' }}></span>
