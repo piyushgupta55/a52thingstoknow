@@ -943,7 +943,7 @@ const ChapterEditor = () => {
       const layout = parsePhotoRenderLayout(photoLayout);
       const photoClass = isVert ? 'chapter-photo vertical-photo' : 'chapter-photo';
       return (
-        <div className="mb-6 flex justify-center">
+        <div className={`mb-6 ${isVert ? 'flex justify-center' : 'w-full'}`}>
           <div
             className="relative overflow-hidden rounded-sm"
             style={{ width: isVert ? 'fit-content' : '100%', height: 'auto' }}

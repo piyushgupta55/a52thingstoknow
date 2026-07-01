@@ -27,9 +27,9 @@ const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = '
   const photoClass = isVertical ? 'chapter-photo vertical-photo' : 'chapter-photo';
 
   return (
-    <div className="mb-6 flex justify-center">
+    <div className={`mb-6 ${isVertical ? 'flex justify-center' : 'w-full'}`}>
       {photo ? (
-        <div className="space-y-3 w-full flex justify-center">
+        <div className={`space-y-3 w-full ${isVertical ? 'flex justify-center' : ''}`}>
           <div
             className="relative overflow-hidden rounded-sm"
             style={{ width: isVertical ? 'fit-content' : '100%', height: 'auto' }}
