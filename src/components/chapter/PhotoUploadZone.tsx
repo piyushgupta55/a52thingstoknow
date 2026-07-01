@@ -32,7 +32,7 @@ const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = '
         <div className="space-y-3 w-full flex justify-center">
           <div
             className="relative overflow-hidden rounded-sm"
-            style={{ width: 'fit-content', height: 'auto' }}
+            style={{ width: isVertical ? 'fit-content' : '100%', height: 'auto' }}
           >
             <img src={photo} alt="Chapter photo" className={photoClass} style={getPhotoImageStyle(layout)} />
             <button
