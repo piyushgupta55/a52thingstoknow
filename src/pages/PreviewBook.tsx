@@ -963,8 +963,8 @@ const PreviewBook = () => {
       );
       const right = (
         <div className="flex flex-col h-full">
-          <div className="flex justify-center items-center mb-4 flex-shrink-0" style={{ height: 'auto' }}>
-            <div className="rounded overflow-hidden shadow-md" style={{ width: `${PREVIEW_PHOTO_VERTICAL_WIDTH}px`, height: 'auto' }}>
+          <div className="flex justify-center items-center mb-4 flex-shrink-0" style={{ height: 'auto', width: '100%' }}>
+            <div className="rounded overflow-hidden shadow-md" style={{ width: 'fit-content', height: 'auto' }}>
               <img src={ch.photo_urls[0]} alt="" className="chapter-photo vertical-photo" style={getPhotoImageStyle(photoLayout)} />
             </div>
           </div>
