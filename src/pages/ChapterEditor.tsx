@@ -23,7 +23,7 @@ import {
   MAX_CONTENT_LENGTH,
 } from '@/features/chapter-editor/constants';
 import { validatePhoto } from '@/features/chapter-editor/photoValidation';
-import { mergeRefAndContent } from '@/features/chapter-editor/textSplit';
+import { mergeRefAndContent, normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 import { getPhotoImageStyle, parsePhotoRenderLayout, serializePhotoRenderLayout } from '@/features/photoRendering';
 import {
   PREVIEW_PHOTO_HORIZONTAL_HEIGHT,
@@ -320,12 +320,15 @@ const ChapterEditor = () => {
         if (chapterData.chapter_number === 0) {
           setIsDesignatedPhotoChapter(false);
           setReferenceContent(null);
-          setReferenceText(chapterData.reference_text || '');
+          const normalizedRefText = normalizeWhitespace(chapterData.reference_text || '');
+          const normalizedContentText = normalizeWhitespace(chapterData.content || '');
+          setReferenceText(normalizedRefText);
           // Letter editor binds to `content`; keep mergedText coherent.
-          setMergedText(chapterData.content || '');
+          setContent(normalizedContentText);
+          setMergedText(normalizedContentText);
           setTemplate('letter' as ChapterTemplate);
-          initialRef.current = { referenceText: chapterData.reference_text || '', content: chapterData.content || '' };
-          lastSavedRef.current = { referenceText: chapterData.reference_text || '', content: chapterData.content || '' };
+          initialRef.current = { referenceText: normalizedRefText, content: normalizedContentText };
+          lastSavedRef.current = { referenceText: normalizedRefText, content: normalizedContentText };
         } else {
           const isFemale = bookData?.recipient_gender === 'Girl/Young Woman';
           const tplGender = isFemale ? 'female' : 'male';
@@ -350,12 +353,16 @@ const ChapterEditor = () => {
                   })
                 : '');
           const contentVal = chapterData.content || '';
-          setReferenceText(refVal);
+          const normalizedRefVal = normalizeWhitespace(refVal);
+          const normalizedContentVal = normalizeWhitespace(contentVal);
+          
+          setReferenceText(normalizedRefVal);
+          setContent(normalizedContentVal);
           // Seed the unified editor buffer from the saved split.
-          setMergedText(mergeRefAndContent(refVal, contentVal));
+          setMergedText(mergeRefAndContent(normalizedRefVal, normalizedContentVal));
 
-          initialRef.current = { referenceText: chapterData.reference_text || rawRef || '', content: chapterData.content || '' };
-          lastSavedRef.current = { referenceText: chapterData.reference_text || rawRef || '', content: chapterData.content || '' };
+          initialRef.current = { referenceText: normalizedRefVal, content: normalizedContentVal };
+          lastSavedRef.current = { referenceText: normalizedRefVal, content: normalizedContentVal };
         }
       }
       if (bookData) {
@@ -440,6 +447,7 @@ const ChapterEditor = () => {
       });
       return;
     }
+
     save(true);
   };
 
@@ -493,11 +501,41 @@ const ChapterEditor = () => {
       const doc = iframe?.contentDocument;
       if (doc && chapter) {
         const exactSplit = extractExactChapterSplit(doc, String(chapter.chapter_number));
-        refToSave = exactSplit.page1;
-        contentToSave = exactSplit.page2;
+        refToSave = normalizeWhitespace(exactSplit.page1);
+        contentToSave = normalizeWhitespace(exactSplit.page2);
+
+        // Sync screen values silently
+        setReferenceText(refToSave);
+        setContent(contentToSave);
+        setMergedText(mergeRefAndContent(refToSave, contentToSave));
+
+        setTimeout(() => {
+          if (refTextareaRef.current) autoResize(refTextareaRef.current);
+          if (wisdomTextareaRef.current) autoResize(wisdomTextareaRef.current);
+        }, 50);
       } else {
-        refToSave = referenceText;
-        contentToSave = mergedText;
+        refToSave = normalizeWhitespace(referenceText);
+        contentToSave = normalizeWhitespace(mergedText);
+      }
+    } else {
+      contentToSave = normalizeWhitespace(content);
+      setContent(contentToSave);
+      setMergedText(contentToSave);
+
+      setTimeout(() => {
+        if (wisdomTextareaRef.current) autoResize(wisdomTextareaRef.current);
+      }, 50);
+    }
+
+    if (!isLetterChapter && markComplete) {
+      if (!refToSave.trim() || !contentToSave.trim()) {
+        toast({
+          title: 'Missing Page Content',
+          description: 'You only wrote one page of content. Before saving, you need to add content on page 2 also.',
+          variant: 'destructive',
+        });
+        setSaving(false);
+        return;
       }
     }
 
@@ -905,10 +943,10 @@ const ChapterEditor = () => {
       const layout = parsePhotoRenderLayout(photoLayout);
       const photoClass = isVert ? 'chapter-photo vertical-photo' : 'chapter-photo';
       return (
-        <div className="mb-6 flex justify-center">
+        <div className={`mb-6 ${isVert ? 'flex justify-center' : 'w-full'}`}>
           <div
             className="relative overflow-hidden rounded-sm"
-            style={{ width: 'fit-content', height: 'auto' }}
+            style={{ width: isVert ? 'fit-content' : '100%', height: 'auto' }}
           >
             <img
               src={primaryPhotoUrl}
@@ -935,15 +973,12 @@ const ChapterEditor = () => {
   useEffect(() => {
     if (!chapter) return;
 
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || (
-      isLocalhost ? 'http://localhost:3000' : 'https://pdf-render-service-33np.onrender.com'
-    );
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://pdf-render-service-33np.onrender.com';
     const chapterPayload = {
       chapter_number: chapter.chapter_number,
       title: chapter.title,
       chapter_template: template,
-      content: isLetterChapter ? mergeRefAndContent(referenceText, content) : mergedText,
+      content: normalizeWhitespace(isLetterChapter ? mergeRefAndContent(referenceText, content) : mergedText),
       photo_urls: hasUploadedPhoto ? [primaryPhotoUrl] : [],
       photo_layout: photoLayout,
       bible_verse_text: bibleVerseText || null,
@@ -996,16 +1031,21 @@ const ChapterEditor = () => {
 
     const waitForLayoutFinal = async () => {
       for (let i = 0; i < 120; i += 1) {
-        if (doc.body?.classList.contains('layout-final')) return;
+        if (doc.readyState === 'complete' && doc.body?.classList.contains('layout-final')) return;
         await new Promise(resolve => window.setTimeout(resolve, 50));
       }
     };
 
     const waitForStableLayout = async () => {
       await waitForLayoutFinal();
-      if (doc.fonts?.ready) {
+      if (doc.fonts) {
         try {
           await doc.fonts.ready;
+          await Promise.all([
+            doc.fonts.load('1em Lora'),
+            doc.fonts.load('700 1em Lora'),
+            doc.fonts.load('italic 1em Lora')
+          ]);
         } catch {
           // Ignore font load failures and measure what rendered.
         }
@@ -1071,10 +1111,7 @@ const ChapterEditor = () => {
 
         const finalizeMeasurement = async (runId: number) => {
           await waitForCurrentImages();
-          await new Promise<void>((resolve) => {
-            const raf = doc.defaultView?.requestAnimationFrame ?? window.requestAnimationFrame;
-            raf(() => raf(() => resolve()));
-          });
+          await waitForStableLayout();
           if (runId !== previewMeasurementRunId.current) return;
           setExactChapterSplit(extractExactChapterSplit(doc, chapterKey));
           setChapterPreviewPageCount(pageNodes.length);
@@ -1458,7 +1495,13 @@ const ChapterEditor = () => {
                             autoResize(ta);
                           });
                         }}
-                        rows={6}
+                         rows={6}
+                        onBlur={e => {
+                          const normalized = normalizeWhitespace(e.target.value);
+                          setContent(normalized);
+                          setMergedText(normalized);
+                          autoResize(e.target);
+                        }}
                         className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
                         style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
                       />
@@ -1603,6 +1646,12 @@ const ChapterEditor = () => {
                       autoResize(ta);
                     });
                   }}
+                  onBlur={e => {
+                    const normalized = normalizeWhitespace(e.target.value);
+                    setReferenceText(normalized);
+                    setMergedText(mergeRefAndContent(normalized, content));
+                    autoResize(e.target);
+                  }}
                   className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
                   style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
                 />
@@ -1654,6 +1703,12 @@ const ChapterEditor = () => {
                       ta.selectionStart = ta.selectionEnd = caret;
                       autoResize(ta);
                     });
+                  }}
+                  onBlur={e => {
+                    const normalized = normalizeWhitespace(e.target.value);
+                    setContent(normalized);
+                    setMergedText(mergeRefAndContent(referenceText, normalized));
+                    autoResize(e.target);
                   }}
                   className="relative w-full border-0 bg-transparent resize-none outline-none px-0 text-[15px] leading-[1.8] text-foreground/80"
                   style={{ fontFamily: 'var(--font-devotional)', overflow: 'hidden' }}
@@ -1719,34 +1774,39 @@ const ChapterEditor = () => {
             title="Hidden exact chapter preview"
             srcDoc={exactPreviewHtml}
             onLoad={syncExactPreview}
-            style={{ position: 'absolute', width: 0, height: 0, border: 0, opacity: 0, pointerEvents: 'none' }}
+            style={{ position: 'absolute', width: '1024px', height: '768px', left: '-9999px', top: '-9999px', border: 0, opacity: 0, pointerEvents: 'none' }}
           />
         )}
 
         {/* Bottom actions */}
         {!previewMode && (
-          <div className="flex gap-3 pt-8 mx-auto max-w-[600px]" style={{ padding: '32px 60px 64px' }}>
-            <Button variant="outline" size="lg" className="flex-1 gap-2" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload}>
-              <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save Draft'}
-            </Button>
-            {isComplete ? (
-              <Button
-                size="lg"
-                variant="outline"
-                className="flex-1 gap-2"
-                onClick={() => { 
-                  setChapter(prev => prev ? { ...prev, status: 'in_progress' } : prev);
-                  save(false, 'in_progress');
-                }}
-                disabled={saving || photoTemplateNeedsUpload}
-              >
-                <Check className="h-4 w-4" /> Unmark Complete
+          <div className="flex flex-col items-center gap-3 pt-8 mx-auto max-w-[600px]" style={{ padding: '32px 60px 64px' }}>
+            <div className="flex w-full gap-3">
+              <Button variant="outline" size="lg" className="flex-1 gap-2" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload}>
+                <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save Draft'}
               </Button>
-            ) : (
-              <Button size="lg" className="flex-1 gap-2" onClick={handleMarkComplete} disabled={saving || photoTemplateNeedsUpload}>
-                <CheckCircle className="h-4 w-4" /> Mark Complete
-              </Button>
-            )}
+              {isComplete ? (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => { 
+                    setChapter(prev => prev ? { ...prev, status: 'in_progress' } : prev);
+                    save(false, 'in_progress');
+                  }}
+                  disabled={saving || photoTemplateNeedsUpload}
+                >
+                  <Check className="h-4 w-4" /> Unmark Complete
+                </Button>
+              ) : (
+                <Button size="lg" className="flex-1 gap-2" onClick={handleMarkComplete} disabled={saving || photoTemplateNeedsUpload}>
+                  <CheckCircle className="h-4 w-4" /> Mark Complete
+                </Button>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground/75 italic text-center mt-1" style={{ fontFamily: 'var(--font-body)' }}>
+              Please save draft before marking complete to ensure correct formatting and accurate page preview.
+            </p>
           </div>
         )}
       </div>

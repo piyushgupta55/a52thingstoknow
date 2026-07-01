@@ -40,8 +40,6 @@ export const parsePhotoRenderLayout = (value: string | null | undefined): PhotoR
 
 export const getPhotoImageStyle = (layout: PhotoRenderLayout & { preset?: string }) => {
   return {
-    width: '100%',
-    height: 'auto',
     display: 'block',
   };
 };

@@ -9,6 +9,16 @@ export const mergeRefAndContent = (referenceText: string, content: string) => {
   return referenceText + (needsSpace ? ' ' : '') + content;
 };
 
+export const normalizeWhitespace = (val: string): string => {
+  if (!val) return '';
+  return val
+    .split('\n')
+    .map(line => line.trim().replace(/[ \t]+/g, ' '))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
 export const splitRefByWordLimit = (text: string, wordLimit: number) => {
   if (!text) return { page1: '', page2: '' };
   const tokens = text.split(/(\s+)/);

@@ -102,7 +102,21 @@ const extractWisdomText = (wisdom: HTMLElement | null) => {
     node.remove();
   });
 
-  return normalizeExtractedText(clone.innerText || clone.textContent || '');
+  // Replace <br> and <br /> elements with newlines to preserve manual line breaks
+  clone.querySelectorAll('br').forEach((br) => {
+    br.replaceWith('\n');
+  });
+
+  // Extract text from <p> tags if present to preserve paragraphs
+  const pTags = Array.from(clone.querySelectorAll('p'));
+  if (pTags.length > 0) {
+    return pTags
+      .map((p) => p.textContent || '')
+      .join('\n\n')
+      .trim();
+  }
+
+  return normalizeExtractedText(clone.textContent || '');
 };
 
 export const extractExactChapterSplit = (doc: Document, chapterKey: string): ExactChapterSplitResult => {

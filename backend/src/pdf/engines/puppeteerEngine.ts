@@ -102,6 +102,14 @@ export class PuppeteerEngine implements PDFEngine {
       });
       await page.waitForSelector('body.layout-final');
 
+      try {
+        const finalHtml = await page.content();
+        writeDebugHtml('debug-final.html', finalHtml);
+        console.log('Saved final split HTML to debug-final.html');
+      } catch (err) {
+        console.warn('Could not save debug-final.html:', err);
+      }
+
       console.log('Generating final PDF page-by-page...');
       const mergedDoc = await PDFDocument.create();
 

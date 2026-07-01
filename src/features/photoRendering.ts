@@ -59,8 +59,6 @@ export const getPhotoFocusLabel = (layout: PhotoRenderLayout): PhotoFocus => {
 
 export const getPhotoImageStyle = (layout: PhotoRenderLayout & { preset?: string }) => {
   return {
-    width: '100%',
-    height: 'auto',
     display: 'block',
   };
 };

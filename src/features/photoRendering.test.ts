@@ -15,18 +15,12 @@ describe('photoRendering', () => {
 
   it('produces identical styles for all renderers', () => {
     expect(getPhotoImageStyle(parsePhotoRenderLayout('top'))).toMatchObject({
-      width: '100%',
-      height: 'auto',
       display: 'block',
     });
     expect(getPhotoImageStyle(parsePhotoRenderLayout('center'))).toMatchObject({
-      width: '100%',
-      height: 'auto',
       display: 'block',
     });
     expect(getPhotoImageStyle(parsePhotoRenderLayout('bottom'))).toMatchObject({
-      width: '100%',
-      height: 'auto',
       display: 'block',
     });
   });
