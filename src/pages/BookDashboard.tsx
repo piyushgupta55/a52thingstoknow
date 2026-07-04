@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { toBookGender } from '@/lib/genderMap';
 
 import { Button } from '@/components/ui/button';
+import { applyReviewFlags, type ReviewAction } from '@/lib/reviewTags';
+
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -86,8 +88,21 @@ const BookDashboard = () => {
     setIsGeneratingPDF(true);
     console.log('PDF generation started');
     const startTime = performance.now();
-    
+
+    // Load review flags for all chapters so <review> keep/soften/remove is honored in the PDF.
+    // The wrapper itself never leaves the client — inner text is applied per action before send.
+    const chapterIds = chapters.map((c: any) => c.id).filter(Boolean);
+    const { data: flagRows } = await supabase
+      .from('chapter_review_flags')
+      .select('chapter_id, tag_index, action')
+      .in('chapter_id', chapterIds.length ? chapterIds : ['00000000-0000-0000-0000-000000000000']);
+    const flagsByChapter: Record<string, Record<number, ReviewAction>> = {};
+    (flagRows || []).forEach((r: any) => {
+      (flagsByChapter[r.chapter_id] ??= {})[r.tag_index] = r.action as ReviewAction;
+    });
+
     try {
+
       // Format bookData with real data fetched from Supabase
       const bookData = {
         title: "52 Things to Know",
@@ -120,8 +135,10 @@ const BookDashboard = () => {
 
               }
               const needsSpace = refText.length > 0 && mainContent.length > 0 && !/\s$/.test(refText) && !/^\s/.test(mainContent);
-              return normalizeWhitespace(refText + (needsSpace ? ' ' : '') + mainContent);
+              const merged = normalizeWhitespace(refText + (needsSpace ? ' ' : '') + mainContent);
+              return applyReviewFlags(merged, flagsByChapter[ch.id] || {});
             })(),
+
           chapter_number: ch.chapter_number,
           chapter_template: ch.chapter_template,
           photo_urls: ch.photo_urls || [],
