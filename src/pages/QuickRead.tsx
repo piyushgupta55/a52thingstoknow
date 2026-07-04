@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
+import { toBookGender } from '@/lib/genderMap';
+
 import { Button } from '@/components/ui/button';
 import { Heart, Plus, PenLine, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
