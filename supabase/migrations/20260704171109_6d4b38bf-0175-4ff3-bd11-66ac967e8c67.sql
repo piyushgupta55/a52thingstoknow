@@ -1,0 +1,2 @@
+ALTER TABLE public.chapter_templates DROP CONSTRAINT IF EXISTS chapter_templates_gender_check;
+ALTER TABLE public.chapter_templates ADD CONSTRAINT chapter_templates_gender_check CHECK (gender IN ('female','male','stepdaughter','stepson'));
