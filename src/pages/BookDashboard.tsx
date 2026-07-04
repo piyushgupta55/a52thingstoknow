@@ -19,11 +19,14 @@ import { replaceTokens } from '@/lib/tokenReplacer';
 interface Book {
   id: string;
   recipient_name: string;
+  recipient_gender: string;
   relationship: string;
   occasion: string;
   from_label: string | null;
+  author_label: string | null;
   user_id: string;
 }
+
 
 interface Chapter {
   id: string;
