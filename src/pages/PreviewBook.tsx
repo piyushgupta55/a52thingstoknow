@@ -92,10 +92,11 @@ const PreviewBook = () => {
     if (!bookId) return;
     const load = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
-      const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
+      const tplGender = toBookGender(bookData?.recipient_gender);
       const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }, { data: fhData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
-        supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content_male, reference_content_female').eq('gender', tplGender),
+        supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content').eq('gender', tplGender),
+
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId),
         supabase.from('book_ancestry').select('content, pdf_url, pdf_filename').eq('book_id', bookId).maybeSingle(),
         supabase.from('book_family_history').select('content').eq('book_id', bookId).maybeSingle(),
@@ -191,8 +192,8 @@ const PreviewBook = () => {
       if (!ref && !body) {
         const tpl = templates.find(t => t.chapter_number === chapterNumber);
         if (tpl) {
-          const isFemale = book.recipient_gender === 'Girl/Young Woman';
-          const rawRef = isFemale ? tpl.reference_content_female : tpl.reference_content_male;
+          const rawRef = tpl.reference_content;
+
           if (rawRef) {
             ref = replaceTokens(rawRef, {
               recipientName: book.recipient_name || 'your loved one',
@@ -586,7 +587,7 @@ const PreviewBook = () => {
     .replace(/\n\n+/g, '\n\n')
     .trim();
   const hasLetterWritten = letterRawText.length > 0;
-  const isFemale = book.recipient_gender === 'Girl/Young Woman';
+  
 
   const photoNums = new Set(templates.filter(t => t.is_photo_chapter).map(t => t.chapter_number));
 
@@ -599,7 +600,7 @@ const PreviewBook = () => {
   const getTemplateRef = (chapterNumber: number) => {
     const tpl = templates.find(t => t.chapter_number === chapterNumber);
     if (!tpl) return null;
-    const raw = isFemale ? tpl.reference_content_female : tpl.reference_content_male;
+    const raw = tpl.reference_content;
     const tokensReplaced = raw ? replaceTokens(raw, tokenCtx) : null;
     if (!tokensReplaced) return null;
     const unescapedTokensReplaced = tokensReplaced.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
