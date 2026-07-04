@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { toBookGender } from '@/lib/genderMap';
+
 import { Button } from '@/components/ui/button';
+import { applyReviewFlags, type ReviewAction } from '@/lib/reviewTags';
+
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -49,9 +53,9 @@ interface ChapterTemplate {
   chapter_number: number;
   title?: string;
   is_photo_chapter: boolean;
-  reference_content_male?: string | null;
-  reference_content_female?: string | null;
+  reference_content?: string | null;
 }
+
 
 interface Memory {
   id: string;
@@ -84,8 +88,21 @@ const BookDashboard = () => {
     setIsGeneratingPDF(true);
     console.log('PDF generation started');
     const startTime = performance.now();
-    
+
+    // Load review flags for all chapters so <review> keep/soften/remove is honored in the PDF.
+    // The wrapper itself never leaves the client — inner text is applied per action before send.
+    const chapterIds = chapters.map((c: any) => c.id).filter(Boolean);
+    const { data: flagRows } = await supabase
+      .from('chapter_review_flags')
+      .select('chapter_id, tag_index, action')
+      .in('chapter_id', chapterIds.length ? chapterIds : ['00000000-0000-0000-0000-000000000000']);
+    const flagsByChapter: Record<string, Record<number, ReviewAction>> = {};
+    (flagRows || []).forEach((r: any) => {
+      (flagsByChapter[r.chapter_id] ??= {})[r.tag_index] = r.action as ReviewAction;
+    });
+
     try {
+
       // Format bookData with real data fetched from Supabase
       const bookData = {
         title: "52 Things to Know",
@@ -106,8 +123,7 @@ const BookDashboard = () => {
               if (!refText && !mainContent) {
                 const tpl = photoTemplates.find(t => t.chapter_number === ch.chapter_number);
                 if (tpl) {
-                  const isFemale = book?.recipient_gender === 'Girl/Young Woman';
-                  const rawRef = isFemale ? tpl.reference_content_female : tpl.reference_content_male;
+                  const rawRef = tpl.reference_content;
                   if (rawRef) {
                     refText = replaceTokens(rawRef, {
                       recipientName: book?.recipient_name || 'your loved one',
@@ -116,10 +132,13 @@ const BookDashboard = () => {
                     });
                   }
                 }
+
               }
               const needsSpace = refText.length > 0 && mainContent.length > 0 && !/\s$/.test(refText) && !/^\s/.test(mainContent);
-              return normalizeWhitespace(refText + (needsSpace ? ' ' : '') + mainContent);
+              const merged = normalizeWhitespace(refText + (needsSpace ? ' ' : '') + mainContent);
+              return applyReviewFlags(merged, flagsByChapter[ch.id] || {});
             })(),
+
           chapter_number: ch.chapter_number,
           chapter_template: ch.chapter_template,
           photo_urls: ch.photo_urls || [],
@@ -227,11 +246,12 @@ const BookDashboard = () => {
     if (!bookId) return;
     const fetchData = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
-      const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
+      const tplGender = toBookGender(bookData?.recipient_gender);
       const [{ data: chapData }, { data: memData }, { data: tplData }, { data: ancData }, { data: fhData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('memories').select('*').eq('book_id', bookId),
-        supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content_male, reference_content_female').eq('gender', tplGender),
+        supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content').eq('gender', tplGender),
+
         supabase.from('book_ancestry').select('status, content, pdf_url').eq('book_id', bookId).maybeSingle(),
         supabase.from('book_family_history').select('status, content').eq('book_id', bookId).maybeSingle(),
       ]);

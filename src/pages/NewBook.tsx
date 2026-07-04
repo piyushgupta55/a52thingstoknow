@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { toBookGender, type BookGender } from '@/lib/genderMap';
+import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
+
 const NewBook = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -30,15 +33,16 @@ const NewBook = () => {
 
     try {
       // Map UI gender to canonical 'female'/'male' for template lookup
-      const bookGender: 'female' | 'male' = gender === 'Girl/Young Woman' ? 'female' : 'male';
+      const bookGender: BookGender = toBookGender(gender);
       const capitalizedRecipientName = recipientName.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-      // Fetch chapter templates filtered by gender (each chapter has separate male/female rows)
+      // Fetch chapter templates (single reference_content column, keyed by gender)
       const { data: templates, error: tplError } = await supabase
         .from('chapter_templates')
-        .select('chapter_number, title, is_photo_chapter, bible_verse_text, bible_verse_reference, quote_text, quote_attribution')
+        .select('chapter_number, title, is_photo_chapter, reference_content, bible_verse_text, bible_verse_reference, quote_text, quote_attribution')
         .eq('gender', bookGender)
         .order('chapter_number');
+
 
       if (tplError) throw tplError;
 
@@ -77,6 +81,7 @@ const NewBook = () => {
         photo_urls: [],
         photo_layout: 'top',
         content: letterContentText,
+        seed_content: letterContentText,
         bible_verse_text: null,
         bible_verse_reference: null,
         quote_text: null,
@@ -85,24 +90,39 @@ const NewBook = () => {
         quote_id: null,
       };
 
-      const chapters = (templates || []).map((t: any) => ({
-        book_id: book.id,
-        chapter_number: t.chapter_number,
-        title: t.title,
-        bible_verse_text: t.bible_verse_text || null,
-        bible_verse_reference: t.bible_verse_reference || null,
-        quote_text: t.quote_text || null,
-        quote_attribution: t.quote_attribution || null,
-        verse_id: null,
-        quote_id: null,
-        chapter_template: t.is_photo_chapter ? 'horizontal_photo' : 'all_words',
-        is_photo_chapter: t.is_photo_chapter || false,
-        photo_urls: [],
-        photo_layout: 'top',
-        status: 'not_started',
-        content: null,
-        reference_text: null,
-      }));
+      // Personalization context for seeding chapter content
+      const tokenCtx = {
+        recipientName: capitalizedRecipientName,
+        recipientGender: gender,
+        authorLabel: authorLabel.trim() || null,
+      };
+
+      const chapters = (templates || []).map((t: any) => {
+        // Personalize the seed once at creation time — both `content` (editable)
+        // and `seed_content` (frozen baseline for future change-measurement) get the same value.
+        const rawSeed = t.reference_content || null;
+        const seededContent = rawSeed ? replaceTokens(rawSeed, tokenCtx) : null;
+        return {
+          book_id: book.id,
+          chapter_number: t.chapter_number,
+          title: t.title,
+          bible_verse_text: t.bible_verse_text || null,
+          bible_verse_reference: t.bible_verse_reference || null,
+          quote_text: t.quote_text || null,
+          quote_attribution: t.quote_attribution || null,
+          verse_id: null,
+          quote_id: null,
+          chapter_template: t.is_photo_chapter ? 'horizontal_photo' : 'all_words',
+          is_photo_chapter: t.is_photo_chapter || false,
+          photo_urls: [],
+          photo_layout: 'top',
+          status: 'not_started',
+          content: seededContent,
+          seed_content: seededContent,
+          reference_text: null,
+        };
+      });
+
 
       const { error: chapError } = await supabase.from('chapters').insert([letterChapter, ...chapters]);
       if (chapError) throw chapError;
@@ -148,7 +168,10 @@ const NewBook = () => {
               <SelectContent>
                 <SelectItem value="Girl/Young Woman">Girl / Young Woman</SelectItem>
                 <SelectItem value="Boy/Young Man">Boy / Young Man</SelectItem>
+                <SelectItem value="Stepdaughter">Stepdaughter</SelectItem>
+                <SelectItem value="Stepson">Stepson</SelectItem>
               </SelectContent>
+
             </Select>
           </div>
 
