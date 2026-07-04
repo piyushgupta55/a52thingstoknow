@@ -193,6 +193,41 @@ export type Database = {
         }
         Relationships: []
       }
+      chapter_review_flags: {
+        Row: {
+          action: string
+          chapter_id: string
+          created_at: string
+          id: string
+          tag_index: number
+          updated_at: string
+        }
+        Insert: {
+          action?: string
+          chapter_id: string
+          created_at?: string
+          id?: string
+          tag_index: number
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          tag_index?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_review_flags_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_templates: {
         Row: {
           bible_verse_reference: string | null
@@ -206,8 +241,7 @@ export type Database = {
           is_photo_chapter: boolean
           quote_attribution: string | null
           quote_text: string | null
-          reference_content_female: string | null
-          reference_content_male: string | null
+          reference_content: string | null
           title: string
         }
         Insert: {
@@ -222,8 +256,7 @@ export type Database = {
           is_photo_chapter?: boolean
           quote_attribution?: string | null
           quote_text?: string | null
-          reference_content_female?: string | null
-          reference_content_male?: string | null
+          reference_content?: string | null
           title: string
         }
         Update: {
@@ -238,8 +271,7 @@ export type Database = {
           is_photo_chapter?: boolean
           quote_attribution?: string | null
           quote_text?: string | null
-          reference_content_female?: string | null
-          reference_content_male?: string | null
+          reference_content?: string | null
           title?: string
         }
         Relationships: [
@@ -277,6 +309,7 @@ export type Database = {
           quote_text: string | null
           reference_text: string | null
           review_status: string | null
+          seed_content: string | null
           status: string
           title: string
           triage: string | null
@@ -300,6 +333,7 @@ export type Database = {
           quote_text?: string | null
           reference_text?: string | null
           review_status?: string | null
+          seed_content?: string | null
           status?: string
           title: string
           triage?: string | null
@@ -323,6 +357,7 @@ export type Database = {
           quote_text?: string | null
           reference_text?: string | null
           review_status?: string | null
+          seed_content?: string | null
           status?: string
           title?: string
           triage?: string | null
