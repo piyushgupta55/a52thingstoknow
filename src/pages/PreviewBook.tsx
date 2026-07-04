@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
+import { toBookGender } from '@/lib/genderMap';
+
 import { X, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
 import CompanionBubble from '@/components/chapter/CompanionBubble';
 import {
