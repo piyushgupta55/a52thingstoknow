@@ -81,6 +81,7 @@ const NewBook = () => {
         photo_urls: [],
         photo_layout: 'top',
         content: letterContentText,
+        seed_content: letterContentText,
         bible_verse_text: null,
         bible_verse_reference: null,
         quote_text: null,
@@ -89,24 +90,39 @@ const NewBook = () => {
         quote_id: null,
       };
 
-      const chapters = (templates || []).map((t: any) => ({
-        book_id: book.id,
-        chapter_number: t.chapter_number,
-        title: t.title,
-        bible_verse_text: t.bible_verse_text || null,
-        bible_verse_reference: t.bible_verse_reference || null,
-        quote_text: t.quote_text || null,
-        quote_attribution: t.quote_attribution || null,
-        verse_id: null,
-        quote_id: null,
-        chapter_template: t.is_photo_chapter ? 'horizontal_photo' : 'all_words',
-        is_photo_chapter: t.is_photo_chapter || false,
-        photo_urls: [],
-        photo_layout: 'top',
-        status: 'not_started',
-        content: null,
-        reference_text: null,
-      }));
+      // Personalization context for seeding chapter content
+      const tokenCtx = {
+        recipientName: capitalizedRecipientName,
+        recipientGender: gender,
+        authorLabel: authorLabel.trim() || null,
+      };
+
+      const chapters = (templates || []).map((t: any) => {
+        // Personalize the seed once at creation time — both `content` (editable)
+        // and `seed_content` (frozen baseline for future change-measurement) get the same value.
+        const rawSeed = t.reference_content || null;
+        const seededContent = rawSeed ? replaceTokens(rawSeed, tokenCtx) : null;
+        return {
+          book_id: book.id,
+          chapter_number: t.chapter_number,
+          title: t.title,
+          bible_verse_text: t.bible_verse_text || null,
+          bible_verse_reference: t.bible_verse_reference || null,
+          quote_text: t.quote_text || null,
+          quote_attribution: t.quote_attribution || null,
+          verse_id: null,
+          quote_id: null,
+          chapter_template: t.is_photo_chapter ? 'horizontal_photo' : 'all_words',
+          is_photo_chapter: t.is_photo_chapter || false,
+          photo_urls: [],
+          photo_layout: 'top',
+          status: 'not_started',
+          content: seededContent,
+          seed_content: seededContent,
+          reference_text: null,
+        };
+      });
+
 
       const { error: chapError } = await supabase.from('chapters').insert([letterChapter, ...chapters]);
       if (chapError) throw chapError;
@@ -152,7 +168,10 @@ const NewBook = () => {
               <SelectContent>
                 <SelectItem value="Girl/Young Woman">Girl / Young Woman</SelectItem>
                 <SelectItem value="Boy/Young Man">Boy / Young Man</SelectItem>
+                <SelectItem value="Stepdaughter">Stepdaughter</SelectItem>
+                <SelectItem value="Stepson">Stepson</SelectItem>
               </SelectContent>
+
             </Select>
           </div>
 
