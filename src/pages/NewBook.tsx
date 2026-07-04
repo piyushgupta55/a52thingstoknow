@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { toBookGender, type BookGender } from '@/lib/genderMap';
+import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
+
 const NewBook = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -30,15 +33,16 @@ const NewBook = () => {
 
     try {
       // Map UI gender to canonical 'female'/'male' for template lookup
-      const bookGender: 'female' | 'male' = gender === 'Girl/Young Woman' ? 'female' : 'male';
+      const bookGender: BookGender = toBookGender(gender);
       const capitalizedRecipientName = recipientName.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-      // Fetch chapter templates filtered by gender (each chapter has separate male/female rows)
+      // Fetch chapter templates (single reference_content column, keyed by gender)
       const { data: templates, error: tplError } = await supabase
         .from('chapter_templates')
-        .select('chapter_number, title, is_photo_chapter, bible_verse_text, bible_verse_reference, quote_text, quote_attribution')
+        .select('chapter_number, title, is_photo_chapter, reference_content, bible_verse_text, bible_verse_reference, quote_text, quote_attribution')
         .eq('gender', bookGender)
         .order('chapter_number');
+
 
       if (tplError) throw tplError;
 
