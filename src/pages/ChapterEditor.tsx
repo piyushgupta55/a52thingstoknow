@@ -353,8 +353,40 @@ const ChapterEditor = () => {
                   })
                 : '');
           const contentVal = chapterData.reference_text !== null ? (chapterData.content || '') : '';
-          const normalizedRefVal = normalizeWhitespace(refVal);
-          const normalizedContentVal = normalizeWhitespace(contentVal);
+          
+          let finalRefVal = refVal;
+          let finalContentVal = contentVal;
+          let isDuplicated = false;
+
+          if (rawRef) {
+            const personalizedTpl = replaceTokens(rawRef, {
+              recipientName: bookData?.recipient_name || 'your child',
+              recipientGender: bookData?.recipient_gender || '',
+              authorLabel: bookData?.author_label,
+            });
+            const normTpl = normalizeWhitespace(personalizedTpl);
+            const initialMerged = mergeRefAndContent(refVal, contentVal);
+            const normMerged = normalizeWhitespace(initialMerged);
+
+            const firstIdx = normMerged.indexOf(normTpl);
+            const lastIdx = normMerged.lastIndexOf(normTpl);
+            
+            const halfLen = Math.floor(normMerged.length / 2);
+            const firstHalf = normMerged.slice(0, halfLen).trim();
+            const secondHalf = normMerged.slice(halfLen).trim();
+
+            if (
+              (firstIdx !== -1 && lastIdx !== -1 && firstIdx !== lastIdx) ||
+              (firstHalf.length > 50 && firstHalf === secondHalf)
+            ) {
+              isDuplicated = true;
+              finalRefVal = personalizedTpl;
+              finalContentVal = '';
+            }
+          }
+
+          const normalizedRefVal = normalizeWhitespace(finalRefVal);
+          const normalizedContentVal = normalizeWhitespace(finalContentVal);
           
           setReferenceText(normalizedRefVal);
           setContent(normalizedContentVal);
@@ -363,6 +395,9 @@ const ChapterEditor = () => {
 
           initialRef.current = { referenceText: normalizedRefVal, content: normalizedContentVal };
           lastSavedRef.current = { referenceText: normalizedRefVal, content: normalizedContentVal };
+          if (isDuplicated) {
+            setHasUnsavedChanges(true);
+          }
         }
       }
       if (bookData) {
