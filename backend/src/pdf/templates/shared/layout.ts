@@ -94,7 +94,11 @@ function renderInlineHtml(line: string): string {
 
 function formatContent(content: string | null | undefined, disableDropcap = false): string {
   if (!content) return '';
-  const trimmed = content.trim();
+  // Safety net: strip any stray <review>...</review> wrappers.
+  // Frontend applies keep/soften/remove semantics before sending; this only guards
+  // against the tag ever leaking into the printed book.
+  const trimmed = content.replace(/<\/?review>/gi, '').trim();
+
   let html = '';
   if (/^<p|^<div|^<ol|^<ul|^<blockquote|^<table/i.test(trimmed)) {
     html = trimmed;

@@ -39,9 +39,9 @@ export interface ChapterTemplate {
   chapter_number: number;
   title: string;
   is_photo_chapter: boolean;
-  reference_content_male: string | null;
-  reference_content_female: string | null;
+  reference_content: string | null;
 }
+
 
 export type SpreadDef =
   | { type: 'title' }

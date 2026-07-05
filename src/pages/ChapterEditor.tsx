@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
+import { toBookGender } from '@/lib/genderMap';
+
 import { Button } from '@/components/ui/button';
 import { Save, CheckCircle, AlertTriangle, Settings2, Check, Sparkles, MessageCircleHeart, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -292,7 +294,7 @@ const ChapterEditor = () => {
         supabase.from('chapter_templates').select('chapter_number, is_photo_chapter, gender, title'),
       ]);
       if (capData) setMaxPhotoChapters(Number(capData.value) || 15);
-      const bookGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
+      const bookGender = toBookGender(bookData?.recipient_gender);
       const genderTpls = ((allTpls || []) as ChapterTemplateRow[]).filter((t) => t.gender === bookGender);
       const photoNums = new Set<number>(genderTpls.filter((t) => t.is_photo_chapter).map((t) => t.chapter_number));
       setPhotoChapterNums(photoNums);
@@ -330,17 +332,17 @@ const ChapterEditor = () => {
           initialRef.current = { referenceText: normalizedRefText, content: normalizedContentText };
           lastSavedRef.current = { referenceText: normalizedRefText, content: normalizedContentText };
         } else {
-          const isFemale = bookData?.recipient_gender === 'Girl/Young Woman';
-          const tplGender = isFemale ? 'female' : 'male';
+          const tplGender = toBookGender(bookData?.recipient_gender);
           const { data: tpl } = await supabase
             .from('chapter_templates')
-            .select('reference_content_female, reference_content_male, is_photo_chapter')
+            .select('reference_content, is_photo_chapter')
             .eq('chapter_number', chapterData.chapter_number)
             .eq('gender', tplGender)
             .maybeSingle();
           setIsDesignatedPhotoChapter(tpl?.is_photo_chapter || false);
-          const rawRef = isFemale ? tpl?.reference_content_female : tpl?.reference_content_male;
+          const rawRef = tpl?.reference_content ?? null;
           setReferenceContent(rawRef || null);
+
 
           // Prefer saved reference_text; fall back to template
           const refVal = chapterData.reference_text
