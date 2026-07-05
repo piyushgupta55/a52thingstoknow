@@ -102,6 +102,12 @@ const extractWisdomText = (wisdom: HTMLElement | null) => {
     node.remove();
   });
 
+  // Replace dropcap containers with their actual letter attribute so textContent extracts it correctly
+  clone.querySelectorAll('.dropcap-svg-container').forEach((node) => {
+    const letter = node.getAttribute('data-dropcap-letter') || '';
+    node.replaceWith(letter);
+  });
+
   // Replace <br> and <br /> elements with newlines to preserve manual line breaks
   clone.querySelectorAll('br').forEach((br) => {
     br.replaceWith('\n');

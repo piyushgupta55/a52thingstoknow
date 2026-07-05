@@ -9,7 +9,30 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors()); // Allow frontend to call the backend
+const allowedOrigins = [
+  'https://lovable.dev',
+  'https://a52thingstoknow.lovable.app',
+  'https://a52thingstoknow.vercel.app'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, or same-origin)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.includes(origin) || 
+                      origin.endsWith('.lovable.app') || 
+                      origin.endsWith('.vercel.app') ||
+                      /^http:\/\/localhost:\d+$/.test(origin);
+                      
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '50mb' })); // Allow large payloads (e.g. base64 images if any)
 
 // Root endpoint
