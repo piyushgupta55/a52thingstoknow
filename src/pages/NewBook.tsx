@@ -119,7 +119,7 @@ const NewBook = () => {
           photo_urls: [],
           photo_layout: 'top',
           status: 'not_started',
-          content: personalizedRef || null,
+          content: null,
           reference_text: null,
         };
       });

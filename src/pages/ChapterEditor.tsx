@@ -352,7 +352,7 @@ const ChapterEditor = () => {
                     authorLabel: bookData?.author_label,
                   })
                 : '');
-          const contentVal = chapterData.content || '';
+          const contentVal = chapterData.reference_text !== null ? (chapterData.content || '') : '';
           const normalizedRefVal = normalizeWhitespace(refVal);
           const normalizedContentVal = normalizeWhitespace(contentVal);
           
