@@ -111,9 +111,10 @@ const ContentSearchPanel = ({ open, onClose, type, defaultTopic, onSelect, exclu
       source: manualSource.trim() || null,
       translation: activeFilter === 'verse' ? (manualTranslation.trim() || null) : null,
       topic_tags: [defaultTopic],
-      status: 'approved',
-      origin: 'author_written',
+      status: 'pending',
+      origin: 'tester_contributed',
     };
+
     if (bookId) insertPayload.book_id = bookId;
 
     const { data, error } = await supabase
