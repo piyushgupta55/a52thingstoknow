@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
+import { replaceTokens } from '@/lib/tokenReplacer';
+
 const NewBook = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -29,14 +31,21 @@ const NewBook = () => {
     setLoading(true);
 
     try {
-      // Map UI gender to canonical 'female'/'male' for template lookup
-      const bookGender: 'female' | 'male' = gender === 'Girl/Young Woman' ? 'female' : 'male';
+      // Map UI gender and relationship to canonical gender values for template lookup
+      let bookGender: 'female' | 'male' | 'stepdaughter' | 'stepson';
+      if (relationship === 'Stepdaughter') {
+        bookGender = 'stepdaughter';
+      } else if (relationship === 'Stepson') {
+        bookGender = 'stepson';
+      } else {
+        bookGender = gender === 'Girl/Young Woman' ? 'female' : 'male';
+      }
       const capitalizedRecipientName = recipientName.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-      // Fetch chapter templates filtered by gender (each chapter has separate male/female rows)
+      // Fetch chapter templates filtered by gender (each chapter has separate rows for female, male, stepdaughter, stepson)
       const { data: templates, error: tplError } = await supabase
         .from('chapter_templates')
-        .select('chapter_number, title, is_photo_chapter, bible_verse_text, bible_verse_reference, quote_text, quote_attribution')
+        .select('chapter_number, title, is_photo_chapter, bible_verse_text, bible_verse_reference, quote_text, quote_attribution, reference_content')
         .eq('gender', bookGender)
         .order('chapter_number');
 
@@ -85,24 +94,35 @@ const NewBook = () => {
         quote_id: null,
       };
 
-      const chapters = (templates || []).map((t: any) => ({
-        book_id: book.id,
-        chapter_number: t.chapter_number,
-        title: t.title,
-        bible_verse_text: t.bible_verse_text || null,
-        bible_verse_reference: t.bible_verse_reference || null,
-        quote_text: t.quote_text || null,
-        quote_attribution: t.quote_attribution || null,
-        verse_id: null,
-        quote_id: null,
-        chapter_template: t.is_photo_chapter ? 'horizontal_photo' : 'all_words',
-        is_photo_chapter: t.is_photo_chapter || false,
-        photo_urls: [],
-        photo_layout: 'top',
-        status: 'not_started',
-        content: null,
-        reference_text: null,
-      }));
+      const chapters = (templates || []).map((t: any) => {
+        const rawRef = t.reference_content || '';
+        const personalizedRef = rawRef
+          ? replaceTokens(rawRef, {
+              recipientName: capitalizedRecipientName,
+              recipientGender: gender,
+              authorLabel: authorLabel.trim() || null,
+            })
+          : '';
+
+        return {
+          book_id: book.id,
+          chapter_number: t.chapter_number,
+          title: t.title,
+          bible_verse_text: t.bible_verse_text || null,
+          bible_verse_reference: t.bible_verse_reference || null,
+          quote_text: t.quote_text || null,
+          quote_attribution: t.quote_attribution || null,
+          verse_id: null,
+          quote_id: null,
+          chapter_template: t.is_photo_chapter ? 'horizontal_photo' : 'all_words',
+          is_photo_chapter: t.is_photo_chapter || false,
+          photo_urls: [],
+          photo_layout: 'top',
+          status: 'not_started',
+          content: personalizedRef || null,
+          reference_text: null,
+        };
+      });
 
       const { error: chapError } = await supabase.from('chapters').insert([letterChapter, ...chapters]);
       if (chapError) throw chapError;

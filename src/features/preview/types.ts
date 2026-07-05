@@ -16,6 +16,7 @@ export interface Book {
   user_id: string;
   from_label: string | null;
   author_label: string | null;
+  gender: string;
 }
 
 export interface Chapter {
@@ -39,8 +40,7 @@ export interface ChapterTemplate {
   chapter_number: number;
   title: string;
   is_photo_chapter: boolean;
-  reference_content_male: string | null;
-  reference_content_female: string | null;
+  reference_content: string | null;
 }
 
 export type SpreadDef =

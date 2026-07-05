@@ -286,13 +286,13 @@ const ChapterEditor = () => {
       const [{ data: chapterData }, { data: allCh }, { data: bookData }, { data: memoriesData }, { data: capData }, { data: allTpls }] = await Promise.all([
         supabase.from('chapters').select('*').eq('id', chapterId).single(),
         supabase.from('chapters').select('id, chapter_number, title, status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls, photo_layout').eq('book_id', bookId).order('chapter_number'),
-        supabase.from('books').select('recipient_name, recipient_gender, user_id, author_label').eq('id', bookId).single(),
+        supabase.from('books').select('recipient_name, recipient_gender, gender, user_id, author_label').eq('id', bookId).single(),
         supabase.from('memories').select('id, chapter_id, memory_text, contributor_name, placed_at, created_at').eq('book_id', bookId).order('placed_at', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
         supabase.from('app_settings').select('value').eq('key', 'photo_chapter_cap').single(),
         supabase.from('chapter_templates').select('chapter_number, is_photo_chapter, gender, title'),
       ]);
       if (capData) setMaxPhotoChapters(Number(capData.value) || 15);
-      const bookGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
+      const bookGender = bookData?.gender || (bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male');
       const genderTpls = ((allTpls || []) as ChapterTemplateRow[]).filter((t) => t.gender === bookGender);
       const photoNums = new Set<number>(genderTpls.filter((t) => t.is_photo_chapter).map((t) => t.chapter_number));
       setPhotoChapterNums(photoNums);
@@ -330,16 +330,15 @@ const ChapterEditor = () => {
           initialRef.current = { referenceText: normalizedRefText, content: normalizedContentText };
           lastSavedRef.current = { referenceText: normalizedRefText, content: normalizedContentText };
         } else {
-          const isFemale = bookData?.recipient_gender === 'Girl/Young Woman';
-          const tplGender = isFemale ? 'female' : 'male';
+          const tplGender = bookData?.gender || (bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male');
           const { data: tpl } = await supabase
             .from('chapter_templates')
-            .select('reference_content_female, reference_content_male, is_photo_chapter')
+            .select('reference_content, is_photo_chapter')
             .eq('chapter_number', chapterData.chapter_number)
             .eq('gender', tplGender)
             .maybeSingle();
           setIsDesignatedPhotoChapter(tpl?.is_photo_chapter || false);
-          const rawRef = isFemale ? tpl?.reference_content_female : tpl?.reference_content_male;
+          const rawRef = tpl?.reference_content;
           setReferenceContent(rawRef || null);
 
           // Prefer saved reference_text; fall back to template

@@ -206,8 +206,7 @@ export type Database = {
           is_photo_chapter: boolean
           quote_attribution: string | null
           quote_text: string | null
-          reference_content_female: string | null
-          reference_content_male: string | null
+          reference_content: string | null
           title: string
         }
         Insert: {
@@ -222,8 +221,7 @@ export type Database = {
           is_photo_chapter?: boolean
           quote_attribution?: string | null
           quote_text?: string | null
-          reference_content_female?: string | null
-          reference_content_male?: string | null
+          reference_content?: string | null
           title: string
         }
         Update: {
@@ -238,8 +236,7 @@ export type Database = {
           is_photo_chapter?: boolean
           quote_attribution?: string | null
           quote_text?: string | null
-          reference_content_female?: string | null
-          reference_content_male?: string | null
+          reference_content?: string | null
           title?: string
         }
         Relationships: [

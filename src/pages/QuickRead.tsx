@@ -41,14 +41,14 @@ interface Book {
   recipient_gender: string;
   from_label: string | null;
   user_id: string;
+  gender: string;
 }
 
 const SHORT_CHAPTER_WORD_THRESHOLD = 180;
 
 interface Template {
   chapter_number: number;
-  reference_content_male: string | null;
-  reference_content_female: string | null;
+  reference_content: string | null;
 }
 
 const stripHtml = (raw: string) =>
@@ -78,11 +78,11 @@ const QuickRead = () => {
     if (!bookId) return;
     (async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
-      const tplGender = bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male';
+      const tplGender = bookData?.gender || (bookData?.recipient_gender === 'Girl/Young Woman' ? 'female' : 'male');
       const [{ data: chapData }, { data: memData }, { data: tplData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).gt('chapter_number', 0).order('chapter_number'),
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId),
-        supabase.from('chapter_templates').select('chapter_number, reference_content_male, reference_content_female').eq('gender', tplGender),
+        supabase.from('chapter_templates').select('chapter_number, reference_content').eq('gender', tplGender),
       ]);
       if (bookData?.recipient_name) {
         bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -133,9 +133,7 @@ const QuickRead = () => {
       return [ref, content].filter(Boolean).join('\n\n');
     }
     // Fall back to template default so the read-through matches editor preview
-    const tpl = templates.find(t => t.chapter_number === chapter.chapter_number);
-    const isFemale = book?.recipient_gender === 'Girl/Young Woman';
-    const raw = tpl ? (isFemale ? tpl.reference_content_female : tpl.reference_content_male) : null;
+    const raw = tpl ? tpl.reference_content : null;
     return raw ? stripHtml(raw) : '';
   }, [chapter, templates, book]);
 
