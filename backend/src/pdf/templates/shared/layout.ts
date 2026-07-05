@@ -694,7 +694,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             }));
         }
 
-        window.addEventListener('load', () => {
+        const runLayout = () => {
           waitForFontsAndRaf().then(() => {
             try {
               splitAllChaptersOverflow();
@@ -706,7 +706,13 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
               document.body.classList.add('layout-final');
             }
           });
-        });
+        };
+
+        if (document.readyState === 'complete') {
+          runLayout();
+        } else {
+          window.addEventListener('load', runLayout);
+        }
 
 
         function splitAllChaptersOverflow() {

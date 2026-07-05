@@ -63,6 +63,7 @@ interface ChapterData {
   verse_id: string | null;
   quote_id: string | null;
   chapter_template: string;
+  reference_text?: string | null;
 }
 
 interface LibraryItem {
@@ -1112,9 +1113,27 @@ const ChapterEditor = () => {
           await waitForCurrentImages();
           await waitForStableLayout();
           if (runId !== previewMeasurementRunId.current) return;
-          setExactChapterSplit(extractExactChapterSplit(doc, chapterKey));
+          const split = extractExactChapterSplit(doc, chapterKey);
+          setExactChapterSplit(split);
           setChapterPreviewPageCount(pageNodes.length);
           setLayoutMeasurement(measureLayout(doc));
+
+          if (!isLetterChapter) {
+            if (!hasUnsavedRef.current && (!chapter.reference_text || content === '')) {
+              const normPage1 = normalizeWhitespace(split.page1);
+              const normPage2 = normalizeWhitespace(split.page2);
+              if (normPage1 !== referenceText || normPage2 !== content) {
+                setReferenceText(normPage1);
+                setContent(normPage2);
+                initialRef.current = { referenceText: normPage1, content: normPage2 };
+                lastSavedRef.current = { referenceText: normPage1, content: normPage2 };
+                setTimeout(() => {
+                  if (refTextareaRef.current) autoResize(refTextareaRef.current);
+                  if (wisdomTextareaRef.current) autoResize(wisdomTextareaRef.current);
+                }, 50);
+              }
+            }
+          }
         };
 
         const remeasure = () => {
