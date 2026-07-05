@@ -368,8 +368,12 @@ const ChapterEditor = () => {
             const initialMerged = mergeRefAndContent(refVal, contentVal);
             const normMerged = normalizeWhitespace(initialMerged);
 
-            const firstIdx = normMerged.indexOf(normTpl);
-            const lastIdx = normMerged.lastIndexOf(normTpl);
+            const pattern = normTpl.length > 50 
+              ? normTpl.slice(15, Math.min(115, normTpl.length)) 
+              : normTpl;
+
+            const firstIdx = normMerged.indexOf(pattern);
+            const lastIdx = normMerged.lastIndexOf(pattern);
             
             const halfLen = Math.floor(normMerged.length / 2);
             const firstHalf = normMerged.slice(0, halfLen).trim();
