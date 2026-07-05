@@ -188,21 +188,22 @@
 .chapter-photo {
   width: 100%;
   max-width: 28em; /* Fill the text column width */
-  height: auto;
+  height: 2.4in;
+  max-height: 2.4in;
   display: block;
   margin-left: auto;
   margin-right: auto;
   border-radius: 2px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   margin-bottom: 1.5em;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .chapter-photo.vertical-photo {
   width: auto;
   max-width: 100%;
-  height: 3.6in; /* Constrain portrait photos by height */
-  max-height: 3.6in;
+  height: 2.4in; /* Constrain portrait photos by height */
+  max-height: 2.4in;
   object-fit: contain !important;
   margin: 0 auto 1.5em auto;
   display: block;
