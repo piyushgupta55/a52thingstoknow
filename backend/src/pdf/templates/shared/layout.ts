@@ -963,7 +963,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           let fitLineCount = 0;
           for (let i = 0; i < lines.length; i++) {
             const lineEndOffset = lines[i].endOffset;
-            const lineBottom = getOffsetVerticalBottom(textFlow, lineEndOffset);
+            const lineBottom = getParagraphBottomAtOffset(textFlow, lineEndOffset);
             if (lineBottom <= maxBottom) {
               fitLineCount = i + 1;
             } else {
