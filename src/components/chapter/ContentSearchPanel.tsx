@@ -53,17 +53,25 @@ const ContentSearchPanel = ({ open, onClose, type, defaultTopic, onSelect, exclu
       setLoading(true);
       const tag = searchTerm.trim();
       
+      // Include approved library items PLUS this book's own pending tester-contributed
+      // items, so the tester can still see and re-use what they just added, but their
+      // in-progress contributions don't leak into other testers' searches.
       let query = supabase
         .from('content_pool')
-        .select('id, text, source, translation, type')
+        .select('id, text, source, translation, type, status, book_id')
         .eq('type', activeFilter)
-        .eq('status', 'approved');
+        .or(
+          bookId
+            ? `status.eq.approved,and(status.eq.pending,book_id.eq.${bookId})`
+            : `status.eq.approved`
+        );
 
       if (tag) {
         query = query.contains('topic_tags', [tag]);
       }
 
       const { data } = await query.order('created_at', { ascending: true });
+
 
       const items: LibraryItem[] = (data || [])
         .filter((row: any) => !excludeText || row.text !== excludeText)
