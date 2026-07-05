@@ -662,6 +662,7 @@ export type Database = {
         | "ai_generated"
         | "author_written"
         | "family_submitted"
+        | "tester_contributed"
       content_status: "pending" | "approved" | "deleted"
       content_type: "verse" | "quote" | "memory"
     }
@@ -797,6 +798,7 @@ export const Constants = {
         "ai_generated",
         "author_written",
         "family_submitted",
+        "tester_contributed",
       ],
       content_status: ["pending", "approved", "deleted"],
       content_type: ["verse", "quote", "memory"],
