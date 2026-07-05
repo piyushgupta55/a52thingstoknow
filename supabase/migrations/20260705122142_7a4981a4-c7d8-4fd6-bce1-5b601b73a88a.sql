@@ -1,0 +1,1 @@
+ALTER TYPE public.content_origin ADD VALUE IF NOT EXISTS 'tester_contributed';
