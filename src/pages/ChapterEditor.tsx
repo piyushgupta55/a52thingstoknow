@@ -32,7 +32,7 @@ import {
   PREVIEW_PAGE_HEIGHT,
   PREVIEW_PAGE_WIDTH,
 } from '@/features/preview/geometry';
-import { extractExactChapterSplit, measureLayout, type ExactChapterSplitResult, type LayoutMeasurementResult } from '@/features/preview/layoutMeasurement';
+import { extractExactChapterSplit, measureLayout, isRenderablePage, type ExactChapterSplitResult, type LayoutMeasurementResult } from '@/features/preview/layoutMeasurement';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -575,6 +575,22 @@ const ChapterEditor = () => {
         });
         setSaving(false);
         return;
+      }
+
+      // Check if layout exceeds 2 pages (due to too much text or photo overflow)
+      const iframe = exactPreviewIframeRef.current;
+      const doc = iframe?.contentDocument;
+      if (doc && chapter) {
+        const pages = Array.from(doc.querySelectorAll<HTMLElement>(`.page[data-chapter="${chapter.chapter_number}"]`)).filter(isRenderablePage);
+        if (pages.length > 2) {
+          toast({
+            title: 'Layout Overflow',
+            description: `This chapter takes up ${pages.length} pages. Chapters are strictly capped at exactly 2 pages. Please shorten the text or choose a different photo layout.`,
+            variant: 'destructive',
+          });
+          setSaving(false);
+          return;
+        }
       }
     }
 
