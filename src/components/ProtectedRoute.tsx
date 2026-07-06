@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { EMAIL_VERIFICATION_REQUIRED } from '@/lib/authGate';
+import VerifyEmailGate from '@/components/VerifyEmailGate';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -20,6 +22,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  // Email verification gate — dormant unless EMAIL_VERIFICATION_REQUIRED is true.
+  if (EMAIL_VERIFICATION_REQUIRED && !user.email_confirmed_at) {
+    return <VerifyEmailGate />;
   }
 
   return <>{children}</>;

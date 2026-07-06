@@ -142,51 +142,113 @@ export type Database = {
           },
         ]
       }
+      book_status_history: {
+        Row: {
+          book_id: string
+          changed_at: string
+          changed_by: string | null
+          id: string
+          note: string | null
+          status: Database["public"]["Enums"]["book_status"]
+        }
+        Insert: {
+          book_id: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          note?: string | null
+          status: Database["public"]["Enums"]["book_status"]
+        }
+        Update: {
+          book_id?: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["book_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_status_history_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       books: {
         Row: {
           author_label: string | null
+          carrier: string | null
+          consent_granted_at: string | null
+          cover_pick: string | null
           created_at: string
           from_label: string | null
           gender: string
           id: string
+          ingramspark_job_id: string | null
           milestone_date: string | null
           occasion: string
           onboarding_step: string
+          print_sku: string | null
+          quantity: number | null
           recipient_gender: string
           recipient_name: string
           relationship: string
+          shipping_address: Json | null
+          status: Database["public"]["Enums"]["book_status"]
+          tracking_number: string | null
           updated_at: string
           user_id: string
           writing_tone: string
         }
         Insert: {
           author_label?: string | null
+          carrier?: string | null
+          consent_granted_at?: string | null
+          cover_pick?: string | null
           created_at?: string
           from_label?: string | null
           gender: string
           id?: string
+          ingramspark_job_id?: string | null
           milestone_date?: string | null
           occasion: string
           onboarding_step?: string
+          print_sku?: string | null
+          quantity?: number | null
           recipient_gender: string
           recipient_name: string
           relationship: string
+          shipping_address?: Json | null
+          status?: Database["public"]["Enums"]["book_status"]
+          tracking_number?: string | null
           updated_at?: string
           user_id: string
           writing_tone?: string
         }
         Update: {
           author_label?: string | null
+          carrier?: string | null
+          consent_granted_at?: string | null
+          cover_pick?: string | null
           created_at?: string
           from_label?: string | null
           gender?: string
           id?: string
+          ingramspark_job_id?: string | null
           milestone_date?: string | null
           occasion?: string
           onboarding_step?: string
+          print_sku?: string | null
+          quantity?: number | null
           recipient_gender?: string
           recipient_name?: string
           relationship?: string
+          shipping_address?: Json | null
+          status?: Database["public"]["Enums"]["book_status"]
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string
           writing_tone?: string
@@ -530,6 +592,8 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          email: string | null
+          email_verified: boolean
           id: string
           updated_at: string
           user_id: string
@@ -538,6 +602,8 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
+          email_verified?: boolean
           id?: string
           updated_at?: string
           user_id: string
@@ -546,6 +612,8 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
+          email_verified?: boolean
           id?: string
           updated_at?: string
           user_id?: string
@@ -657,6 +725,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin"
+      book_status:
+        | "in_progress"
+        | "ready"
+        | "approved_for_print"
+        | "printed"
+        | "shipped"
       content_origin:
         | "preloaded"
         | "ai_generated"
@@ -793,6 +867,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin"],
+      book_status: [
+        "in_progress",
+        "ready",
+        "approved_for_print",
+        "printed",
+        "shipped",
+      ],
       content_origin: [
         "preloaded",
         "ai_generated",
