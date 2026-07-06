@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Plus, BookOpen, Trash2, Beaker } from 'lucide-react';
+import { Plus, BookOpen, Trash2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import { createTestBook } from '@/lib/createTestBook';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,22 +32,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [creatingTestBook, setCreatingTestBook] = useState(false);
-
-  const handleCreateTestBook = async () => {
-    if (!user) return;
-    setCreatingTestBook(true);
-    try {
-      const bookId = await createTestBook(user.id);
-      toast({ title: 'Test Book created successfully!' });
-      navigate(`/book/${bookId}`);
-    } catch (e: any) {
-      console.error(e);
-      toast({ title: 'Error creating test book', description: e.message, variant: 'destructive' });
-    } finally {
-      setCreatingTestBook(false);
-    }
-  };
 
   useEffect(() => {
     if (!user) {
@@ -94,14 +77,6 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
           <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">My Books</h1>
           <div className="flex gap-3 w-full sm:w-auto">
-            <Button 
-              variant="outline" 
-              className="flex-1 sm:flex-none border-dashed border-primary/50 text-primary/80 hover:bg-primary/5" 
-              onClick={handleCreateTestBook} 
-              disabled={creatingTestBook}
-            >
-              <Beaker className="h-4 w-4 mr-2" /> {creatingTestBook ? 'Creating...' : 'Create Test Book'}
-            </Button>
             <Button onClick={() => navigate('/new-book')} className="flex-1 sm:flex-none">
               <Plus className="h-4 w-4 mr-2" /> New Book
             </Button>
