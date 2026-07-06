@@ -15,6 +15,7 @@ import { CheckCircle, Trash2, Filter, ChevronDown, ChevronUp, Pencil } from 'luc
 import { useToast } from '@/hooks/use-toast';
 import EditContentDialog from '@/components/admin/EditContentDialog';
 import PhotoChapterManager from '@/components/admin/PhotoChapterManager';
+import TestersManager from '@/components/admin/TestersManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ContentEntry {
