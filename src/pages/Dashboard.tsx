@@ -32,22 +32,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [creatingTestBook, setCreatingTestBook] = useState(false);
-
-  const handleCreateTestBook = async () => {
-    if (!user) return;
-    setCreatingTestBook(true);
-    try {
-      const bookId = await createTestBook(user.id);
-      toast({ title: 'Test Book created successfully!' });
-      navigate(`/book/${bookId}`);
-    } catch (e: any) {
-      console.error(e);
-      toast({ title: 'Error creating test book', description: e.message, variant: 'destructive' });
-    } finally {
-      setCreatingTestBook(false);
-    }
-  };
 
   useEffect(() => {
     if (!user) {
