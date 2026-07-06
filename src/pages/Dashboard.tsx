@@ -77,14 +77,6 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
           <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">My Books</h1>
           <div className="flex gap-3 w-full sm:w-auto">
-            <Button 
-              variant="outline" 
-              className="flex-1 sm:flex-none border-dashed border-primary/50 text-primary/80 hover:bg-primary/5" 
-              onClick={handleCreateTestBook} 
-              disabled={creatingTestBook}
-            >
-              <Beaker className="h-4 w-4 mr-2" /> {creatingTestBook ? 'Creating...' : 'Create Test Book'}
-            </Button>
             <Button onClick={() => navigate('/new-book')} className="flex-1 sm:flex-none">
               <Plus className="h-4 w-4 mr-2" /> New Book
             </Button>
