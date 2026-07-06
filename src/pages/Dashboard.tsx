@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Plus, BookOpen, Trash2, Beaker } from 'lucide-react';
+import { Plus, BookOpen, Trash2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import { createTestBook } from '@/lib/createTestBook';
 import {
   AlertDialog,
   AlertDialogAction,
