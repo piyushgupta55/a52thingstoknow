@@ -164,17 +164,29 @@ const Admin = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold font-serif text-foreground mb-6">Admin Panel</h1>
 
-        <Tabs defaultValue="content" className="mb-8">
+        <Tabs defaultValue="testers" className="mb-8">
           <TabsList>
+            <TabsTrigger value="testers">Testers & Books</TabsTrigger>
             <TabsTrigger value="content">Content Manager</TabsTrigger>
             <TabsTrigger value="photos">Photo Chapters</TabsTrigger>
+            <TabsTrigger value="lifecycle" disabled>Book Lifecycle</TabsTrigger>
+            <TabsTrigger value="qc" disabled>QC Review</TabsTrigger>
+            <TabsTrigger value="moderation" disabled>Moderation</TabsTrigger>
+            <TabsTrigger value="pricing" disabled>Pricing</TabsTrigger>
+            <TabsTrigger value="reminders" disabled>Reminders</TabsTrigger>
+            <TabsTrigger value="orders" disabled>Orders</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="testers" className="mt-6">
+            <TestersManager />
+          </TabsContent>
 
           <TabsContent value="photos" className="mt-6">
             <PhotoChapterManager />
           </TabsContent>
 
           <TabsContent value="content" className="mt-6">
+
 
         {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
