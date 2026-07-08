@@ -123,7 +123,6 @@ const NewBook = () => {
         };
       });
 
-
       const { error: chapError } = await supabase.from('chapters').insert([letterChapter, ...chapters]);
       if (chapError) throw chapError;
 

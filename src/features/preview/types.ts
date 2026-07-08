@@ -16,6 +16,7 @@ export interface Book {
   user_id: string;
   from_label: string | null;
   author_label: string | null;
+  gender: string;
 }
 
 export interface Chapter {

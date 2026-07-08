@@ -43,6 +43,7 @@ interface Book {
   recipient_gender: string;
   from_label: string | null;
   user_id: string;
+  gender: string;
 }
 
 const SHORT_CHAPTER_WORD_THRESHOLD = 180;
@@ -135,7 +136,6 @@ const QuickRead = () => {
     if (ref || content) {
       return [ref, content].filter(Boolean).join('\n\n');
     }
-    // Fall back to template default so the read-through matches editor preview
     const tpl = templates.find(t => t.chapter_number === chapter.chapter_number);
     const raw = tpl?.reference_content ?? null;
     return raw ? stripHtml(raw) : '';

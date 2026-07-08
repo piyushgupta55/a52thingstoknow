@@ -43,6 +43,7 @@
   width: 100%;
   max-width: 28em; /* Fill the text column width */
   height: auto;
+  max-height: 2.8in; /* Enforce height cap on square/tall landscape photos */
   display: block;
   margin-left: auto;
   margin-right: auto;
@@ -55,8 +56,8 @@
 .chapter-photo.vertical-photo {
   width: auto;
   max-width: 100%;
-  height: 3.6in; /* Constrain portrait photos by height */
-  max-height: 3.6in;
+  height: 2.8in; /* Lower portrait cap to match Respect worst-case constraints */
+  max-height: 2.8in;
   object-fit: contain !important;
   margin: 0 auto 1.5em auto;
   display: block;

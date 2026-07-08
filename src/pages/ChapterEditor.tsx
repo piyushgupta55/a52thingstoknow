@@ -34,7 +34,7 @@ import {
   PREVIEW_PAGE_HEIGHT,
   PREVIEW_PAGE_WIDTH,
 } from '@/features/preview/geometry';
-import { extractExactChapterSplit, measureLayout, type ExactChapterSplitResult, type LayoutMeasurementResult } from '@/features/preview/layoutMeasurement';
+import { extractExactChapterSplit, measureLayout, isRenderablePage, type ExactChapterSplitResult, type LayoutMeasurementResult } from '@/features/preview/layoutMeasurement';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -65,6 +65,7 @@ interface ChapterData {
   verse_id: string | null;
   quote_id: string | null;
   chapter_template: string;
+  reference_text?: string | null;
 }
 
 interface LibraryItem {
@@ -288,7 +289,7 @@ const ChapterEditor = () => {
       const [{ data: chapterData }, { data: allCh }, { data: bookData }, { data: memoriesData }, { data: capData }, { data: allTpls }] = await Promise.all([
         supabase.from('chapters').select('*').eq('id', chapterId).single(),
         supabase.from('chapters').select('id, chapter_number, title, status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls, photo_layout').eq('book_id', bookId).order('chapter_number'),
-        supabase.from('books').select('recipient_name, recipient_gender, user_id, author_label').eq('id', bookId).single(),
+        supabase.from('books').select('recipient_name, recipient_gender, gender, user_id, author_label').eq('id', bookId).single(),
         supabase.from('memories').select('id, chapter_id, memory_text, contributor_name, placed_at, created_at').eq('book_id', bookId).order('placed_at', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
         supabase.from('app_settings').select('value').eq('key', 'photo_chapter_cap').single(),
         supabase.from('chapter_templates').select('chapter_number, is_photo_chapter, gender, title'),
@@ -354,9 +355,45 @@ const ChapterEditor = () => {
                     authorLabel: bookData?.author_label,
                   })
                 : '');
-          const contentVal = chapterData.content || '';
-          const normalizedRefVal = normalizeWhitespace(refVal);
-          const normalizedContentVal = normalizeWhitespace(contentVal);
+          const contentVal = chapterData.reference_text !== null ? (chapterData.content || '') : '';
+          
+          let finalRefVal = refVal;
+          let finalContentVal = contentVal;
+          let isDuplicated = false;
+
+          if (rawRef) {
+            const personalizedTpl = replaceTokens(rawRef, {
+              recipientName: bookData?.recipient_name || 'your child',
+              recipientGender: bookData?.recipient_gender || '',
+              authorLabel: bookData?.author_label,
+            });
+            const normTpl = normalizeWhitespace(personalizedTpl);
+            const initialMerged = mergeRefAndContent(refVal, contentVal);
+            const normMerged = normalizeWhitespace(initialMerged);
+
+            const pattern = normTpl.length > 50 
+              ? normTpl.slice(15, Math.min(115, normTpl.length)) 
+              : normTpl;
+
+            const firstIdx = normMerged.indexOf(pattern);
+            const lastIdx = normMerged.lastIndexOf(pattern);
+            
+            const halfLen = Math.floor(normMerged.length / 2);
+            const firstHalf = normMerged.slice(0, halfLen).trim();
+            const secondHalf = normMerged.slice(halfLen).trim();
+
+            if (
+              (firstIdx !== -1 && lastIdx !== -1 && firstIdx !== lastIdx) ||
+              (firstHalf.length > 50 && firstHalf === secondHalf)
+            ) {
+              isDuplicated = true;
+              finalRefVal = personalizedTpl;
+              finalContentVal = '';
+            }
+          }
+
+          const normalizedRefVal = normalizeWhitespace(finalRefVal);
+          const normalizedContentVal = normalizeWhitespace(finalContentVal);
           
           setReferenceText(normalizedRefVal);
           setContent(normalizedContentVal);
@@ -365,6 +402,9 @@ const ChapterEditor = () => {
 
           initialRef.current = { referenceText: normalizedRefVal, content: normalizedContentVal };
           lastSavedRef.current = { referenceText: normalizedRefVal, content: normalizedContentVal };
+          if (isDuplicated) {
+            setHasUnsavedChanges(true);
+          }
         }
       }
       if (bookData) {
@@ -538,6 +578,22 @@ const ChapterEditor = () => {
         });
         setSaving(false);
         return;
+      }
+
+      // Check if layout exceeds 2 pages (due to too much text or photo overflow)
+      const iframe = exactPreviewIframeRef.current;
+      const doc = iframe?.contentDocument;
+      if (doc && chapter) {
+        const pages = Array.from(doc.querySelectorAll<HTMLElement>(`.page[data-chapter="${chapter.chapter_number}"]`)).filter(isRenderablePage);
+        if (pages.length > 2) {
+          toast({
+            title: 'Layout Overflow',
+            description: `This chapter takes up ${pages.length} pages. Chapters are strictly capped at exactly 2 pages. Please shorten the text or choose a different photo layout.`,
+            variant: 'destructive',
+          });
+          setSaving(false);
+          return;
+        }
       }
     }
 
@@ -1115,9 +1171,27 @@ const ChapterEditor = () => {
           await waitForCurrentImages();
           await waitForStableLayout();
           if (runId !== previewMeasurementRunId.current) return;
-          setExactChapterSplit(extractExactChapterSplit(doc, chapterKey));
+          const split = extractExactChapterSplit(doc, chapterKey);
+          setExactChapterSplit(split);
           setChapterPreviewPageCount(pageNodes.length);
           setLayoutMeasurement(measureLayout(doc));
+
+          if (!isLetterChapter) {
+            if (!hasUnsavedRef.current && (!chapter.reference_text || content === '')) {
+              const normPage1 = normalizeWhitespace(split.page1);
+              const normPage2 = normalizeWhitespace(split.page2);
+              if (normPage1 !== referenceText || normPage2 !== content) {
+                setReferenceText(normPage1);
+                setContent(normPage2);
+                initialRef.current = { referenceText: normPage1, content: normPage2 };
+                lastSavedRef.current = { referenceText: normPage1, content: normPage2 };
+                setTimeout(() => {
+                  if (refTextareaRef.current) autoResize(refTextareaRef.current);
+                  if (wisdomTextareaRef.current) autoResize(wisdomTextareaRef.current);
+                }, 50);
+              }
+            }
+          }
         };
 
         const remeasure = () => {

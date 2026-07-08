@@ -98,7 +98,6 @@ const PreviewBook = () => {
       const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }, { data: fhData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content').eq('gender', tplGender),
-
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId),
         supabase.from('book_ancestry').select('content, pdf_url, pdf_filename').eq('book_id', bookId).maybeSingle(),
         supabase.from('book_family_history').select('content').eq('book_id', bookId).maybeSingle(),
@@ -195,7 +194,6 @@ const PreviewBook = () => {
         const tpl = templates.find(t => t.chapter_number === chapterNumber);
         if (tpl) {
           const rawRef = tpl.reference_content;
-
           if (rawRef) {
             ref = replaceTokens(rawRef, {
               recipientName: book.recipient_name || 'your loved one',

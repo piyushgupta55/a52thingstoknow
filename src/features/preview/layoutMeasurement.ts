@@ -29,7 +29,7 @@ const parsePx = (value: string | null | undefined) => {
   return Number.isFinite(next) ? next : 0;
 };
 
-const isRenderablePage = (page: HTMLElement) => {
+export const isRenderablePage = (page: HTMLElement) => {
   const hasText = (page.textContent || '').replace(/\s+/g, '').length > 0;
   const hasMedia = page.querySelector('img, svg, .chapter-photo, .memory-item, .cover-frame') !== null;
   return hasText || hasMedia;
