@@ -87,6 +87,8 @@ export class PuppeteerEngine implements PDFEngine {
         console.warn('Could not save debug-pass2.html:', err);
       }
 
+      await page.goto('about:blank');
+
       await page.setContent(htmlPass2, {
         waitUntil: 'load',
       });
