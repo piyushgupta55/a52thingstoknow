@@ -670,7 +670,6 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
           return rects.length > 0 ? rects[rects.length - 1].bottom : container.getBoundingClientRect().bottom;
         }
 
-        // Client-side text splitting to flow overflowing content from page-p1 to page-p2 and dynamically create overflow pages as needed
         function waitForFontsAndRaf() {
           // 1. Wait for document fonts API to report ready
           // 2. Explicitly load the key font variants used for layout measurement
@@ -692,7 +691,14 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             } catch (e) { /* ignore */ }
           });
 
-          return Promise.all([document.fonts.ready, ...fontLoadPromises])
+          const fontPromise = Promise.all([document.fonts.ready, ...fontLoadPromises])
+            .catch(err => {
+              console.warn('Font loading error, continuing with fallback:', err);
+            });
+
+          const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3500));
+
+          return Promise.race([fontPromise, timeoutPromise])
             .then(() => new Promise((resolve) => {
               // Two rAF frames to let the browser finalize layout after font swap
               requestAnimationFrame(() => requestAnimationFrame(resolve));
