@@ -484,7 +484,8 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       ${chaptersHtml}
 
       <script>
-        console.log("PUPPETEER BOOTSTRAP ACTIVE");
+        (function() {
+          console.log("PUPPETEER BOOTSTRAP ACTIVE");
         window.onerror = function(msg, url, line, col, error) {
           console.error("BROWSER EXCEPTION:", msg, "at", url, "line", line, "col", col);
           return false;
@@ -1111,7 +1112,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
             }
           });
         }
-
+        })();
       </script>
     </body>
     </html>
