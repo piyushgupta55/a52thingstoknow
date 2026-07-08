@@ -194,8 +194,6 @@
   margin-left: auto;
   margin-right: auto;
   border-radius: 2px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  margin-bottom: 1.5em;
   object-fit: contain;
 }
 
@@ -205,7 +203,7 @@
   height: 2.8in; /* Lower portrait cap to match Respect worst-case constraints */
   max-height: 2.8in;
   object-fit: contain !important;
-  margin: 0 auto 1.5em auto;
+  margin: 0 auto;
   display: block;
 }
 
