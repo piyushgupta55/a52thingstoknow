@@ -38,6 +38,7 @@ interface Props {
   recipientName?: string;
   recipientGender?: string;
   onSaved?: () => void;
+  onValidatePlacement?: (text: string, contributorName: string) => boolean;
 }
 
 const MemoryCaptureOverlay = ({
@@ -50,6 +51,7 @@ const MemoryCaptureOverlay = ({
   recipientName = 'them',
   recipientGender,
   onSaved,
+  onValidatePlacement,
 }: Props) => {
   const [fromName, setFromName] = useState(defaultFromName);
   const [text, setText] = useState('');
@@ -110,8 +112,15 @@ const MemoryCaptureOverlay = ({
 
   const saveMemory = async (placeInChapter = false): Promise<boolean> => {
     if (!text.trim() || !fromName.trim()) return false;
-    setSaving(true);
     const shouldPlace = placeInChapter && !!chapterId;
+
+    if (shouldPlace && onValidatePlacement) {
+      if (!onValidatePlacement(text.trim(), fromName.trim())) {
+        return false;
+      }
+    }
+
+    setSaving(true);
     const { error } = await supabase.from('memories').insert({
       book_id: bookId,
       contributor_name: fromName.trim(),
@@ -149,6 +158,14 @@ const MemoryCaptureOverlay = ({
 
   const placeFromPool = async (memoryId: string) => {
     if (!chapterId) return;
+
+    if (onValidatePlacement) {
+      const mem = pool.find(m => m.id === memoryId);
+      if (mem && !onValidatePlacement(mem.memory_text, mem.contributor_name)) {
+        return;
+      }
+    }
+
     setPlacingId(memoryId);
     const { error } = await supabase
       .from('memories')

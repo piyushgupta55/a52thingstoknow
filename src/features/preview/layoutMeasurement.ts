@@ -43,21 +43,43 @@ export const measureLayout = (doc: Document): LayoutMeasurementResult => {
     const rect = page.getBoundingClientRect();
     const styles = view ? view.getComputedStyle(page) : null;
     const paddingTop = parsePx(styles?.paddingTop);
-    const paddingBottom = parsePx(styles?.paddingBottom);
-    const capacityPx = Math.max(0, rect.height - paddingTop - paddingBottom);
     const pageTop = rect.top + paddingTop;
+    
+    // Match backend exact logic: maxBottom = pageRect.top + (800 * scale)
+    const scale = (rect.height / 828) || 1;
+    const backendMaxBottom = rect.top + (800 * scale);
+    const capacityPx = Math.max(0, backendMaxBottom - pageTop);
 
     let maxBottom = pageTop;
     Array.from(page.children).forEach((child) => {
       const el = child as HTMLElement;
       if (el.classList.contains('page-number')) return;
-      const childRect = el.getBoundingClientRect();
-      if (childRect.bottom > maxBottom) maxBottom = childRect.bottom;
+      
+      // Ignore ghost containers left behind by backend splitting
+      if (el.classList.contains('memories-section') && el.querySelectorAll('.memory-item').length === 0) return;
+      if (el.classList.contains('wisdom-text') && el.innerHTML.trim() === '') return;
+      
+      let effectiveBottom = el.getBoundingClientRect().bottom;
+      
+      // The backend PDF layout engine measures individual paragraph <p> units, not the .wisdom-text wrapper.
+      // Due to CSS margin collapse rules, the wrapper's bounding box can artificially extend ~12px past its last paragraph.
+      // By measuring the last child, we perfectly align our capacity measurement with the backend's logic.
+      if (el.classList.contains('wisdom-text') && el.lastElementChild) {
+        effectiveBottom = el.lastElementChild.getBoundingClientRect().bottom;
+      }
+      
+      if (effectiveBottom > maxBottom) maxBottom = effectiveBottom;
     });
 
     const contentPx = Math.max(0, maxBottom - pageTop);
-    const fillPercent = capacityPx > 0 ? Math.max(0, Math.min(100, (contentPx / capacityPx) * 100)) : 0;
+    let fillPercent = capacityPx > 0 ? Math.max(0, Math.min(100, (contentPx / capacityPx) * 100)) : 0;
+    if (fillPercent >= 96 && fillPercent < 100) {
+      fillPercent = 100;
+    }
     const remainingPx = Math.max(0, capacityPx - contentPx);
+
+    // Be strict about overflow, but allow a tiny 1px variance for floating point rounding
+    const overflows = contentPx > capacityPx + 1;
 
     return {
       pageIndex,
@@ -67,12 +89,12 @@ export const measureLayout = (doc: Document): LayoutMeasurementResult => {
       remainingPx,
       contentPx,
       capacityPx,
-      overflows: contentPx > capacityPx,
+      overflows,
     } satisfies PageLayoutMeasurement;
   });
 
   const overflowPageIndexes = metrics
-    .filter((m) => m.isOverflowPage || m.overflows)
+    .filter((m) => m.overflows)
     .map((m) => m.pageIndex);
   const overflowPageCount = overflowPageIndexes.length;
   const overflowDetected = overflowPageCount > 0;

@@ -474,13 +474,23 @@ const ChapterEditor = () => {
     setDuplicateWarning(match ? { type, chapterTitle: match.title, chapterNumber: match.chapter_number } : null);
   }, [siblingChapters]);
 
+  const hasOverflow = layoutMeasurement?.pages?.some(p => p.overflows) || (layoutMeasurement?.totalPages || 0) > 2;
+
   const canMarkComplete = () => {
     if (isLetterChapter) return true;
-
+    if (hasOverflow) return false;
     return layoutMeasurement?.pages.some((page) => page.fillPercent > 0) || false;
   };
 
   const handleMarkComplete = () => {
+    if (hasOverflow && !isLetterChapter) {
+      toast({
+        title: 'Layout Overflow',
+        description: 'This chapter exceeds the two-page limit. Please shorten the text or memory before marking complete.',
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!canMarkComplete()) {
       toast({
         title: 'Nothing to complete yet',
@@ -491,6 +501,64 @@ const ChapterEditor = () => {
     }
 
     save(true);
+  };
+
+  const validateMemoryPlacement = (text: string, contributorName: string): boolean => {
+    const iframe = exactPreviewIframeRef.current;
+    if (!iframe?.contentDocument) return true;
+
+    const doc = iframe.contentDocument;
+    const pages = Array.from(doc.querySelectorAll(`.page[data-chapter="${chapter?.chapter_number}"]`));
+    const page = pages[pages.length - 1];
+    if (!page) return true;
+
+    let memoriesSection = page.querySelector('.memories-section');
+    let createdSection = false;
+    if (!memoriesSection) {
+      memoriesSection = doc.createElement('div');
+      memoriesSection.className = 'memories-section';
+      const wisdomText = page.querySelector('.wisdom-text');
+      if (wisdomText) {
+        wisdomText.after(memoriesSection);
+      } else {
+        page.appendChild(memoriesSection);
+      }
+      createdSection = true;
+    }
+
+    const dummyMemory = doc.createElement('div');
+    dummyMemory.className = 'memory-item mt-4 px-4 py-4 rounded-lg relative';
+    dummyMemory.style.background = '#F5F0E8';
+    dummyMemory.style.breakInside = 'avoid';
+    dummyMemory.innerHTML = `
+      <p style="font-family: 'Caveat', cursive; font-size: 15px; color: #2D3748; line-height: 1.6;">
+        <span class="text-[#C9A84C] mr-1">✦</span>
+        ${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+      </p>
+      ${contributorName ? `<p class="mt-2 text-[8px] uppercase tracking-[0.12em] text-muted-foreground/60" style="font-family: 'Lora', serif;">— ${contributorName.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : ''}
+    `;
+
+    memoriesSection.appendChild(dummyMemory);
+
+    const measurement = measureLayout(doc);
+    const chapterPages = measurement.pages.filter(p => p.chapter === String(chapter?.chapter_number));
+    const memoryOverflow = chapterPages.some(p => p.overflows) || chapterPages.length > 2;
+
+    dummyMemory.remove();
+    if (createdSection) {
+      memoriesSection.remove();
+    }
+
+    if (memoryOverflow) {
+      toast({
+        title: 'Memory Overflow',
+        description: 'This memory cannot fit within the two-page chapter limit. Please shorten the chapter or memory.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    return true;
   };
 
   const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
@@ -569,26 +637,40 @@ const ChapterEditor = () => {
       }, 50);
     }
 
-    if (!isLetterChapter && markComplete) {
-      if (!refToSave.trim() || !contentToSave.trim()) {
+    if (!isLetterChapter) {
+      if (exactPreviewLoading) {
         toast({
-          title: 'Missing Page Content',
-          description: 'You only wrote one page of content. Before saving, you need to add content on page 2 also.',
-          variant: 'destructive',
+          title: 'Evaluating Layout',
+          description: 'Please wait a moment for the layout engine to finish updating with your latest text.',
         });
         setSaving(false);
         return;
       }
 
-      // Check if layout exceeds 2 pages (due to too much text or photo overflow)
       const iframe = exactPreviewIframeRef.current;
       const doc = iframe?.contentDocument;
       if (doc && chapter) {
-        const pages = Array.from(doc.querySelectorAll<HTMLElement>(`.page[data-chapter="${chapter.chapter_number}"]`)).filter(isRenderablePage);
-        if (pages.length > 2) {
+        const measurement = measureLayout(doc);
+        const chapterPages = measurement.pages.filter(p => p.chapter === String(chapter.chapter_number));
+        const overflow = chapterPages.some(p => p.overflows) || chapterPages.length > 2;
+        if (overflow) {
           toast({
             title: 'Layout Overflow',
-            description: `This chapter takes up ${pages.length} pages. Chapters are strictly capped at exactly 2 pages. Please shorten the text or choose a different photo layout.`,
+            description: `This chapter exceeds the 2-page limit. Please shorten the text or choose a different photo layout.`,
+            variant: 'destructive',
+          });
+          if (markComplete) {
+            setSaving(false);
+            return;
+          }
+        }
+      }
+
+      if (markComplete) {
+        if (!refToSave.trim() || !contentToSave.trim()) {
+          toast({
+            title: 'Missing Page Content',
+            description: 'You only wrote one page of content. Before saving, you need to add content on page 2 also.',
             variant: 'destructive',
           });
           setSaving(false);
@@ -1603,7 +1685,12 @@ const ChapterEditor = () => {
                         {layoutMeasurement.pages.map((page) => (
                           <span key={page.pageIndex}>
                             <span className="text-[#E5E7EB]">|</span>{' '}
-                            Page {page.pageIndex + 1}: <strong className="text-foreground">{Math.round(page.fillPercent)}%</strong> full
+                            Page {page.pageIndex + 1}:{' '}
+                            {page.overflows ? (
+                              <strong className="text-red-500 font-bold">Overflow</strong>
+                            ) : (
+                              <><strong className="text-foreground">{Math.round(page.fillPercent)}%</strong> full</>
+                            )}
                           </span>
                         ))}
                       </div>
@@ -1824,7 +1911,12 @@ const ChapterEditor = () => {
                   {layoutMeasurement.pages.map((page, index) => (
                     <span key={page.pageIndex}>
                       <span className="text-[#E5E7EB]">|</span>{' '}
-                      Page {page.pageIndex + 1}: <strong className="text-foreground">{Math.round(page.fillPercent)}%</strong> full
+                      Page {page.pageIndex + 1}:{' '}
+                      {page.overflows ? (
+                        <strong className="text-red-500 font-bold">Overflow</strong>
+                      ) : (
+                        <><strong className="text-foreground">{Math.round(page.fillPercent)}%</strong> full</>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -1928,6 +2020,7 @@ const ChapterEditor = () => {
           onClose={() => setMemoryOverlayOpen(false)}
           bookId={bookId}
           chapterId={chapterId}
+          onValidatePlacement={validateMemoryPlacement}
           defaultFromName={authorName || 'Me'}
           mode={memoryOverlayMode}
           recipientName={recipientName}

@@ -735,6 +735,15 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
 
         function splitPageIfNeeded(page, depth = 0) {
           const chapterNum = page.getAttribute('data-chapter');
+
+          // Strict two-page limit: If the chapter already has at least 2 pages,
+          // and we are currently processing the second (or later) page, stop splitting.
+          const chapterPages = document.querySelectorAll('.page[data-chapter="' + chapterNum + '"]');
+          if (chapterPages.length >= 2 && page !== chapterPages[0]) {
+             console.log("Enforcing strict 2-page limit for chapter " + chapterNum + ". Cancelling further page splits.");
+             return;
+          }
+
           const pageRect = page.getBoundingClientRect();
           const scale = (pageRect.height / 828) || 1;
           // Slightly tighter page fit so we reclaim the last line more often, scaled to match the viewport transform.
