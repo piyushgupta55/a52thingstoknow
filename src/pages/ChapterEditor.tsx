@@ -503,7 +503,7 @@ const ChapterEditor = () => {
     save(true);
   };
 
-  const validateMemoryPlacement = (text: string, contributorName: string): boolean => {
+  const validateMemoryPlacement = (text: string, contributorName: string): boolean | string => {
     const iframe = exactPreviewIframeRef.current;
     if (!iframe?.contentDocument) return true;
 
@@ -550,12 +550,7 @@ const ChapterEditor = () => {
     }
 
     if (memoryOverflow) {
-      toast({
-        title: 'Memory Overflow',
-        description: 'This memory cannot fit within the two-page chapter limit. Please shorten the chapter or memory.',
-        variant: 'destructive',
-      });
-      return false;
+      return "This chapter is already full. Please shorten this memory or trim the chapter's main text to make room.";
     }
 
     return true;
@@ -667,10 +662,17 @@ const ChapterEditor = () => {
       }
 
       if (markComplete) {
-        if (!refToSave.trim() || !contentToSave.trim()) {
+        const page1HasPhoto = template === 'photo_top' && hasUploadedPhoto;
+        const page1HasContent = !!refToSave.trim() || page1HasPhoto;
+        
+        const page2HasPhoto = template === 'photo_second' && hasUploadedPhoto;
+        const page2HasMemory = placedMemories.length > 0;
+        const page2HasContent = !!contentToSave.trim() || page2HasPhoto || page2HasMemory;
+
+        if (!page1HasContent || !page2HasContent) {
           toast({
             title: 'Missing Page Content',
-            description: 'You only wrote one page of content. Before saving, you need to add content on page 2 also.',
+            description: 'Both pages need some content before you can mark the chapter complete. Make sure you have text, a photo, or a memory on each page.',
             variant: 'destructive',
           });
           setSaving(false);

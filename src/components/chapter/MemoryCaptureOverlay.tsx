@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,7 +38,7 @@ interface Props {
   recipientName?: string;
   recipientGender?: string;
   onSaved?: () => void;
-  onValidatePlacement?: (text: string, contributorName: string) => boolean;
+  onValidatePlacement?: (text: string, contributorName: string) => boolean | string;
 }
 
 const MemoryCaptureOverlay = ({
@@ -61,6 +61,11 @@ const MemoryCaptureOverlay = ({
   const [stage, setStage] = useState<'prompt' | 'ask-another'>('prompt');
   const [savedCount, setSavedCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [placementError, setPlacementError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPlacementError(null);
+  }, [text, fromName, manualView]);
 
   // Manual-mode: pool browsing
   // 'choose' = list of unplaced memories; 'compose' = the From + textarea form
@@ -78,6 +83,7 @@ const MemoryCaptureOverlay = ({
       setSavedCount(0);
       setManualView('choose');
       setPlacingId(null);
+      setPlacementError(null);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open, defaultFromName]);
@@ -115,7 +121,9 @@ const MemoryCaptureOverlay = ({
     const shouldPlace = placeInChapter && !!chapterId;
 
     if (shouldPlace && onValidatePlacement) {
-      if (!onValidatePlacement(text.trim(), fromName.trim())) {
+      const valid = onValidatePlacement(text.trim(), fromName.trim());
+      if (valid !== true) {
+        setPlacementError(typeof valid === 'string' ? valid : 'Cannot place memory.');
         return false;
       }
     }
@@ -161,8 +169,12 @@ const MemoryCaptureOverlay = ({
 
     if (onValidatePlacement) {
       const mem = pool.find(m => m.id === memoryId);
-      if (mem && !onValidatePlacement(mem.memory_text, mem.contributor_name)) {
-        return;
+      if (mem) {
+        const valid = onValidatePlacement(mem.memory_text, mem.contributor_name);
+        if (valid !== true) {
+          setPlacementError(typeof valid === 'string' ? valid : 'Cannot place memory.');
+          return;
+        }
       }
     }
 
@@ -278,6 +290,16 @@ const MemoryCaptureOverlay = ({
               </div>
             )}
 
+            {placementError && (
+              <div className="flex items-start gap-2.5 text-sm text-destructive bg-destructive/10 p-3.5 rounded-xl border border-destructive/20 mb-2 shadow-sm">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div className="leading-snug">
+                  <strong className="font-semibold block mb-0.5">Memory won't fit</strong>
+                  {placementError}
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end pt-1">
               <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
             </div>
@@ -319,6 +341,15 @@ const MemoryCaptureOverlay = ({
                 className="mt-1"
               />
             </div>
+            {placementError && (
+              <div className="flex items-start gap-2.5 text-sm text-destructive bg-destructive/10 p-3.5 rounded-xl border border-destructive/20 shadow-sm">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div className="leading-snug">
+                  <strong className="font-semibold block mb-0.5">Memory won't fit</strong>
+                  {placementError}
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2 justify-end">
               <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
               <Button
