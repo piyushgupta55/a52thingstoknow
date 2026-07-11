@@ -276,6 +276,18 @@ const BookDashboard = () => {
       setChapters(correctedChapters);
       setMemories(memData || []);
       setPhotoTemplates(tplData || []);
+
+      // Load family stats
+      const [{ count: sentCount }, { data: familyMems }] = await Promise.all([
+        supabase.from('memory_invitees').select('*', { count: 'exact', head: true }).eq('book_id', bookId),
+        supabase.from('memories').select('id, seen_by_author_at').eq('book_id', bookId).eq('contributor_type', 'family'),
+      ]);
+      setFamilyStats({
+        sent: sentCount || 0,
+        responded: (familyMems || []).length,
+        unseen: (familyMems || []).filter((m: any) => !m.seen_by_author_at).length,
+      });
+
       if (bookData) {
         const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
         setAuthorName(profile?.display_name || '');
@@ -511,24 +523,30 @@ const BookDashboard = () => {
             </div>
           </div>
 
-          {/* Emails */}
-          <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+          {/* Family */}
+          <button
+            onClick={() => navigate(`/book/${bookId}/memories`)}
+            className="text-left bg-card rounded-xl border border-border p-5 shadow-sm hover:border-primary/40 hover:shadow-md transition-all"
+          >
             <div className="flex items-center gap-2 mb-3">
-              <Mail className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Emails</h3>
+              <Heart className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Family</h3>
+              {familyStats.unseen > 0 && (
+                <Badge className="ml-auto text-[0.65rem] bg-primary text-primary-foreground">{familyStats.unseen} new</Badge>
+              )}
             </div>
             <div className="space-y-1.5 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Send className="h-3.5 w-3.5 text-muted-foreground/40" />
-                <span><span className="font-semibold text-foreground">0</span> sent</span>
+                <Send className="h-3.5 w-3.5 text-muted-foreground/60" />
+                <span><span className="font-semibold text-foreground">{familyStats.sent}</span> invites sent</span>
               </div>
               <div className="flex items-center gap-2">
-                <Inbox className="h-3.5 w-3.5 text-muted-foreground/40" />
-                <span><span className="font-semibold text-foreground">0</span> responded</span>
+                <Inbox className="h-3.5 w-3.5 text-muted-foreground/60" />
+                <span><span className="font-semibold text-foreground">{familyStats.responded}</span> contributions received</span>
               </div>
             </div>
-            <Badge variant="secondary" className="mt-2 text-[0.65rem]">Coming soon</Badge>
-          </div>
+          </button>
+
 
           {/* AI Questions */}
           <div className="bg-card rounded-xl border border-border p-5 shadow-sm opacity-50">
