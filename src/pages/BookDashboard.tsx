@@ -276,6 +276,18 @@ const BookDashboard = () => {
       setChapters(correctedChapters);
       setMemories(memData || []);
       setPhotoTemplates(tplData || []);
+
+      // Load family stats
+      const [{ count: sentCount }, { data: familyMems }] = await Promise.all([
+        supabase.from('memory_invitees').select('*', { count: 'exact', head: true }).eq('book_id', bookId),
+        supabase.from('memories').select('id, seen_by_author_at').eq('book_id', bookId).eq('contributor_type', 'family'),
+      ]);
+      setFamilyStats({
+        sent: sentCount || 0,
+        responded: (familyMems || []).length,
+        unseen: (familyMems || []).filter((m: any) => !m.seen_by_author_at).length,
+      });
+
       if (bookData) {
         const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
         setAuthorName(profile?.display_name || '');
