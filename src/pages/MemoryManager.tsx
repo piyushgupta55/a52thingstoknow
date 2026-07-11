@@ -83,6 +83,16 @@ const MemoryManager = () => {
         if (memErr) console.error('[MemoryManager] memories load error', memErr);
         setMemories(memData || []);
 
+        // Mark any unseen family memories as seen now that the author is viewing this book's pool
+        try {
+          await supabase
+            .from('memories')
+            .update({ seen_by_author_at: new Date().toISOString() })
+            .eq('book_id', bookId)
+            .eq('contributor_type', 'family')
+            .is('seen_by_author_at', null);
+        } catch (e) { console.warn('mark-seen failed', e); }
+
         const { data: inviteData, error: invErr } = await supabase
           .from('memory_invites').select('token').eq('book_id', bookId).is('revoked_at', null)
           .order('created_at', { ascending: false }).limit(1);
