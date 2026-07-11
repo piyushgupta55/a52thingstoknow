@@ -510,36 +510,45 @@ export type Database = {
         Row: {
           book_id: string
           chapter_id: string | null
+          contributor_email: string | null
           contributor_name: string
           contributor_type: string
           created_at: string
+          entry_type: string | null
           id: string
           memory_text: string
           placed_at: string | null
+          seen_by_author_at: string | null
           size_tag: string
           status: string
         }
         Insert: {
           book_id: string
           chapter_id?: string | null
+          contributor_email?: string | null
           contributor_name: string
           contributor_type?: string
           created_at?: string
+          entry_type?: string | null
           id?: string
           memory_text: string
           placed_at?: string | null
+          seen_by_author_at?: string | null
           size_tag?: string
           status?: string
         }
         Update: {
           book_id?: string
           chapter_id?: string | null
+          contributor_email?: string | null
           contributor_name?: string
           contributor_type?: string
           created_at?: string
+          entry_type?: string | null
           id?: string
           memory_text?: string
           placed_at?: string | null
+          seen_by_author_at?: string | null
           size_tag?: string
           status?: string
         }
@@ -556,6 +565,50 @@ export type Database = {
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memory_invitees: {
+        Row: {
+          book_id: string
+          created_at: string
+          email: string
+          id: string
+          invite_token: string | null
+          last_sent_at: string
+          name: string
+          sent_at: string
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          email: string
+          id?: string
+          invite_token?: string | null
+          last_sent_at?: string
+          name: string
+          sent_at?: string
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          invite_token?: string | null
+          last_sent_at?: string
+          name?: string
+          sent_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_invitees_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
             referencedColumns: ["id"]
           },
         ]
@@ -717,6 +770,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      submit_family_contributions: {
+        Args: {
+          _entries: Json
+          _from_email: string
+          _from_name: string
+          _token: string
+        }
+        Returns: number
       }
       submit_memory_via_invite: {
         Args: { _from_name: string; _memory_text: string; _token: string }
