@@ -26,6 +26,7 @@ interface Memory {
   size_tag: string;
   status: string;
   created_at: string;
+  entry_type?: string | null;
 }
 
 interface BookInfo {
