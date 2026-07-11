@@ -410,6 +410,12 @@ const MemoryCard = ({
           {m.contributor_type === 'family' && (
             <Badge variant="secondary" className="text-[0.65rem]">family</Badge>
           )}
+          {m.entry_type === 'wisdom' && (
+            <Badge className="text-[0.65rem] bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">wisdom</Badge>
+          )}
+          {m.entry_type === 'memory' && (
+            <Badge variant="outline" className="text-[0.65rem]">memory</Badge>
+          )}
         </div>
         <button
           onClick={() => onDelete(m.id)}
