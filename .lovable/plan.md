@@ -1,100 +1,82 @@
-# Plan — 4-Gender Templates + `<review>` Editor Tag + Seed Capture
+# Family Contributions — Implementation Plan
 
-## Goal
-
-Support 4 book genders (`female`, `male`, `stepdaughter`, `stepson`), consolidate template content into a single column, add an editor-only `<review>` tag, and capture per-chapter seed text at book creation for future change-measurement.
+Extends existing plumbing (`memories`, `memory_invites`, `submit_memory_via_invite`, MemoryManager). Nothing gets replaced.
 
 ## 1. Database migration
 
-### `chapter_templates`
-- Add `reference_content TEXT`.
-- Backfill: copy `reference_content_female` or `reference_content_male` into `reference_content` based on each row's `gender`.
-- Drop `reference_content_female` and `reference_content_male`.
-- Add unique constraint `(gender, chapter_number)`.
-- `gender` stays TEXT — carries `female | male | stepdaughter | stepson`.
+Additions to `memories`:
+- `contributor_email TEXT NULL` — reliable grouping key
+- `entry_type TEXT NULL` check in (`memory`,`wisdom`) — labeling
+- `seen_by_author_at TIMESTAMPTZ NULL` — unseen indicator
 
-### `chapters`
-- Add `seed_content TEXT` (nullable). Write-once at book creation, never touched again. Baseline for future harvest/measurement.
+New table `memory_invitees`:
+- `id`, `book_id` (FK books), `invite_token` (FK memory_invites.token), `name`, `email`, `sent_at`, `last_sent_at`
+- unique (book_id, lower(email))
+- RLS: author of the book can select/insert/update; service_role all.
+- GRANTs to authenticated + service_role.
 
-Existing books unaffected — chapter text already lives in `chapters`.
+RPC updates:
+- New `submit_family_contributions(_token, _from_name, _from_email, _entries jsonb)` — inserts N rows in one call, each with `entry_type` and shared `contributor_email`. Keeps original `submit_memory_via_invite` for back-compat.
 
-## 2. Gender codes (final)
+Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE public.memories;` (if not already).
 
-`stepdaughter` / `stepson` (matches the CSV). No relabel needed.
+## 2. Email sending (Resend)
 
-`src/lib/genderMap.ts`:
-```ts
-export type BookGender = 'female' | 'male' | 'stepdaughter' | 'stepson';
-export const toBookGender = (recipient_gender: string): BookGender => { ... }
-export const isFeminine = (g: BookGender) => g === 'female' || g === 'stepdaughter';
-```
+- Edge function `send-family-invite`: takes `{ book_id, name, email }`, loads book + author, renders the invitation copy from `family_invite_content.md` (Part 1) with `[Name]`, `[Author]`, `[Contributor first name]`, `[Link]`, optional `[Occasion]`, sends via Resend, then upserts a `memory_invitees` row.
+- Requires `RESEND_API_KEY` secret — will prompt user via add_secret if not present.
+- Reuse the existing per-book reusable token (or mint one if none exists).
 
-## 3. Book creation UI (`src/pages/NewBook.tsx`)
+## 3. Invite UI (author side) — `MemoryManager.tsx`
 
-Recipient Gender select becomes 4 options:
-- Girl / Young Woman → `female`
-- Boy / Young Man → `male`
-- Stepdaughter → `stepdaughter`
-- Stepson → `stepson`
+Replace the "Generate/copy invite link" card with an **Invite family** form:
+- Fields: Name, Email → "Send invite" button → calls `send-family-invite`.
+- Below: list of invitees with status `Sent · Responded` (join memory_invitees ↔ memories by email).
+- Keep raw link visible as a fallback ("Or copy the link").
 
-Store canonical code in `books.gender`, human label in `books.recipient_gender`.
+## 4. Public submission page — `MemoryInvite.tsx`
 
-**Seeding:** template query returns `reference_content` for the book's gender. Each inserted chapter row gets:
-- `content` = seed text (editable)
-- `seed_content` = same seed text (frozen)
+Rewrite per Part 2 of the copy spec:
+- Name + Email (email new, required for grouping).
+- Section: **Memories** — repeatable, "+ Add another memory", helper text + example.
+- Section: **Wisdom or advice** — repeatable, "+ Add another", helper text + example.
+- Both optional; at least one entry required to submit.
+- 5000 chars per entry.
+- Submit → `submit_family_contributions` RPC.
+- Success screen unchanged in tone.
 
-Applies to all 52 chapters and the Letter from the Author.
+## 5. Dashboard "Family" hub
 
-## 4. Replace the 2-way shortcut everywhere
+Rename existing "Emails" box on `Dashboard.tsx` to **Family** and repurpose:
+- Header stats: `Sent: X · Responded: Y` across all the author's books.
+- Grouped list: one card per contributor (group by `contributor_email` if present, else name), showing entry count and unseen badge.
+- Unseen = any row with `seen_by_author_at IS NULL AND contributor_type='family'` — bold styling; dim once opened.
+- Tap contributor → deep-link to that book's `MemoryManager` with the contributor pre-expanded. Mark that contributor's rows `seen_by_author_at = now()` on open.
+- MemoryManager: group family pending items by contributor (email/name), show entry_type label chips (memory/wisdom), keep existing Approve/Decline.
 
-Files: `NewBook.tsx`, `ChapterEditor.tsx`, `BookDashboard.tsx`, `PreviewBook.tsx`, `src/features/preview/types.ts`.
+## 6. Notifications — family-only
 
-- Every `=== 'Girl/Young Woman' ? 'female' : 'male'` → `toBookGender(...)`.
-- Template queries switch from `reference_content_female / _male` to `reference_content` filtered by 4-way `gender`.
+- **In-app realtime**: Dashboard subscribes to `postgres_changes` on `memories` filtered `contributor_type=eq.family`, matched to the author's books. New insert → toast + Family badge count bump.
+- **Email**: DB trigger on `memories` insert where `contributor_type='family'` → invokes edge function `notify-author-family-contribution` (Resend). Subject: "[Contributor] shared something for [Name]'s book".
+- Existing "any memory add" notifications (if any) are restricted to family only.
 
-## 5. Token replacer (`src/lib/tokenReplacer.ts`)
+## 7. Files touched
 
-- `isFeminine(gender)` replaces the exact-string check.
-- Stepdaughter/stepson get the same pronouns as daughter/son.
-- `[SON_DAUGHTER]` returns `stepdaughter` / `stepson` for step books.
+**New**
+- `supabase/functions/send-family-invite/index.ts`
+- `supabase/functions/notify-author-family-contribution/index.ts`
+- `src/components/family/InviteFamilyForm.tsx`
+- `src/components/family/FamilyHub.tsx` (dashboard box)
 
-## 6. `<review>` editor tag
+**Modified**
+- `src/pages/MemoryManager.tsx` — invite form + grouped family section + seen-marking
+- `src/pages/MemoryInvite.tsx` — multi-entry guided form, per spec copy
+- `src/pages/Dashboard.tsx` — Family hub, realtime subscription
+- migration file (schema above)
 
-Editor-only markup. Distinct from `<mark>` (which stays the yellow Reading Reward).
+## Open questions before I build
 
-### Rendering
-- `src/components/chapter/ReviewCallout.tsx`.
-- `ReferenceBlock` (and other body renderers) parse `<review>…</review>` and swap for the callout: amber-tinted inline highlight + top-right pill "Direct content — review" + Keep / Soften / Remove actions.
-- Text stays freely editable in the textarea (tag stays in raw body).
+1. **Resend key** — is `RESEND_API_KEY` already available, or should I request it via add_secret?
+2. **Email required on submission page?** Spec says group by email if present, fall back to name — I'll make email **required** (matches invite-by-email flow); confirm ok.
+3. **Occasion token** — books have `occasion` already; I'll auto-fill when non-empty, skip line when empty. Ok?
 
-### Persistence
-```
-chapter_review_flags(
-  id, chapter_id, tag_index int,
-  action text ('keep'|'soften'|'remove'),
-  updated_at
-)
-```
-- `tag_index` = ordinal of the `<review>` span in the chapter body.
-- Default is `keep` if no row.
-
-### PDF render (`backend/src/pdf`)
-- Strip `<review>` / `</review>` wrappers before render.
-- `remove` → drop wrapped text entirely.
-- `soften` → Phase 1 same as remove (logged as "softened"; future AI rewrite in Phase 2).
-- `keep` (default) → print inner text as plain prose.
-- Child's book never sees tag, callout, or editor UI.
-
-## 7. CSV import readiness
-
-After migration + code changes ship:
-- Upload 208-row CSV: `gender, chapter_number, title, reference_content, bible_verse_text, bible_verse_reference, quote_text, quote_attribution, is_photo_chapter`.
-- Full-replace: TRUNCATE `chapter_templates`, insert 208 rows. No FKs point at this table.
-- Test: create one book of each of the 4 gender types, open the two chapters with `<review>` tags, verify callout in editor + tag stripped in PDF preview.
-
-## Out of scope (later batches — safe to defer)
-
-- AI-powered "soften" rewrite.
-- Admin UI for review-flag browsing.
-- Tester tracking, share checkbox, harvest/consent UI.
-- Migrating existing books' chapter text to new templates.
+Reply "go" (and answer 1–3) and I'll ship migration → edge functions → UI in that order.
