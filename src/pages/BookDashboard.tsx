@@ -83,6 +83,7 @@ const BookDashboard = () => {
   const [reorderMode, setReorderMode] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
+  const [familyStats, setFamilyStats] = useState<{ sent: number; responded: number; unseen: number }>({ sent: 0, responded: 0, unseen: 0 });
   const [savingOrder, setSavingOrder] = useState(false);
 
   const handleGenerateTestPDF = async () => {

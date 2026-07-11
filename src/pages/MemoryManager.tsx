@@ -12,7 +12,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Users, Copy, Inbox, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Inbox, CheckCircle2, Clock } from 'lucide-react';
+import { InviteFamilyForm } from '@/components/family/InviteFamilyForm';
 import { toast } from '@/hooks/use-toast';
 
 interface Memory {
@@ -25,6 +26,7 @@ interface Memory {
   size_tag: string;
   status: string;
   created_at: string;
+  entry_type?: string | null;
 }
 
 interface BookInfo {
@@ -81,6 +83,16 @@ const MemoryManager = () => {
           .from('memories').select('*').eq('book_id', bookId).order('created_at', { ascending: false });
         if (memErr) console.error('[MemoryManager] memories load error', memErr);
         setMemories(memData || []);
+
+        // Mark any unseen family memories as seen now that the author is viewing this book's pool
+        try {
+          await supabase
+            .from('memories')
+            .update({ seen_by_author_at: new Date().toISOString() })
+            .eq('book_id', bookId)
+            .eq('contributor_type', 'family')
+            .is('seen_by_author_at', null);
+        } catch (e) { console.warn('mark-seen failed', e); }
 
         const { data: inviteData, error: invErr } = await supabase
           .from('memory_invites').select('token').eq('book_id', bookId).is('revoked_at', null)
@@ -234,29 +246,13 @@ const MemoryManager = () => {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-5 mb-8 shadow-sm">
-          <div className="flex items-start gap-3">
-            <Users className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-heading font-semibold text-foreground">Invite family to share memories</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Share a link with anyone who knows {book.recipient_name}. Their submissions will arrive here for your approval.
-              </p>
-              {inviteUrl ? (
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <code className="flex-1 min-w-0 text-xs bg-muted px-3 py-2 rounded-md truncate">{inviteUrl}</code>
-                  <Button size="sm" variant="outline" onClick={handleCopyInvite}>
-                    <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy
-                  </Button>
-                </div>
-              ) : (
-                <Button size="sm" className="mt-3" onClick={handleGenerateInvite} disabled={generatingInvite}>
-                  {generatingInvite ? 'Creating…' : 'Generate invite link'}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
+        <InviteFamilyForm
+          bookId={bookId!}
+          recipientName={book.recipient_name}
+          inviteUrl={inviteUrl}
+          onFallbackNeeded={handleGenerateInvite}
+          generatingFallback={generatingInvite}
+        />
 
         <form onSubmit={handleAdd} className="bg-card border border-border rounded-xl p-5 mb-8 shadow-sm">
           <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -413,6 +409,12 @@ const MemoryCard = ({
           <Badge variant="outline" className="text-[0.65rem]">{m.size_tag}</Badge>
           {m.contributor_type === 'family' && (
             <Badge variant="secondary" className="text-[0.65rem]">family</Badge>
+          )}
+          {m.entry_type === 'wisdom' && (
+            <Badge className="text-[0.65rem] bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">wisdom</Badge>
+          )}
+          {m.entry_type === 'memory' && (
+            <Badge variant="outline" className="text-[0.65rem]">memory</Badge>
           )}
         </div>
         <button
