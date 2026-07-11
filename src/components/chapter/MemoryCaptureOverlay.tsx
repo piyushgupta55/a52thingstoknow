@@ -63,9 +63,7 @@ const MemoryCaptureOverlay = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [placementError, setPlacementError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setPlacementError(null);
-  }, [text, fromName, manualView]);
+
 
   // Manual-mode: pool browsing
   // 'choose' = list of unplaced memories; 'compose' = the From + textarea form
@@ -73,6 +71,10 @@ const MemoryCaptureOverlay = ({
   const [pool, setPool] = useState<Array<{ id: string; memory_text: string; contributor_name: string }>>([]);
   const [poolLoading, setPoolLoading] = useState(false);
   const [placingId, setPlacingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPlacementError(null);
+  }, [text, fromName, manualView]);
 
   useEffect(() => {
     if (open) {
