@@ -641,8 +641,7 @@ const HelpFaq = () => {
     }
 
     const sectionResults: SectionResult[] = faqSections.map((section, sIdx) => {
-      const sectionTitleLower = section.title.toLowerCase();
-      const sectionMatchesAll = tokens.every((t) => sectionTitleLower.includes(t.toLowerCase()));
+      const sectionMatchesAll = tokens.every((t) => tokenMatches(section.title, t));
 
       const questions = section.questions
         .map((item, qIdx) => {
