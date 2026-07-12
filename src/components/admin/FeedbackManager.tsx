@@ -17,6 +17,7 @@ interface FeedbackRow {
   message: string;
   page_url: string | null;
   screenshot_url: string | null;
+  screenshot_urls: string[] | null;
   status: 'open' | 'resolved' | 'dismissed';
   created_at: string;
 }
