@@ -80,7 +80,6 @@ Deno.serve(async (req) => {
     const link = `${origin}/invite/${token}`;
     const recipient = book.recipient_name;
     const contributorFirst = name.trim().split(/\s+/)[0];
-    const occasion = book.occasion?.trim() || null;
 
     const subject = `Will you share a memory or a bit of wisdom for ${recipient}?`;
 
