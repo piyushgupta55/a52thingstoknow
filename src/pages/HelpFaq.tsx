@@ -567,29 +567,30 @@ const faqSections: FaqSection[] = [
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const tokenBoundaryRegex = (token: string) =>
+  new RegExp(`\\b(${escapeRegExp(token)})`, 'i');
+
+const tokenMatches = (text: string, token: string) => tokenBoundaryRegex(token).test(text);
+
 const buildTokenRegex = (tokens: string[]) => {
   if (!tokens.length) return null;
   return new RegExp(`\\b(${tokens.map(escapeRegExp).join('|')})`, 'gi');
 };
 
 const scoreItem = (item: FaqItem, sectionTitle: string, tokens: string[]) => {
-  const sectionLower = sectionTitle.toLowerCase();
-  const qLower = item.q.toLowerCase();
-  const aLower = item.aText.toLowerCase();
   let score = 0;
 
   for (const token of tokens) {
-    const t = token.toLowerCase();
     let found = false;
-    if (sectionLower.includes(t)) {
+    if (tokenMatches(sectionTitle, token)) {
       score += 100;
       found = true;
     }
-    if (qLower.includes(t)) {
+    if (tokenMatches(item.q, token)) {
       score += 50;
       found = true;
     }
-    if (aLower.includes(t)) {
+    if (tokenMatches(item.aText, token)) {
       score += 10;
       found = true;
     }
