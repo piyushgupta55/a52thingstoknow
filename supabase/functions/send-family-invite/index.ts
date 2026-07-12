@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
 
     const text = `Hi ${contributorFirst},
 
-I'm putting together something special for ${recipient} — a keepsake book called "52 Things to Know," filled with wisdom, memories, and love to carry into this next chapter of life.${occasionLine ? occasionLine + "." : ""}
+I'm putting together something special for ${recipient} — a keepsake book called "52 Things to Know," filled with wisdom, memories, and love to carry into this next chapter of life.
 
 I would love for your voice to be a part of it.
 
