@@ -17,6 +17,7 @@ import EditContentDialog from '@/components/admin/EditContentDialog';
 import PhotoChapterManager from '@/components/admin/PhotoChapterManager';
 import TestersManager from '@/components/admin/TestersManager';
 import TutorialsManager from '@/components/admin/TutorialsManager';
+import FeedbackManager from '@/components/admin/FeedbackManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ContentEntry {
@@ -168,6 +169,7 @@ const Admin = () => {
         <Tabs defaultValue="testers" className="mb-8">
           <TabsList>
             <TabsTrigger value="testers">Testers & Books</TabsTrigger>
+            <TabsTrigger value="feedback">Feedback</TabsTrigger>
             <TabsTrigger value="content">Content Manager</TabsTrigger>
             <TabsTrigger value="photos">Photo Chapters</TabsTrigger>
             <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
@@ -181,6 +183,10 @@ const Admin = () => {
 
           <TabsContent value="testers" className="mt-6">
             <TestersManager />
+          </TabsContent>
+
+          <TabsContent value="feedback" className="mt-6">
+            <FeedbackManager />
           </TabsContent>
 
           <TabsContent value="photos" className="mt-6">

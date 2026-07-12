@@ -27,6 +27,7 @@ import BookReview from "./pages/BookReview";
 import QuickRead from "./pages/QuickRead";
 import ReviewPile from "./pages/ReviewPile";
 import BookSettings from "./pages/BookSettings";
+import FeedbackFab from "./components/feedback/FeedbackFab";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/admin-setup" element={<ProtectedRoute><AdminSetup /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <FeedbackFab />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
