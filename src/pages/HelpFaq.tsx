@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,7 +59,7 @@ const faqSections: FaqSection[] = [
       {
         q: "I didn't get my confirmation email. What do I do?",
         aText:
-          'Give it a couple of minutes, then check your spam or junk folder. If it still hasn\'t arrived, try signing in again to have it resent, or email help@52thingstoknow.com.',
+          "Give it a couple of minutes, then check your spam or junk folder. If it still hasn't arrived, try signing in again to have it resent, or email help@52thingstoknow.com.",
         a: (
           <p>
             Give it a couple of minutes, then <strong>check your spam or junk folder</strong> —
@@ -120,7 +120,7 @@ const faqSections: FaqSection[] = [
       {
         q: 'Important: choose the book type carefully',
         aText:
-          'The book type is locked once created because it shapes wording of all 52 chapters. To switch, start a new book. Everything else, like recipient\'s name, is editable in Book Settings.',
+          "The book type is locked once created because it shapes wording of all 52 chapters. To switch, start a new book. Everything else, like recipient's name, is editable in Book Settings.",
         a: (
           <p>
             The book type (son / daughter / stepson / stepdaughter) is{' '}
@@ -294,7 +294,7 @@ const faqSections: FaqSection[] = [
       {
         q: 'How do I add photos?',
         aText:
-          "About 15 chapters per book are set up as photo chapters. Upload a photo that fits the theme.",
+          'About 15 chapters per book are set up as photo chapters. Upload a photo that fits the theme.',
         a: (
           <p>
             Certain chapters are set up as <strong>photo chapters</strong> — about 15 per book —
@@ -565,24 +565,115 @@ const faqSections: FaqSection[] = [
   },
 ];
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const tokenBoundaryRegex = (token: string) =>
+  new RegExp(`\\b(${escapeRegExp(token)})`, 'i');
+
+const tokenMatches = (text: string, token: string) => tokenBoundaryRegex(token).test(text);
+
+const buildTokenRegex = (tokens: string[]) => {
+  if (!tokens.length) return null;
+  return new RegExp(`\\b(${tokens.map(escapeRegExp).join('|')})`, 'gi');
+};
+
+const scoreItem = (item: FaqItem, sectionTitle: string, tokens: string[]) => {
+  let score = 0;
+
+  for (const token of tokens) {
+    let found = false;
+    if (tokenMatches(sectionTitle, token)) {
+      score += 100;
+      found = true;
+    }
+    if (tokenMatches(item.q, token)) {
+      score += 50;
+      found = true;
+    }
+    if (tokenMatches(item.aText, token)) {
+      score += 10;
+      found = true;
+    }
+    if (!found) return 0;
+  }
+
+  return score;
+};
+
+type QuestionResult = { item: FaqItem; qIdx: number; score: number };
+type SectionResult = { section: FaqSection; sIdx: number; questions: QuestionResult[]; sectionScore: number };
+
+const HighlightText = ({ text, regex }: { text: string; regex: RegExp | null }) => {
+  if (!regex) return <>{text}</>;
+  const parts = text.split(regex);
+  if (parts.length <= 1) return <>{text}</>;
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <mark key={i} className="bg-primary/20 text-foreground rounded px-0.5">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+};
+
 const HelpFaq = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [openItems, setOpenItems] = useState<string[]>([]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return faqSections;
-    return faqSections
-      .map((section) => ({
-        ...section,
-        questions: section.questions.filter(
-          (item) =>
-            item.q.toLowerCase().includes(q) ||
-            item.aText.toLowerCase().includes(q),
-        ),
-      }))
-      .filter((section) => section.questions.length > 0);
-  }, [query]);
+  const tokens = useMemo(() => query.trim().split(/\s+/).filter(Boolean), [query]);
+  const regex = useMemo(() => buildTokenRegex(tokens), [tokens]);
+
+  const results = useMemo<SectionResult[]>(() => {
+    if (!tokens.length) {
+      return faqSections.map((section, sIdx) => ({
+        section,
+        sIdx,
+        questions: section.questions.map((item, qIdx) => ({ item, qIdx, score: 0 })),
+        sectionScore: 0,
+      }));
+    }
+
+    const sectionResults: SectionResult[] = faqSections.map((section, sIdx) => {
+      const sectionMatchesAll = tokens.every((t) => tokenMatches(section.title, t));
+
+      const questions = section.questions
+        .map((item, qIdx) => {
+          const score = sectionMatchesAll
+            ? Math.max(scoreItem(item, section.title, tokens), 1000)
+            : scoreItem(item, section.title, tokens);
+          return { item, qIdx, score };
+        })
+        .filter((q) => q.score > 0);
+
+      const sectionScore = sectionMatchesAll
+        ? 10000
+        : Math.max(0, ...questions.map((q) => q.score));
+
+      return { section, sIdx, questions, sectionScore };
+    });
+
+    const withMatches = sectionResults.filter((s) => s.questions.length > 0);
+    withMatches.sort((a, b) => b.sectionScore - a.sectionScore);
+    withMatches.forEach((s) => s.questions.sort((a, b) => b.score - a.score));
+
+    return withMatches;
+  }, [tokens]);
+
+  useEffect(() => {
+    if (!tokens.length) {
+      setOpenItems([]);
+      return;
+    }
+    const values = results.flatMap((s) => s.questions.map((q) => `${s.sIdx}-${q.qIdx}`));
+    setOpenItems(values);
+  }, [tokens, results]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -617,32 +708,50 @@ const HelpFaq = () => {
           />
         </div>
 
-        {filtered.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">
-            No matches for "{query}". Try different words, or email <MailLink />.
-          </p>
+        {results.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-muted-foreground mb-2">
+              No results — try different words, or use{' '}
+              <a
+                href={`mailto:${supportEmail}?subject=Report a problem`}
+                className="text-primary underline underline-offset-2"
+              >
+                Report a Problem
+              </a>{' '}
+              to reach us.
+            </p>
+          </div>
         ) : (
           <div className="space-y-8">
-            {filtered.map((section) => (
-              <div key={section.title}>
+            {results.map(({ section, sIdx, questions }) => (
+              <div key={sIdx}>
                 <h2 className="font-heading text-xl font-semibold text-foreground mb-3">
-                  {section.title}
+                  <HighlightText text={section.title} regex={regex} />
                 </h2>
-                {section.intro && (
+                {section.intro && !tokens.length && (
                   <div className="text-muted-foreground leading-relaxed mb-4">{section.intro}</div>
                 )}
-                <Accordion type="single" collapsible className="w-full">
-                  {section.questions.map((item, idx) => (
+                <Accordion
+                  type="multiple"
+                  value={openItems}
+                  onValueChange={setOpenItems}
+                  className="w-full"
+                >
+                  {questions.map(({ item, qIdx }) => (
                     <AccordionItem
-                      key={idx}
-                      value={`${section.title}-${idx}`}
+                      key={`${sIdx}-${qIdx}`}
+                      value={`${sIdx}-${qIdx}`}
                       className="border border-border rounded-lg px-4 mb-3 bg-card"
                     >
                       <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-4">
-                        {item.q}
+                        <HighlightText text={item.q} regex={regex} />
                       </AccordionTrigger>
                       <AccordionContent className="text-muted-foreground pb-4 leading-relaxed">
-                        {item.a}
+                        {tokens.length ? (
+                          <HighlightText text={item.aText} regex={regex} />
+                        ) : (
+                          item.a
+                        )}
                       </AccordionContent>
                     </AccordionItem>
                   ))}
