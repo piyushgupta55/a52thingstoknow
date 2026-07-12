@@ -52,13 +52,18 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Signed URL for screenshot (7 days)
-    let screenshotLink = "";
-    if (fb.screenshot_url) {
+    // Signed URLs for all screenshots (7 days). Falls back to legacy single field.
+    const paths: string[] =
+      (Array.isArray(fb.screenshot_urls) && fb.screenshot_urls.length > 0)
+        ? fb.screenshot_urls
+        : (fb.screenshot_url ? [fb.screenshot_url] : []);
+
+    const screenshotLinks: string[] = [];
+    for (const p of paths) {
       const { data: signed } = await admin.storage
         .from("feedback-screenshots")
-        .createSignedUrl(fb.screenshot_url, 60 * 60 * 24 * 7);
-      if (signed?.signedUrl) screenshotLink = signed.signedUrl;
+        .createSignedUrl(p, 60 * 60 * 24 * 7);
+      if (signed?.signedUrl) screenshotLinks.push(signed.signedUrl);
     }
 
     const typeLabel: Record<string, string> = { bug: "Bug", question: "Question", suggestion: "Suggestion" };
