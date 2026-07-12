@@ -130,7 +130,7 @@ ${authorName}`;
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: `${authorName} <onboarding@resend.dev>`,
+        from: `${authorName} <memories@52thingstoknow.com>`,
         to: [email.trim()],
         subject,
         html,

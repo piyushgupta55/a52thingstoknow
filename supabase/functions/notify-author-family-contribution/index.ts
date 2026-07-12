@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
-        from: `52 Things <onboarding@resend.dev>`,
+        from: `52 Things <memories@52thingstoknow.com>`,
         to: [profile.email],
         subject,
         html,
