@@ -38,7 +38,6 @@ const BookSettings = () => {
       setRecipientName(data.recipient_name || '');
       setRelationship(data.relationship || '');
       setGender(data.recipient_gender || '');
-      setGender(data.recipient_gender || '');
       setOccasion(data.occasion || '');
       setMilestoneDate(data.milestone_date || '');
       setWritingTone(data.writing_tone || 'Warm and Conversational');
