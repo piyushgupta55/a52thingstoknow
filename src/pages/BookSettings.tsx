@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { toBookGender, type BookGender } from '@/lib/genderMap';
-import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import { ArrowLeft } from 'lucide-react';
@@ -23,13 +20,11 @@ const BookSettings = () => {
   const [recipientName, setRecipientName] = useState('');
   const [relationship, setRelationship] = useState('');
   const [gender, setGender] = useState('');
-  const [originalGender, setOriginalGender] = useState('');
   const [occasion, setOccasion] = useState('');
   const [milestoneDate, setMilestoneDate] = useState('');
   const [writingTone, setWritingTone] = useState('Warm and Conversational');
   const [fromLabel, setFromLabel] = useState('');
   const [authorLabel, setAuthorLabel] = useState('');
-  const [reseedUntouched, setReseedUntouched] = useState(true);
 
   useEffect(() => {
     if (!bookId) return;
@@ -43,7 +38,6 @@ const BookSettings = () => {
       setRecipientName(data.recipient_name || '');
       setRelationship(data.relationship || '');
       setGender(data.recipient_gender || '');
-      setOriginalGender(data.recipient_gender || '');
       setOccasion(data.occasion || '');
       setMilestoneDate(data.milestone_date || '');
       setWritingTone(data.writing_tone || 'Warm and Conversational');
@@ -53,21 +47,16 @@ const BookSettings = () => {
     })();
   }, [bookId, toast]);
 
-  const genderChanged = gender !== originalGender && originalGender !== '';
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookId || saving) return;
     setSaving(true);
     try {
       const capitalizedName = recipientName.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      const bookGender: BookGender = toBookGender(gender);
 
       const { error: updateErr } = await supabase.from('books').update({
         recipient_name: capitalizedName,
         relationship,
-        recipient_gender: gender,
-        gender: bookGender,
         occasion,
         milestone_date: milestoneDate || null,
         writing_tone: writingTone,
@@ -76,37 +65,7 @@ const BookSettings = () => {
       }).eq('id', bookId);
       if (updateErr) throw updateErr;
 
-      // If gender changed and the user opted in, re-seed untouched chapters from the
-      // new gender's templates. "Untouched" = content === seed_content (author hasn't edited).
-      if (genderChanged && reseedUntouched) {
-        const [{ data: chapters }, { data: templates }] = await Promise.all([
-          supabase.from('chapters').select('id, chapter_number, content, seed_content').eq('book_id', bookId),
-          supabase.from('chapter_templates').select('chapter_number, reference_content').eq('gender', bookGender),
-        ]);
-        const tplByNum = new Map<number, string | null>((templates || []).map((t: any) => [t.chapter_number, t.reference_content]));
-        const tokenCtx = {
-          recipientName: capitalizedName,
-          recipientGender: gender,
-          authorLabel: authorLabel.trim() || null,
-        };
-        let reseeded = 0;
-        for (const ch of (chapters || [])) {
-          if (ch.chapter_number === 0) continue; // don't touch Letter
-          const raw = tplByNum.get(ch.chapter_number);
-          if (!raw) continue;
-          const isUntouched = (ch.content || '') === (ch.seed_content || '');
-          if (!isUntouched) continue;
-          const newSeed = replaceTokens(raw, tokenCtx);
-          const { error: chErr } = await supabase.from('chapters').update({
-            content: newSeed,
-            seed_content: newSeed,
-          }).eq('id', ch.id);
-          if (!chErr) reseeded++;
-        }
-        toast({ title: 'Book settings saved', description: `${reseeded} untouched chapter${reseeded === 1 ? '' : 's'} re-seeded for the new gender.` });
-      } else {
-        toast({ title: 'Book settings saved' });
-      }
+      toast({ title: 'Book settings saved' });
       navigate(`/book/${bookId}`);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -157,29 +116,12 @@ const BookSettings = () => {
 
           <div>
             <Label>Recipient's Gender</Label>
-            <Select value={gender} onValueChange={setGender} required>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select gender" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Girl/Young Woman">Girl / Young Woman</SelectItem>
-                <SelectItem value="Boy/Young Man">Boy / Young Man</SelectItem>
-                <SelectItem value="Stepdaughter">Stepdaughter</SelectItem>
-                <SelectItem value="Stepson">Stepson</SelectItem>
-              </SelectContent>
-            </Select>
-            {genderChanged && (
-              <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-                <p className="font-medium mb-2">You changed the recipient's gender.</p>
-                <p className="mb-3">Chapters you've already edited will be left alone. For chapters you haven't touched yet, we can rewrite them from the new gender's template so pronouns and relationship words match.</p>
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={reseedUntouched}
-                    onCheckedChange={(v) => setReseedUntouched(v === true)}
-                    className="mt-0.5"
-                  />
-                  <span>Re-seed untouched chapters from the new gender's template</span>
-                </label>
-              </div>
-            )}
+            <div className="mt-1 flex items-center h-10 px-3 rounded-md border border-input bg-muted/40 text-sm text-muted-foreground">
+              {gender || '—'}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Gender is locked once a book is created. To change this, start a new book.
+            </p>
           </div>
 
           <div>
