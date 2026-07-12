@@ -35,7 +35,7 @@ export default function FeedbackManager() {
   const [rows, setRows] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
-  const [signed, setSigned] = useState<Record<string, string>>({});
+  const [signed, setSigned] = useState<Record<string, string[]>>({});
 
   const fetchRows = async () => {
     setLoading(true);
@@ -45,15 +45,24 @@ export default function FeedbackManager() {
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      setRows(data || []);
-      // Sign screenshot URLs in parallel
-      const toSign = (data || []).filter((r) => r.screenshot_url);
+      const rows = (data || []) as FeedbackRow[];
+      setRows(rows);
+      // Sign all screenshots in parallel
       const entries = await Promise.all(
-        toSign.map(async (r) => {
-          const { data: s } = await supabase.storage
-            .from('feedback-screenshots')
-            .createSignedUrl(r.screenshot_url!, 60 * 60);
-          return [r.id, s?.signedUrl || ''] as const;
+        rows.map(async (r) => {
+          const paths = (r.screenshot_urls && r.screenshot_urls.length > 0)
+            ? r.screenshot_urls
+            : (r.screenshot_url ? [r.screenshot_url] : []);
+          if (paths.length === 0) return [r.id, [] as string[]] as const;
+          const urls = await Promise.all(
+            paths.map(async (p) => {
+              const { data: s } = await supabase.storage
+                .from('feedback-screenshots')
+                .createSignedUrl(p, 60 * 60);
+              return s?.signedUrl || '';
+            })
+          );
+          return [r.id, urls.filter(Boolean)] as const;
         })
       );
       setSigned(Object.fromEntries(entries));
