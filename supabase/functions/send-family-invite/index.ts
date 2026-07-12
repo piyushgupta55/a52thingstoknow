@@ -82,13 +82,12 @@ Deno.serve(async (req) => {
     const contributorFirst = name.trim().split(/\s+/)[0];
     const occasion = book.occasion?.trim() || null;
 
-    const occasionLine = occasion ? ` as ${recipient} ${occasion.toLowerCase()}` : "";
     const subject = `Will you share a memory or a bit of wisdom for ${recipient}?`;
 
     const html = `
 <div style="font-family: Georgia, serif; color: #2d2a26; line-height: 1.6; max-width: 560px; margin: 0 auto;">
   <p>Hi ${escapeHtml(contributorFirst)},</p>
-  <p>I'm putting together something special for ${escapeHtml(recipient)} — a keepsake book called <em>"52 Things to Know,"</em> filled with wisdom, memories, and love to carry into this next chapter of life.${occasion ? ` <span>${escapeHtml(occasionLine)}</span>` : ""}</p>
+  <p>I'm putting together something special for ${escapeHtml(recipient)} — a keepsake book called <em>"52 Things to Know,"</em> filled with wisdom, memories, and love to carry into this next chapter of life.</p>
   <p>I would love for your voice to be a part of it.</p>
   <p>It's easy — and it can be short. You don't have to write much. Just click the link below and share either (or both):</p>
   <ul>
