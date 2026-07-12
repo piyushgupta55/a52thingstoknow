@@ -1,0 +1,240 @@
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { toBookGender, type BookGender } from '@/lib/genderMap';
+import { replaceTokens } from '@/lib/tokenReplacer';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import Navbar from '@/components/Navbar';
+import { ArrowLeft } from 'lucide-react';
+
+const BookSettings = () => {
+  const { bookId } = useParams<{ bookId: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [recipientName, setRecipientName] = useState('');
+  const [relationship, setRelationship] = useState('');
+  const [gender, setGender] = useState('');
+  const [originalGender, setOriginalGender] = useState('');
+  const [occasion, setOccasion] = useState('');
+  const [milestoneDate, setMilestoneDate] = useState('');
+  const [writingTone, setWritingTone] = useState('Warm and Conversational');
+  const [fromLabel, setFromLabel] = useState('');
+  const [authorLabel, setAuthorLabel] = useState('');
+  const [reseedUntouched, setReseedUntouched] = useState(true);
+
+  useEffect(() => {
+    if (!bookId) return;
+    (async () => {
+      const { data, error } = await supabase.from('books').select('*').eq('id', bookId).single();
+      if (error || !data) {
+        toast({ title: 'Could not load book', description: error?.message, variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+      setRecipientName(data.recipient_name || '');
+      setRelationship(data.relationship || '');
+      setGender(data.recipient_gender || '');
+      setOriginalGender(data.recipient_gender || '');
+      setOccasion(data.occasion || '');
+      setMilestoneDate(data.milestone_date || '');
+      setWritingTone(data.writing_tone || 'Warm and Conversational');
+      setFromLabel(data.from_label || '');
+      setAuthorLabel(data.author_label || '');
+      setLoading(false);
+    })();
+  }, [bookId, toast]);
+
+  const genderChanged = gender !== originalGender && originalGender !== '';
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bookId || saving) return;
+    setSaving(true);
+    try {
+      const capitalizedName = recipientName.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const bookGender: BookGender = toBookGender(gender);
+
+      const { error: updateErr } = await supabase.from('books').update({
+        recipient_name: capitalizedName,
+        relationship,
+        recipient_gender: gender,
+        gender: bookGender,
+        occasion,
+        milestone_date: milestoneDate || null,
+        writing_tone: writingTone,
+        from_label: fromLabel.trim() || null,
+        author_label: authorLabel.trim() || null,
+      }).eq('id', bookId);
+      if (updateErr) throw updateErr;
+
+      // If gender changed and the user opted in, re-seed untouched chapters from the
+      // new gender's templates. "Untouched" = content === seed_content (author hasn't edited).
+      if (genderChanged && reseedUntouched) {
+        const [{ data: chapters }, { data: templates }] = await Promise.all([
+          supabase.from('chapters').select('id, chapter_number, content, seed_content').eq('book_id', bookId),
+          supabase.from('chapter_templates').select('chapter_number, reference_content').eq('gender', bookGender),
+        ]);
+        const tplByNum = new Map<number, string | null>((templates || []).map((t: any) => [t.chapter_number, t.reference_content]));
+        const tokenCtx = {
+          recipientName: capitalizedName,
+          recipientGender: gender,
+          authorLabel: authorLabel.trim() || null,
+        };
+        let reseeded = 0;
+        for (const ch of (chapters || [])) {
+          if (ch.chapter_number === 0) continue; // don't touch Letter
+          const raw = tplByNum.get(ch.chapter_number);
+          if (!raw) continue;
+          const isUntouched = (ch.content || '') === (ch.seed_content || '');
+          if (!isUntouched) continue;
+          const newSeed = replaceTokens(raw, tokenCtx);
+          const { error: chErr } = await supabase.from('chapters').update({
+            content: newSeed,
+            seed_content: newSeed,
+          }).eq('id', ch.id);
+          if (!chErr) reseeded++;
+        }
+        toast({ title: 'Book settings saved', description: `${reseeded} untouched chapter${reseeded === 1 ? '' : 's'} re-seeded for the new gender.` });
+      } else {
+        toast({ title: 'Book settings saved' });
+      }
+      navigate(`/book/${bookId}`);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container mx-auto px-4 py-10 max-w-xl">
+        <button
+          onClick={() => navigate(`/book/${bookId}`)}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to book
+        </button>
+        <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">Book Settings</h1>
+        <p className="text-muted-foreground mb-8">Update any of the details you set when you started this book.</p>
+
+        <form onSubmit={handleSave} className="bg-card rounded-xl border border-border p-8 shadow-sm space-y-5">
+          <div>
+            <Label htmlFor="recipientName">Recipient's First Name</Label>
+            <Input id="recipientName" value={recipientName} onChange={e => setRecipientName(e.target.value)} required className="mt-1" />
+          </div>
+
+          <div>
+            <Label>Your Relationship</Label>
+            <Select value={relationship} onValueChange={setRelationship} required>
+              <SelectTrigger className="mt-1"><SelectValue placeholder="Select relationship" /></SelectTrigger>
+              <SelectContent>
+                {['Daughter', 'Son', 'Stepdaughter', 'Stepson', 'Granddaughter', 'Grandson', 'Niece', 'Nephew', 'Family Friend'].map(r => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Recipient's Gender</Label>
+            <Select value={gender} onValueChange={setGender} required>
+              <SelectTrigger className="mt-1"><SelectValue placeholder="Select gender" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Girl/Young Woman">Girl / Young Woman</SelectItem>
+                <SelectItem value="Boy/Young Man">Boy / Young Man</SelectItem>
+                <SelectItem value="Stepdaughter">Stepdaughter</SelectItem>
+                <SelectItem value="Stepson">Stepson</SelectItem>
+              </SelectContent>
+            </Select>
+            {genderChanged && (
+              <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                <p className="font-medium mb-2">You changed the recipient's gender.</p>
+                <p className="mb-3">Chapters you've already edited will be left alone. For chapters you haven't touched yet, we can rewrite them from the new gender's template so pronouns and relationship words match.</p>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={reseedUntouched}
+                    onCheckedChange={(v) => setReseedUntouched(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span>Re-seed untouched chapters from the new gender's template</span>
+                </label>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <Label>Occasion</Label>
+            <Select value={occasion} onValueChange={setOccasion} required>
+              <SelectTrigger className="mt-1"><SelectValue placeholder="Select occasion" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="High School Graduation">High School Graduation</SelectItem>
+                <SelectItem value="18th Birthday">18th Birthday</SelectItem>
+                <SelectItem value="Other Milestone">Other Milestone</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="milestoneDate">Expected Date (optional)</Label>
+            <Input id="milestoneDate" type="date" value={milestoneDate} onChange={e => setMilestoneDate(e.target.value)} className="mt-1" />
+          </div>
+
+          <div>
+            <Label htmlFor="authorLabel">How should {recipientName || 'the recipient'} refer to you?</Label>
+            <Input id="authorLabel" value={authorLabel} onChange={e => setAuthorLabel(e.target.value)} placeholder="e.g. Mom, Dad, Grandpa, Uncle Joe" className="mt-1" />
+            <p className="text-xs text-muted-foreground mt-1">Used in personalized text throughout the book</p>
+          </div>
+
+          <div>
+            <Label htmlFor="fromLabel">From (shown on book cover)</Label>
+            <Input id="fromLabel" value={fromLabel} onChange={e => setFromLabel(e.target.value)} placeholder="e.g. Mom and Dad, Your Father, Grandma" className="mt-1" />
+            <p className="text-xs text-muted-foreground mt-1">Leave blank to use your account name</p>
+          </div>
+
+          <div>
+            <Label>Writing Tone for AI Assistance</Label>
+            <Select value={writingTone} onValueChange={setWritingTone}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {['Warm and Conversational', 'Formal and Thoughtful', 'Warm and Humorous', 'Poetic and Reflective'].map(t => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" className="flex-1" onClick={() => navigate(`/book/${bookId}`)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1" size="lg" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default BookSettings;
