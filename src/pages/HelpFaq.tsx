@@ -24,59 +24,121 @@ const MailLink = () => (
 
 const faqSections: FaqSection[] = [
   {
-    title: 'Getting Started',
+    title: 'Quick Start',
     intro: (
       <p>
-        Welcome! You don't need to be "techy" — if you can send an email, you can build this book.
-        Take it one chapter at a time. Here's the whole journey in five steps:
+        Welcome! This guide walks you through everything you need to create a beautiful,
+        personalized keepsake book. You don't need to be "techy" — if you can send an email, you can
+        build this book. Take it one chapter at a time.
         <br />
         <br />
-        1. <strong>Create your account</strong> and confirm your email.
+        If you ever get stuck, there's a <strong>Report a Problem</strong> button and you can
+        always email <MailLink />.
         <br />
-        2. <strong>Start a new book</strong> — choose who it's for and add a few details.
         <br />
-        3. <strong>Read through your chapters</strong> — every chapter comes filled with wisdom, ready
-        for you to make it your own.
-        <br />
-        4. <strong>Personalize</strong> — edit the words, add your own memories, and drop in photos.
-        <br />
-        5. <strong>Invite family</strong> to add their memories and wisdom, then preview your finished book.
+        <strong>One thing to remember as you go:</strong> your work does <strong>not</strong> save
+        on its own. When you make changes in a chapter, click <strong>Save Draft</strong> to keep
+        them. If you see "• Unsaved changes," that's your reminder to save before leaving the page.
       </p>
     ),
     questions: [
       {
+        q: 'What are the five steps to create my book?',
+        aText:
+          "1. Create your account and confirm your email. 2. Start a new book — choose who it's for and add a few details. 3. Read through your chapters — every chapter already comes filled with wisdom, ready for you to make it your own. 4. Personalize — edit the words (and click Save Draft), add your own memories, and drop in photos. 5. Invite family to add their memories and wisdom, then preview your finished book. There's no deadline. You can work a little at a time and come back whenever you like.",
+        a: (
+          <>
+            <ol className="list-decimal pl-6 mt-2 space-y-1">
+              <li>
+                <strong>Create your account</strong> and confirm your email.
+              </li>
+              <li>
+                <strong>Start a new book</strong> — choose who it's for and add a few details.
+              </li>
+              <li>
+                <strong>Read through your chapters</strong> — every chapter already comes filled
+                with wisdom, ready for you to make it your own.
+              </li>
+              <li>
+                <strong>Personalize</strong> — edit the words (and click <strong>Save Draft</strong>
+                ), add your own memories, and drop in photos.
+              </li>
+              <li>
+                <strong>Invite family</strong> to add their memories and wisdom, then{' '}
+                <strong>preview your finished book</strong>.
+              </li>
+            </ol>
+            <p className="mt-3">
+              There's no deadline. You can work a little at a time and come back whenever you like.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+  {
+    title: 'Getting Started',
+    questions: [
+      {
         q: 'How do I create my account?',
         aText:
-          'Sign up with your email and password. After you sign up, we send a confirmation email — click the link inside before starting your book.',
+          '1. Click Get Started on the homepage. 2. Fill in Full Name, Email, and Password (at least 6 characters). 3. Click Get Started to submit. 4. You will see a message: "Check your email — confirm your email first, then log in." You must click the link in that email before you can begin.',
         a: (
-          <p>
-            Sign up with your email address and a password. After you sign up, we'll send you a{' '}
-            <strong>confirmation email</strong> — you must click the link inside it before you can
-            start your book. This just proves the email is really yours.
-          </p>
+          <ol className="list-decimal pl-6 mt-2 space-y-1">
+            <li>
+              Click <strong>Get Started</strong> on the homepage.
+            </li>
+            <li>
+              Fill in <strong>Full Name</strong>, <strong>Email</strong>, and{' '}
+              <strong>Password</strong> (at least 6 characters).
+            </li>
+            <li>
+              Click <strong>Get Started</strong> to submit.
+            </li>
+            <li>
+              You'll see a message: "Check your email — confirm your email first, then log in."
+              You must click the link in that email before you can begin.
+            </li>
+          </ol>
         ),
       },
       {
         q: "I didn't get my confirmation email. What do I do?",
         aText:
-          "Give it a couple of minutes, then check your spam or junk folder. If it still hasn't arrived, try signing in again to have it resent, or email help@52thingstoknow.com.",
+          "Give it a couple of minutes, then check your spam or junk folder — confirmation emails sometimes land there. If you're stuck on the Verify your email screen, click Resend verification email. Still nothing? Email help@52thingstoknow.com.",
         a: (
           <p>
             Give it a couple of minutes, then <strong>check your spam or junk folder</strong> —
-            confirmation emails sometimes land there. If it still hasn't arrived, try signing in
-            again to have it resent, or reach out at <MailLink />.
+            confirmation emails sometimes land there. If you're stuck on the "Verify your email"
+            screen, click <strong>Resend verification email</strong>. Still nothing? Email{' '}
+            <MailLink />.
           </p>
         ),
       },
       {
-        q: 'How do I log back in later?',
+        q: 'How do I log in?',
         aText:
-          'Return to the app and sign in with the same email and password. Your book saves automatically.',
+          '1. Go to the Log In page. 2. Enter your Email and Password and click Log In. 3. You will land on My Books, your home base. If you try to open any page before confirming your email, you will see a Verify your email screen with a Resend verification email button — just confirm first, then log in.',
         a: (
-          <p>
-            Just return to the app and sign in with the same email and password. Your book saves
-            automatically, so everything will be exactly where you left it.
-          </p>
+          <>
+            <ol className="list-decimal pl-6 mt-2 space-y-1">
+              <li>
+                Go to the <strong>Log In</strong> page.
+              </li>
+              <li>
+                Enter your <strong>Email</strong> and <strong>Password</strong> and click{' '}
+                <strong>Log In</strong>.
+              </li>
+              <li>
+                You'll land on <strong>My Books</strong>, your home base.
+              </li>
+            </ol>
+            <p className="mt-3">
+              If you try to open any page before confirming your email, you'll see a "Verify your
+              email" screen with a <strong>Resend verification email</strong> button — just
+              confirm first, then log in.
+            </p>
+          </>
         ),
       },
     ],
@@ -87,60 +149,75 @@ const faqSections: FaqSection[] = [
       {
         q: 'How do I start a book?',
         aText:
-          "Once signed in, create a new book. Pick who it's for and add personal details — we'll build all 52 chapters instantly, already written and ready to personalize.",
+          "1. On My Books, click + New Book (top right). If it's your very first book, the button says Start Your Book. 2. Fill in the Set Up Your Book form. 3. Click Create My Book. Your 52 chapters are built instantly, and you land on your book's dashboard.",
         a: (
-          <p>
-            Once you're signed in, choose to <strong>create a new book</strong>. You'll pick who
-            the book is for and add a few personal details, and we'll instantly build all 52
-            chapters for you — already written and ready to personalize.
-          </p>
+          <ol className="list-decimal pl-6 mt-2 space-y-1">
+            <li>
+              On <strong>My Books</strong>, click <strong>+ New Book</strong> (top right). If it's
+              your very first book, the button says <strong>Start Your Book</strong>.
+            </li>
+            <li>
+              Fill in the <strong>Set Up Your Book</strong> form (details below).
+            </li>
+            <li>
+              Click <strong>Create My Book</strong>. Your 52 chapters are built instantly, and you
+              land on your book's dashboard.
+            </li>
+          </ol>
         ),
       },
       {
-        q: 'What are the different book types?',
+        q: 'What do I fill in when setting up?',
         aText:
-          'Four versions: for a son, daughter, stepson, or stepdaughter. Step versions are written for blended families, honoring the unique bond.',
+          "Recipient's First Name — who the book is for. Your Relationship — Daughter, Son, Stepdaughter, Stepson, Granddaughter, Grandson, Niece, Nephew, or Family Friend. Recipient's Gender / book version — Girl / Young Woman, Boy / Young Man, Stepdaughter, or Stepson. (See the important note below — this one is locked later.) Occasion — High School Graduation, 18th Birthday, or Other Milestone. Expected Date (optional) — the milestone date, if you know it. How should [name] refer to you? (optional) — e.g. Mom, Grandpa. From (shown on the book cover) (optional) — leave blank to use your account name. Writing Tone for AI Assistance — defaults to Warm and Conversational.",
         a: (
-          <>
-            <p>There are four versions so the book fits your relationship and reads naturally:</p>
-            <ul className="list-disc pl-6 mt-2 space-y-1">
-              <li><strong>For a son</strong></li>
-              <li><strong>For a daughter</strong></li>
-              <li><strong>For a stepson</strong></li>
-              <li><strong>For a stepdaughter</strong></li>
-            </ul>
-            <p className="mt-2">
-              The step versions aren't just relabeled — the wording is written for a blended
-              family, with language that honors how your child came into your life and the unique
-              bond you share.
-            </p>
-          </>
+          <ul className="list-disc pl-6 mt-2 space-y-1">
+            <li>
+              <strong>Recipient's First Name</strong> — who the book is for.
+            </li>
+            <li>
+              <strong>Your Relationship</strong> — Daughter, Son, Stepdaughter, Stepson,
+              Granddaughter, Grandson, Niece, Nephew, or Family Friend.
+            </li>
+            <li>
+              <strong>Recipient's Gender / book version</strong> — Girl / Young Woman, Boy / Young
+              Man, Stepdaughter, or Stepson. (<em>See the important note below — this one is locked
+              later.</em>)
+            </li>
+            <li>
+              <strong>Occasion</strong> — High School Graduation, 18th Birthday, or Other Milestone.
+            </li>
+            <li>
+              <strong>Expected Date</strong> (<em>optional</em>) — the milestone date, if you know
+              it.
+            </li>
+            <li>
+              <strong>How should [name] refer to you?</strong> (<em>optional</em>) — e.g. "Mom,"
+              "Grandpa."
+            </li>
+            <li>
+              <strong>From (shown on the book cover)</strong> (<em>optional</em>) — leave blank to
+              use your account name.
+            </li>
+            <li>
+              <strong>Writing Tone for AI Assistance</strong> — defaults to{' '}
+              <em>Warm and Conversational</em>.
+            </li>
+          </ul>
         ),
       },
       {
-        q: 'Important: choose the book type carefully',
+        q: 'Important: the "Recipient\'s Gender / book version" field is locked',
         aText:
-          "The book type is locked once created because it shapes wording of all 52 chapters. To switch, start a new book. Everything else, like recipient's name, is editable in Book Settings.",
+          "This one field sets the wording for all 52 chapters (including the special blended-family language in the stepson/stepdaughter versions), so it locks once your book is created. If you choose the wrong one, you'll need to start a new book. Everything else — the recipient's name, occasion, date, how they refer to you, and more — you can change anytime in Book Settings.",
         a: (
           <p>
-            The book type (son / daughter / stepson / stepdaughter) is{' '}
-            <strong>locked once your book is created</strong>, because it shapes the wording of
-            all 52 chapters. If you pick the wrong one, you'll need to start a new book rather
-            than switch. Everything else — like the recipient's name — you can change later in
-            Book Settings.
-          </p>
-        ),
-      },
-      {
-        q: 'What details do I add when setting up?',
-        aText:
-          "Recipient's name, how the book refers to them, and their pronouns. These flow into every chapter automatically.",
-        a: (
-          <p>
-            You'll add things like the <strong>recipient's name</strong>, how the book should{' '}
-            <strong>refer to them</strong>, and their <strong>pronouns</strong>. These flow
-            automatically into every chapter, so the whole book reads as if it were written just
-            for that one person — because it was.
+            This one field sets the wording for all 52 chapters (including the special
+            blended-family language in the stepson/stepdaughter versions), so it{' '}
+            <strong>locks once your book is created</strong>. If you choose the wrong one, you'll
+            need to start a new book. <strong>Everything else</strong> — the recipient's name,
+            occasion, date, how they refer to you, and more — you can change anytime in{' '}
+            <strong>Book Settings</strong>.
           </p>
         ),
       },
@@ -152,25 +229,25 @@ const faqSections: FaqSection[] = [
       {
         q: "What's actually in the book?",
         aText:
-          '52 chapters of wisdom, memories, and love — one meaningful topic each. Faith-based with scripture woven in. About 100 pages when finished.',
+          'Your book has 52 chapters of wisdom, memories, and love — one meaningful topic each. It is a faith-based keepsake, so you will find scripture woven in alongside the life lessons. When it is finished, it becomes a beautifully formatted book (around 100 pages) your child can keep forever.',
         a: (
           <p>
             Your book has <strong>52 chapters</strong> of wisdom, memories, and love — one
             meaningful topic each. It's a faith-based keepsake, so you'll find scripture woven in
-            alongside the life lessons. When it's finished, it becomes a beautifully formatted
-            book (around 100 pages) your child can keep forever.
+            alongside the life lessons. When it's finished, it becomes a beautifully formatted book
+            (around 100 pages) your child can keep forever.
           </p>
         ),
       },
       {
         q: 'Do I have to write all 52 chapters from scratch?',
         aText:
-          "No. Every chapter arrives already written. Your job is to make each chapter yours — adjust wording, add a memory, include a photo.",
+          "No — and this is the best part. Every chapter arrives already written with heartfelt, ready-to-read wisdom. Your job isn't to start from a blank page; it's to make each chapter yours — adjust the words so they sound like you, add a memory, include a photo. Personalize as much or as little as you like.",
         a: (
           <p>
             No — and this is the best part. Every chapter arrives <strong>already written</strong>{' '}
-            with heartfelt, ready-to-read wisdom. Your job isn't to start from a blank page; it's
-            to make each chapter <em>yours</em> — adjust the words so they sound like you, add a
+            with heartfelt, ready-to-read wisdom. Your job isn't to start from a blank page; it's to
+            make each chapter <em>yours</em> — adjust the words so they sound like you, add a
             memory, include a photo. You can personalize as much or as little as you like.
           </p>
         ),
@@ -178,13 +255,13 @@ const faqSections: FaqSection[] = [
       {
         q: 'How long is each chapter?',
         aText:
-          "Each chapter fits neatly on two pages. If you add so much it overflows, you'll see a gentle note to trim it down.",
+          "Each chapter is designed to fit neatly on two pages. That keeps the book clean and readable, and it means there's a limit to how much text fits. If a chapter runs too long, you'll be told when you try to mark it complete (see Marking Chapters Complete).",
         a: (
           <p>
-            Each chapter is designed to fit neatly on <strong>two pages</strong>, which keeps the
-            finished book clean and readable. That means there's a limit to how much text will
-            fit — if you add so much that it overflows, you'll see a gentle note asking you to
-            trim it down a little.
+            Each chapter is designed to fit neatly on <strong>two pages</strong>. That keeps the
+            book clean and readable, and it means there's a limit to how much text fits. If a
+            chapter runs too long, you'll be told when you try to mark it complete (see{' '}
+            <em>Marking Chapters Complete</em>).
           </p>
         ),
       },
@@ -194,26 +271,65 @@ const faqSections: FaqSection[] = [
     title: 'Personalizing Your Chapters',
     questions: [
       {
-        q: 'How do I edit a chapter?',
+        q: 'How do I open a chapter?',
         aText:
-          "Open any chapter and edit the text right there. Change a word, rewrite a sentence, or leave as-is. Everything saves automatically.",
+          "From your book dashboard, you have three ways in: Click Continue Writing (top) to jump to your next unfinished chapter. Click any chapter in the Table of Contents on the right. Click View All Chapters, then pick a chapter tile.",
         a: (
-          <p>
-            Open any chapter and edit the text right there. Change a word, rewrite a sentence, or
-            leave it as-is — it's completely up to you. Whatever you change saves automatically.
-          </p>
+          <>
+            <p>From your book dashboard, you have three ways in:</p>
+            <ul className="list-disc pl-6 mt-2 space-y-1">
+              <li>
+                Click <strong>Continue Writing</strong> (top) to jump to your next unfinished
+                chapter.
+              </li>
+              <li>
+                Click any chapter in the <strong>Table of Contents</strong> on the right.
+              </li>
+              <li>
+                Click <strong>View All Chapters</strong>, then pick a chapter tile.
+              </li>
+            </ul>
+          </>
         ),
       },
       {
-        q: 'The chapters say "I" — what if two of us are writing the book together?',
+        q: 'How do I edit a chapter?',
         aText:
-          'Chapters are first person ("I") by default. Ask the AI Companion to switch a chapter to "we" whenever you\'d like — chapter by chapter.',
+          "1. The chapter opens on the Edit tab (there's an Edit / Preview toggle at the top). 2. To rename it, click the chapter title at the top and type (up to 45 characters). 3. The verse and quote sit above the main text — click either to edit it, or use the swap link to browse other options. 4. Click into the large text area below and write. This is the chapter's main wisdom. 5. Click Save Draft (top right, the floppy-disk icon) to keep your changes.",
+        a: (
+          <ol className="list-decimal pl-6 mt-2 space-y-1">
+            <li>
+              The chapter opens on the <strong>Edit</strong> tab (there's an{' '}
+              <strong>Edit / Preview</strong> toggle at the top).
+            </li>
+            <li>
+              To rename it, click the <strong>chapter title</strong> at the top and type (up to 45
+              characters).
+            </li>
+            <li>
+              The <strong>verse</strong> and <strong>quote</strong> sit above the main text — click
+              either to edit it, or use the <strong>swap</strong> link to browse other options.
+            </li>
+            <li>
+              Click into the large <strong>text area</strong> below and write. This is the chapter's
+              main wisdom.
+            </li>
+            <li>
+              Click <strong>Save Draft</strong> (top right, the floppy-disk icon) to keep your
+              changes.
+            </li>
+          </ol>
+        ),
+      },
+      {
+        q: 'Does my writing save automatically?',
+        aText:
+          'No — you need to click Save Draft. Until you do, you will see "• Unsaved changes" near the buttons, and if you try to leave the page, the app will ask you to confirm. When in doubt, save.',
         a: (
           <p>
-            The chapters are written in the <strong>first person ("I")</strong> by default. If
-            you and a spouse or partner are creating the book together, you can ask the{' '}
-            <strong>AI Companion</strong> to change a chapter to <strong>"we"</strong> whenever
-            you'd like. It's chapter by chapter, so you decide where it fits.
+            No — <strong>you need to click Save Draft</strong>. Until you do, you'll see "• Unsaved
+            changes" near the buttons, and if you try to leave the page, the app will ask you to
+            confirm. When in doubt, save.
           </p>
         ),
       },
@@ -225,166 +341,261 @@ const faqSections: FaqSection[] = [
       {
         q: 'What is the AI Companion?',
         aText:
-          "A built-in writing helper. Reword, tighten, or adjust tone while you stay in control of the final words.",
+          'The AI Companion is a built-in writing helper. If you are not sure how to phrase something, it can reword, tighten, or adjust the tone of a chapter for you — while you stay in control of the final words. Think of it as a gentle writing partner sitting beside you.',
         a: (
           <p>
             The AI Companion is a built-in writing helper. If you're not sure how to phrase
-            something, it can reword, tighten, or adjust the tone of a chapter for you — while
-            you stay in control of the final words. Think of it as a gentle writing partner
-            sitting beside you.
+            something, it can reword, tighten, or adjust the tone of a chapter for you — while you
+            stay in control of the final words. Think of it as a gentle writing partner sitting
+            beside you.
           </p>
         ),
       },
       {
         q: 'How do I use it?',
         aText:
-          "Open a chapter and use the AI Companion to reword or reshape text. Accept, tweak, or ignore — nothing changes unless you say so.",
+          '1. Open a chapter and look for the round white "52" badge (a pink-outlined circle) floating on the page — it gives a little pulse the first time. 2. Click it to open the chat panel (you can drag it around). 3. Type what you would like in the box at the bottom — for example, "make this warmer" or "shorten this a little" — and press Enter. 4. When it suggests an edit, you will see a preview with two buttons: Add to chapter (applies it) or Try again (ask for another version). 5. Changed your mind? Use Revert in the panel header to undo, or × to close. 6. Then click Save Draft in the toolbar — nothing is saved until you do.',
         a: (
-          <p>
-            Open a chapter and use the AI Companion to reword or reshape the text. You can accept
-            its suggestion, tweak it, or ignore it — nothing changes unless you say so.
-          </p>
+          <ol className="list-decimal pl-6 mt-2 space-y-1">
+            <li>
+              Open a chapter and look for the round white "<strong>52</strong>"{' '}
+              <strong>badge</strong> (a pink-outlined circle) floating on the page — it gives a little
+              pulse the first time.
+            </li>
+            <li>
+              Click it to open the chat panel (you can drag it around).
+            </li>
+            <li>
+              Type what you'd like in the box at the bottom — for example, "make this warmer" or
+              "shorten this a little" — and press <strong>Enter</strong>.
+            </li>
+            <li>
+              When it suggests an edit, you'll see a preview with two buttons:{' '}
+              <strong>Add to chapter</strong> (applies it) or <strong>Try again</strong> (ask for
+              another version).
+            </li>
+            <li>
+              Changed your mind? Use <strong>Revert</strong> in the panel header to undo, or × to
+              close.
+            </li>
+            <li>
+              <strong>Then click Save Draft</strong> in the toolbar — nothing is saved until you
+              do.
+            </li>
+          </ol>
         ),
       },
       {
         q: 'Can it change a chapter from "I" to "we"?',
         aText:
-          'Yes. Ask the AI Companion to switch a chapter to "we." Chapter by chapter, you decide where it fits.',
+          'Yes. Chapters are written in the first person ("I") by default. If you and a spouse or partner are creating the book together, ask the AI Companion to switch a chapter to "we." It is chapter by chapter, so you decide where it fits.',
         a: (
           <p>
-            Yes. Chapters are written in the first person ("I") by default. If you and a spouse
-            or partner are creating the book together, ask the AI Companion to switch a chapter
-            to "we." It's chapter by chapter, so you decide where it fits.
+            Yes. Chapters are written in the first person ("I") by default. If you and a spouse or
+            partner are creating the book together, ask the AI Companion to switch a chapter to{' '}
+            <strong>"we."</strong> It's chapter by chapter, so you decide where it fits.
           </p>
         ),
       },
     ],
   },
   {
-    title: 'Memories',
+    title: 'Adding Your Memories',
     questions: [
       {
-        q: 'How do I add a memory to a chapter?',
+        q: 'How do I add a memory to the chapter I am in?',
         aText:
-          "Within a chapter, add a personal memory — a specific moment. Even a sentence or two (\"I'll never forget when you...\") makes a chapter come alive.",
+          "1. In the chapter's top toolbar, click Memory (the heart-with-chat icon). 2. In the Memory Capture window, enter who it's from and the memory itself. 3. Save. It's added to the chapter and appears on page 2 in the preview.",
         a: (
-          <p>
-            Within a chapter, add a personal memory — a specific moment you remember with your
-            child. Even a sentence or two ("I'll never forget when you…") makes a chapter come
-            alive. These sit alongside the wisdom to make each page personal.
-          </p>
+          <ol className="list-decimal pl-6 mt-2 space-y-1">
+            <li>
+              In the chapter's top toolbar, click <strong>Memory</strong> (the heart-with-chat
+              icon).
+            </li>
+            <li>
+              In the <strong>Memory Capture</strong> window, enter who it's from and the memory
+              itself.
+            </li>
+            <li>
+              <strong>Save</strong>. It's added to the chapter and appears on page 2 in the preview.
+            </li>
+          </ol>
+        ),
+      },
+      {
+        q: 'How do I add memories to use later?',
+        aText:
+          '1. From your book dashboard, click the Family tile (or View Memory Pool). 2. Under Add a memory, fill in From and the Memory, then click Add to pool. 3. It waits in the Unplaced area. To place it, open the chapter you want, then add it from that chapter\'s Memory panel.',
+        a: (
+          <ol className="list-decimal pl-6 mt-2 space-y-1">
+            <li>
+              From your book dashboard, click the <strong>Family</strong> tile (or{' '}
+              <strong>View Memory Pool</strong>).
+            </li>
+            <li>
+              Under <strong>Add a memory</strong>, fill in <strong>From</strong> and the{' '}
+              <strong>Memory</strong>, then click <strong>Add to pool</strong>.
+            </li>
+            <li>
+              It waits in the <strong>Unplaced</strong> area. To place it, open the chapter you want,
+              then add it from that chapter's <strong>Memory</strong> panel.
+            </li>
+          </ol>
         ),
       },
       {
         q: 'How many memories can I add?',
         aText:
-          "Add as many as you'd like across your chapters. Each chapter still needs to fit its two pages.",
+          "As many as you'd like — just remember each chapter needs to fit its two pages, so very long entries may need trimming.",
         a: (
           <p>
-            Add as many as you'd like across your chapters — just keep in mind each chapter needs
-            to fit its two pages, so very long entries may need trimming.
+            As many as you'd like — just remember each chapter needs to fit its two pages, so very
+            long entries may need trimming.
           </p>
         ),
       },
     ],
   },
   {
-    title: 'Photos',
+    title: 'Adding Photos',
     questions: [
       {
-        q: 'How do I add photos?',
+        q: 'How do I add a photo?',
         aText:
-          'About 15 chapters per book are set up as photo chapters. Upload a photo that fits the theme.',
+          "About 15 chapters per book are photo chapters — you'll spot a small camera icon next to them in the Table of Contents. 1. Open a photo chapter. 2. You'll see a dashed box that says something like \"Add a horizontal photo.\" 3. Click it to open your device's file picker (JPEG or PNG only). 4. Choose your photo — it uploads into the frame. To remove it, click the ✕ on the photo. 5. If you'd like a different arrangement, use the layout selector in the toolbar (Classic, Photo Top, or Photo Second Page). 6. Click Save Draft to store it.",
         a: (
-          <p>
-            Certain chapters are set up as <strong>photo chapters</strong> — about 15 per book —
-            where you can upload a picture that fits the theme. Just upload your photo and it's
-            placed into the chapter for you.
-          </p>
+          <>
+            <p>
+              About 15 chapters per book are <strong>photo chapters</strong> — you'll spot a small{' '}
+              <strong>camera icon</strong> next to them in the Table of Contents.
+            </p>
+            <ol className="list-decimal pl-6 mt-2 space-y-1">
+              <li>Open a photo chapter.</li>
+              <li>
+                You'll see a <strong>dashed box</strong> that says something like "Add a horizontal
+                photo."
+              </li>
+              <li>
+                Click it to open your device's file picker (<strong>JPEG or PNG</strong> only).
+              </li>
+              <li>
+                Choose your photo — it uploads into the frame. To remove it, click the ✕ on the
+                photo.
+              </li>
+              <li>
+                If you'd like a different arrangement, use the <strong>layout selector</strong> in the
+                toolbar (Classic, Photo Top, or Photo Second Page).
+              </li>
+              <li>
+                Click <strong>Save Draft</strong> to store it.
+              </li>
+            </ol>
+          </>
         ),
       },
       {
         q: 'Do I need to resize my photos?',
-        aText: "No. Photos are automatically sized to fit the page beautifully.",
+        aText:
+          'No — photos are sized to fit the page automatically. Just pick one you love. (Note: a photo-layout chapter will not let you mark it complete until you either add a photo or switch it to the Classic layout.)',
         a: (
           <p>
-            No. Photos are <strong>automatically sized</strong> to fit the page beautifully, so
-            you don't have to worry about dimensions. Just pick a photo you love.
+            No — photos are <strong>sized to fit the page automatically</strong>. Just pick one you
+            love. (Note: a photo-layout chapter won't let you mark it complete until you either add
+            a photo or switch it to the <strong>Classic</strong> layout.)
           </p>
         ),
       },
     ],
   },
   {
-    title: 'Inviting Family',
+    title: 'Inviting Family to Contribute',
     intro: (
       <p>
-        One of the most special things you can do is invite family members — grandparents, aunts,
-        uncles, siblings — to add their own memories and words of wisdom for your child.
+        One of the most special things you can do is invite family — grandparents, aunts, uncles,
+        siblings — to add their own memories and wisdom for your child.
       </p>
     ),
     questions: [
       {
         q: 'How do I invite a family member?',
         aText:
-          "In the Family section of your dashboard, enter their name and email. The app sends a warm invitation email on your behalf.",
+          "1. From your book dashboard, click the Family tile (or Invite Family to Share Memories). 2. At the top, the Invite family to share memories card is already open. 3. Enter their Name (e.g. \"Grandpa\") and Email. 4. Click Send invite. They'll get a warm email from memories@52thingstoknow.com with a simple link — you don't have to write anything. 5. Below the form you'll see everyone you've invited, each marked Sent or Responded. Prefer to share a link yourself? Expand Or copy a shareable link and click Generate shareable link.",
         a: (
-          <p>
-            In the <strong>Family</strong> section of your dashboard, enter the family member's{' '}
-            <strong>name and email</strong>. The app sends them a warm invitation email on your
-            behalf, with a simple link. You don't have to write the email yourself — we've
-            crafted it for you.
-          </p>
+          <>
+            <ol className="list-decimal pl-6 mt-2 space-y-1">
+              <li>
+                From your book dashboard, click the <strong>Family</strong> tile (or{' '}
+                <strong>Invite Family to Share Memories</strong>).
+              </li>
+              <li>
+                At the top, the <strong>Invite family to share memories</strong> card is already
+                open.
+              </li>
+              <li>
+                Enter their <strong>Name</strong> (e.g. "Grandpa") and <strong>Email</strong>.
+              </li>
+              <li>
+                Click <strong>Send invite</strong>. They'll get a warm email from{' '}
+                <strong>memories@52thingstoknow.com</strong> with a simple link — you don't have to
+                write anything.
+              </li>
+              <li>
+                Below the form you'll see everyone you've invited, each marked{' '}
+                <strong>Sent</strong> or <strong>Responded</strong>.
+              </li>
+            </ol>
+            <p className="mt-3">
+              Prefer to share a link yourself? Expand <strong>Or copy a shareable link</strong> and
+              click <strong>Generate shareable link</strong>.
+            </p>
+          </>
         ),
       },
       {
         q: 'What do they do?',
         aText:
-          "They click the link and share memories, words of wisdom, or both. No sign-up required. They can add several entries in one visit.",
+          'They click the link and land on a friendly page where they can share memories, wisdom, or both — as little or as much as they like, and several entries in one visit. No account needed.',
         a: (
           <p>
             They click the link and land on a friendly page where they can share{' '}
-            <strong>memories, words of wisdom</strong>, or both — as little or as much as they'd
-            like. They can even pass along wisdom they've heard from someone else ("Grandpa
-            always says..."). They can add several entries in one visit.
+            <strong>memories</strong>, <strong>wisdom</strong>, or both — as little or as much as
+            they'd like, and several entries in one visit. No account needed.
           </p>
         ),
       },
+    ],
+  },
+  {
+    title: 'Reviewing Family Contributions',
+    questions: [
       {
-        q: 'Where do their contributions go?',
+        q: 'Someone responded — how do I add it to the book?',
         aText:
-          'Everything arrives in your Family hub, grouped by person. New, unread contributions show bright/bold, then dim once viewed. See sent vs. responded counts.',
+          "1. New submissions appear in the Pending Approval area at the top of your Memory Pool (Family section). The Family tile also shows an \"N new\" badge until you visit. 2. Each card shows who it's from and the memory. Click ✓ Approve to keep it, or ✕ Decline to remove it. 3. Approved memories move to Unplaced. To put one in the book, open the chapter you want and add it from that chapter's Memory tools — it then shows as Placed. You're always the editor — nothing a family member sends appears in the book until you approve and place it. You can also edit the \"from\" name (pencil icon) or delete a memory (trash icon) on any card.",
         a: (
-          <p>
-            Everything they send arrives in your <strong>Family</strong> hub, grouped by person.
-            New, unread contributions show up <strong>bright/bold</strong> so you can spot them
-            at a glance, and dim once you've viewed them. The hub also shows how many invites
-            you've <strong>sent</strong> versus <strong>responded</strong>, so you know who
-            might need a gentle nudge.
-          </p>
-        ),
-      },
-      {
-        q: 'How do I use what they sent?',
-        aText:
-          "Open a contributor's entries and approve the ones to include, then place them into the right chapter. Nothing appears until you approve it.",
-        a: (
-          <p>
-            Open a contributor's entries and <strong>approve</strong> the ones you'd like to
-            include, then place them into the right chapter. Nothing a family member sends
-            appears in the book until <em>you</em> approve it — you're always the editor.
-          </p>
-        ),
-      },
-      {
-        q: 'Will I know when someone responds?',
-        aText:
-          "Yes. You get a notification in the app and by email whenever a family member shares something.",
-        a: (
-          <p>
-            Yes. You'll get a notification — both in the app and by email — whenever a family
-            member shares something, so you never miss a contribution.
-          </p>
+          <>
+            <ol className="list-decimal pl-6 mt-2 space-y-1">
+              <li>
+                New submissions appear in the <strong>Pending Approval</strong> area at the top of
+                your <strong>Memory Pool</strong> (Family section). The <strong>Family</strong> tile
+                also shows an "<strong>N new</strong>" badge until you visit.
+              </li>
+              <li>
+                Each card shows who it's from and the memory. Click ✓ <strong>Approve</strong> to
+                keep it, or ✕ <strong>Decline</strong> to remove it.
+              </li>
+              <li>
+                Approved memories move to <strong>Unplaced</strong>. To put one in the book, open
+                the chapter you want and add it from that chapter's <strong>Memory tools</strong> —
+                it then shows as <strong>Placed</strong>.
+              </li>
+            </ol>
+            <p className="mt-3">
+              You're always the editor — nothing a family member sends appears in the book until{' '}
+              <em>you</em> approve and place it. You can also edit the "from" name (pencil icon) or
+              delete a memory (trash icon) on any card.
+            </p>
+          </>
         ),
       },
     ],
@@ -393,17 +604,32 @@ const faqSections: FaqSection[] = [
     title: 'Book Settings',
     questions: [
       {
-        q: "Can I change my book's details after I start?",
+        q: 'Can I change my book\'s details after I start?',
         aText:
-          "Yes. In Book Settings, update setup details like the recipient's name. The book type is the only thing you can't change — start a new book to switch it.",
+          "Yes — most of them. 1. From your book dashboard, click Book Settings (top-right). 2. Update any of these: Recipient's First Name, Your Relationship, Occasion, Expected Date, how they refer to you, the From name, and Writing Tone. 3. Click Save Changes. The one thing you can't change is Recipient's Gender / book version — it shows as locked, because it's built into the wording of all 52 chapters. To change that, you'd start a new book.",
         a: (
-          <p>
-            Yes. In <strong>Book Settings</strong> you can update your setup details — like the
-            recipient's name — and the change flows through your chapters. The one thing you{' '}
-            <strong>can't</strong> change is the book type (son / daughter / stepson /
-            stepdaughter), since that's built into the wording of every chapter. To change that,
-            you'd start a new book.
-          </p>
+          <>
+            <p>Yes — most of them.</p>
+            <ol className="list-decimal pl-6 mt-2 space-y-1">
+              <li>
+                From your book dashboard, click <strong>Book Settings</strong> (top-right).
+              </li>
+              <li>
+                Update any of these: <strong>Recipient's First Name</strong>,{' '}
+                <strong>Your Relationship</strong>, <strong>Occasion</strong>,{' '}
+                <strong>Expected Date</strong>, how they <strong>refer to you</strong>, the{' '}
+                <strong>From</strong> name, and <strong>Writing Tone</strong>.
+              </li>
+              <li>
+                Click <strong>Save Changes</strong>.
+              </li>
+            </ol>
+            <p className="mt-3">
+              The one thing you <strong>can't</strong> change is{' '}
+              <strong>Recipient's Gender / book version</strong> — it shows as locked, because it's
+              built into the wording of all 52 chapters. To change that, you'd start a new book.
+            </p>
+          </>
         ),
       },
     ],
@@ -412,41 +638,106 @@ const faqSections: FaqSection[] = [
     title: 'Previewing Your Book',
     questions: [
       {
-        q: 'How do I see what my book will look like?',
+        q: 'How do I see what my book looks like?',
         aText:
-          "Preview your book as a formatted document any time — title page, table of contents, letter from the author, and all your chapters laid out beautifully.",
+          '1. On your book dashboard, click the book cover (it says "Click to preview your book"). 2. Page through the spreads with the ◀ / ▶ arrows (or your arrow keys). 3. Click ✕ to return. Note: only completed chapters show in the preview — chapters still in progress are hidden until you mark them complete.',
+        a: (
+          <>
+            <ol className="list-decimal pl-6 mt-2 space-y-1">
+              <li>
+                On your book dashboard, click the <strong>book cover</strong> (it says "Click to
+                preview your book").
+              </li>
+              <li>
+                Page through the spreads with the <strong>◀ / ▶</strong> arrows (or your arrow
+                keys).
+              </li>
+              <li>
+                Click <strong>✕</strong> to return.
+              </li>
+            </ol>
+            <p className="mt-3">
+              Note: only <strong>completed</strong> chapters show in the preview — chapters still in
+              progress are hidden until you mark them complete.
+            </p>
+          </>
+        ),
+      },
+      {
+        q: 'Can I download a copy to look at?',
+        aText:
+          'Yes. On the dashboard, click Generate Test PDF in Quick Actions. It prepares the file and downloads book-test.pdf. As with the preview, it includes your opening Letter plus any chapters marked complete.',
         a: (
           <p>
-            You can <strong>preview your book</strong> as a formatted document at any time. It
-            includes a title page, table of contents, a letter from you as the author, and all
-            your chapters with their wisdom, verses, memories, and photos laid out beautifully.
+            Yes. On the dashboard, click <strong>Generate Test PDF</strong> in Quick Actions. It
+            prepares the file and downloads <strong>book-test.pdf</strong>. As with the preview, it
+            includes your opening Letter plus any chapters marked complete.
           </p>
         ),
       },
       {
-        q: 'When is my book "finished"?',
+        q: 'Can I order a printed copy?',
         aText:
-          "When each chapter fits within its two pages and you're happy with how it reads. Take your time.",
+          "Printing isn't available during this testing phase — right now the focus is on helping you build and preview your book. Printed, bound copies are coming later.",
         a: (
           <p>
-            Your book is complete when each chapter fits within its two pages and you're happy
-            with how it reads. Take your time — there's no rush, and you can keep refining.
+            Printing isn't available during this testing phase — right now the focus is on helping
+            you build and preview your book. Printed, bound copies are coming later.
           </p>
         ),
       },
     ],
   },
   {
-    title: 'Ordering',
+    title: 'Marking Chapters Complete',
     questions: [
       {
-        q: 'Can I order a printed copy?',
+        q: 'How do I mark a chapter done?',
         aText:
-          "Printing isn't available during this testing phase. Right now the focus is on helping you build and preview your book. Printed and bound copies are coming later.",
+          "1. In the chapter toolbar (top right), click Mark Complete (green check). 2. It saves first, then checks three things: the chapter fits its two pages, both pages have some content, and any photo layout actually has a photo. 3. If all's well, the chapter is marked complete and you're moved to the next one. 4. If something's off, you'll see a short note explaining why — Layout Overflow (too long — trim a little), Missing Page Content (a page is empty), or Photo required — and the chapter stays in progress until you fix it.",
+        a: (
+          <ol className="list-decimal pl-6 mt-2 space-y-1">
+            <li>
+              In the chapter toolbar (top right), click <strong>Mark Complete</strong> (green
+              check).
+            </li>
+            <li>
+              It saves first, then checks three things: the chapter fits its two pages, both pages
+              have some content, and any photo layout actually has a photo.
+            </li>
+            <li>
+              If all's well, the chapter is marked complete and you're moved to the next one.
+            </li>
+            <li>
+              If something's off, you'll see a short note explaining why —{' '}
+              <strong>Layout Overflow</strong> (too long — trim a little),{' '}
+              <strong>Missing Page Content</strong> (a page is empty), or{' '}
+              <strong>Photo required</strong> — and the chapter stays in progress until you fix it.
+            </li>
+          </ol>
+        ),
+      },
+      {
+        q: 'Changed something after marking it done?',
+        aText:
+          "Open it and click Unmark Complete to edit again. Then make your changes, click Save Draft, and Mark Complete when you're ready.",
         a: (
           <p>
-            Printing isn't available during this testing phase — right now the focus is on
-            helping you build and preview your book. Printed and bound copies are coming later.
+            Open it and click <strong>Unmark Complete</strong> to edit again. Then make your
+            changes, click <strong>Save Draft</strong>, and <strong>Mark Complete</strong> when
+            you're ready.
+          </p>
+        ),
+      },
+      {
+        q: 'When is the whole book finished?',
+        aText:
+          "There's no single \"book done\" button. Your dashboard shows a progress bar — \"N of 52 chapters complete\" — that fills in as you go. When you're happy with it, use Review My Book to do a final look-through.",
+        a: (
+          <p>
+            There's no single "book done" button. Your dashboard shows a progress bar — "
+            <strong>N of 52 chapters complete</strong>" — that fills in as you go. When you're happy
+            with it, use <strong>Review My Book</strong> to do a final look-through.
           </p>
         ),
       },
@@ -456,24 +747,23 @@ const faqSections: FaqSection[] = [
     title: 'Getting Help',
     questions: [
       {
-        q: 'I found a problem or something looks wrong. How do I report it?',
+        q: "Something's broken or looks wrong — how do I tell you?",
         aText:
-          "Use the Report a Problem / Send Feedback button on the Help page and in the footer. Choose the issue type, describe what happened, and attach a screenshot.",
+          'Use the Report a Problem / Send Feedback button. Choose the type of issue, describe what happened, and — most helpfully — attach a screenshot. A picture of what you are seeing helps us fix it much faster.',
         a: (
           <p>
-            Use the <strong>Report a Problem / Send Feedback</strong> button (on the Help page
-            and in the footer). You can choose the type of issue, describe what happened, and —
-            most helpfully — <strong>attach a screenshot</strong>. A picture of what you're
-            seeing helps us fix things much faster. Your message comes straight to us.
+            Use the <strong>Report a Problem / Send Feedback</strong> button. Choose the type of
+            issue, describe what happened, and — most helpfully — <strong>attach a screenshot</strong>
+            . A picture of what you're seeing helps us fix it much faster.
           </p>
         ),
       },
       {
         q: 'How else can I reach you?',
-        aText: `Email ${supportEmail} any time and we'll get back to you.`,
+        aText: 'Email help@52thingstoknow.com any time.',
         a: (
           <p>
-            Email <MailLink /> any time and we'll get back to you.
+            Email <MailLink /> any time.
           </p>
         ),
       },
@@ -483,67 +773,78 @@ const faqSections: FaqSection[] = [
     title: 'Frequently Asked Questions',
     questions: [
       {
+        q: 'Does my work save automatically?',
+        aText:
+          'No. Click Save Draft in a chapter to keep your changes. "• Unsaved changes" means you have not saved yet.',
+        a: (
+          <p>
+            No. Click <strong>Save Draft</strong> in a chapter to keep your changes. "• Unsaved
+            changes" means you haven't saved yet.
+          </p>
+        ),
+      },
+      {
         q: 'Do I have to finish the book all at once?',
         aText:
-          "Not at all. Your work saves automatically. Do one chapter or ten, then come back whenever you like.",
+          'Not at all. Save your work and come back whenever you like — one chapter or ten at a time.',
         a: (
           <p>
-            Not at all. Your work saves automatically. Do one chapter or ten, then come back
-            whenever you like.
+            Not at all. Save your work and come back whenever you like — one chapter or ten at a
+            time.
           </p>
         ),
       },
       {
-        q: 'Can I change the book type after I start?',
+        q: 'Can I change who the book is for after I start?',
         aText:
-          "No — that's locked. You'd need to start a new book. Everything else, including the recipient's name, can be changed in Book Settings.",
+          "You can change the name and most details in Book Settings. The one locked field is Recipient's Gender / book version, since it shapes all 52 chapters — that requires starting a new book.",
         a: (
           <p>
-            No — that's locked. You'd need to start a new book. Everything else, including the
-            recipient's name, can be changed in Book Settings.
+            You can change the <strong>name</strong> and most details in Book Settings. The one
+            locked field is <strong>Recipient's Gender / book version</strong>, since it shapes all
+            52 chapters — that requires starting a new book.
           </p>
         ),
       },
       {
-        q: "What if a chapter's text is too long?",
+        q: "Why won't a chapter mark complete?",
         aText:
-          "Each chapter fits two pages. If you go over, you'll see a note to trim it slightly so it lays out cleanly.",
+          "It's one of three things: it's too long (trim it), a page is empty (add a little content), or it's a photo chapter with no photo (add one, or switch to the Classic layout).",
         a: (
           <p>
-            Each chapter fits two pages. If you go over, you'll see a note to trim it slightly so
-            it lays out cleanly.
+            It's one of three things: it's too long (<strong>trim it</strong>), a page is empty (
+            <strong>add a little content</strong>), or it's a photo chapter with no photo (
+            <strong>add one, or switch to the Classic layout</strong>).
           </p>
         ),
       },
       {
         q: 'Do family members need an account?',
         aText:
-          "No. They just click the link in the invitation email and share — no sign-up required.",
-        a: (
-          <p>
-            No. They just click the link in the invitation email and share — no sign-up required.
-          </p>
-        ),
+          'No. They just click the link in the invitation email and share.',
+        a: <p>No. They just click the link in the invitation email and share.</p>,
       },
       {
-        q: 'Will family contributions show up in my book automatically?',
+        q: 'Will family contributions show up automatically?',
         aText:
-          "No. Nothing appears until you approve it and place it in a chapter. You're always in control.",
+          'No. Nothing appears until you approve it and place it in a chapter. You are always in control.',
         a: (
           <p>
-            No. Nothing appears until you approve it and place it in a chapter. You're always in
-            control.
+            No. Nothing appears until you <strong>approve</strong> it and <strong>place</strong> it
+            in a chapter. You're always in control.
           </p>
         ),
       },
       {
-        q: 'Do I need to resize my photos before uploading?',
-        aText: "No, photos are sized for you automatically.",
-        a: <p>No, photos are sized for you automatically.</p>,
+        q: 'Do I need to resize my photos?',
+        aText:
+          'No — they are sized for you automatically (JPEG or PNG).',
+        a: <p>No — they're sized for you automatically (JPEG or PNG).</p>,
       },
       {
         q: "I didn't get an email (confirmation, invite, or notification). What now?",
-        aText: `Check your spam/junk folder first. If it's still missing, email ${supportEmail}.`,
+        aText:
+          'Check your spam/junk folder first. If it is still missing, email help@52thingstoknow.com.',
         a: (
           <p>
             Check your spam/junk folder first. If it's still missing, email <MailLink />.
@@ -553,11 +854,11 @@ const faqSections: FaqSection[] = [
       {
         q: 'Can I print my book?',
         aText:
-          "Not yet — printing comes after this testing phase. For now you can build and preview it.",
+          'Not yet — printing comes after this testing phase. For now you can build, preview, and download a test PDF.',
         a: (
           <p>
-            Not yet — printing comes after this testing phase. For now you can build and preview
-            it.
+            Not yet — printing comes after this testing phase. For now you can build, preview, and
+            download a test PDF.
           </p>
         ),
       },
