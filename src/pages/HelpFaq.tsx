@@ -462,7 +462,7 @@ const faqSections: FaqSection[] = [
       {
         q: 'How do I add a photo?',
         aText:
-          "About 15 chapters per book are photo chapters — you'll spot a small camera icon next to them in the Table of Contents. 1. Open a photo chapter. 2. You'll see a dashed box that says something like "Add a horizontal photo." 3. Click it to open your device's file picker (JPEG or PNG only). 4. Choose your photo — it uploads into the frame. To remove it, click the ✕ on the photo. 5. If you'd like a different arrangement, use the layout selector in the toolbar (Classic, Photo Top, or Photo Second Page). 6. Click Save Draft to store it.",
+          "About 15 chapters per book are photo chapters — you'll spot a small camera icon next to them in the Table of Contents. 1. Open a photo chapter. 2. You'll see a dashed box that says something like \"Add a horizontal photo.\" 3. Click it to open your device's file picker (JPEG or PNG only). 4. Choose your photo — it uploads into the frame. To remove it, click the ✕ on the photo. 5. If you'd like a different arrangement, use the layout selector in the toolbar (Classic, Photo Top, or Photo Second Page). 6. Click Save Draft to store it.",
         a: (
           <>
             <p>
@@ -519,7 +519,7 @@ const faqSections: FaqSection[] = [
       {
         q: 'How do I invite a family member?',
         aText:
-          "1. From your book dashboard, click the Family tile (or Invite Family to Share Memories). 2. At the top, the Invite family to share memories card is already open. 3. Enter their Name (e.g. "Grandpa") and Email. 4. Click Send invite. They'll get a warm email from memories@52thingstoknow.com with a simple link — you don't have to write anything. 5. Below the form you'll see everyone you've invited, each marked Sent or Responded. Prefer to share a link yourself? Expand Or copy a shareable link and click Generate shareable link.",
+          "1. From your book dashboard, click the Family tile (or Invite Family to Share Memories). 2. At the top, the Invite family to share memories card is already open. 3. Enter their Name (e.g. \"Grandpa\") and Email. 4. Click Send invite. They'll get a warm email from memories@52thingstoknow.com with a simple link — you don't have to write anything. 5. Below the form you'll see everyone you've invited, each marked Sent or Responded. Prefer to share a link yourself? Expand Or copy a shareable link and click Generate shareable link.",
         a: (
           <>
             <ol className="list-decimal pl-6 mt-2 space-y-1">
@@ -571,7 +571,7 @@ const faqSections: FaqSection[] = [
       {
         q: 'Someone responded — how do I add it to the book?',
         aText:
-          "1. New submissions appear in the Pending Approval area at the top of your Memory Pool (Family section). The Family tile also shows an "N new" badge until you visit. 2. Each card shows who it's from and the memory. Click ✓ Approve to keep it, or ✕ Decline to remove it. 3. Approved memories move to Unplaced. To put one in the book, open the chapter you want and add it from that chapter's Memory tools — it then shows as Placed. You're always the editor — nothing a family member sends appears in the book until you approve and place it. You can also edit the "from" name (pencil icon) or delete a memory (trash icon) on any card.",
+          "1. New submissions appear in the Pending Approval area at the top of your Memory Pool (Family section). The Family tile also shows an \"N new\" badge until you visit. 2. Each card shows who it's from and the memory. Click ✓ Approve to keep it, or ✕ Decline to remove it. 3. Approved memories move to Unplaced. To put one in the book, open the chapter you want and add it from that chapter's Memory tools — it then shows as Placed. You're always the editor — nothing a family member sends appears in the book until you approve and place it. You can also edit the \"from\" name (pencil icon) or delete a memory (trash icon) on any card.",
         a: (
           <>
             <ol className="list-decimal pl-6 mt-2 space-y-1">
@@ -732,7 +732,7 @@ const faqSections: FaqSection[] = [
       {
         q: 'When is the whole book finished?',
         aText:
-          "There's no single "book done" button. Your dashboard shows a progress bar — "N of 52 chapters complete" — that fills in as you go. When you're happy with it, use Review My Book to do a final look-through.",
+          "There's no single \"book done\" button. Your dashboard shows a progress bar — \"N of 52 chapters complete\" — that fills in as you go. When you're happy with it, use Review My Book to do a final look-through.",
         a: (
           <p>
             There's no single "book done" button. Your dashboard shows a progress bar — "
