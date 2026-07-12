@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import EditContentDialog from '@/components/admin/EditContentDialog';
 import PhotoChapterManager from '@/components/admin/PhotoChapterManager';
 import TestersManager from '@/components/admin/TestersManager';
+import TutorialsManager from '@/components/admin/TutorialsManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ContentEntry {
@@ -169,6 +170,7 @@ const Admin = () => {
             <TabsTrigger value="testers">Testers & Books</TabsTrigger>
             <TabsTrigger value="content">Content Manager</TabsTrigger>
             <TabsTrigger value="photos">Photo Chapters</TabsTrigger>
+            <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
             <TabsTrigger value="lifecycle" disabled>Book Lifecycle</TabsTrigger>
             <TabsTrigger value="qc" disabled>QC Review</TabsTrigger>
             <TabsTrigger value="moderation" disabled>Moderation</TabsTrigger>
@@ -184,6 +186,11 @@ const Admin = () => {
           <TabsContent value="photos" className="mt-6">
             <PhotoChapterManager />
           </TabsContent>
+
+          <TabsContent value="tutorials" className="mt-6">
+            <TutorialsManager />
+          </TabsContent>
+
 
           <TabsContent value="content" className="mt-6">
 
