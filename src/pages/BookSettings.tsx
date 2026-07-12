@@ -20,13 +20,11 @@ const BookSettings = () => {
   const [recipientName, setRecipientName] = useState('');
   const [relationship, setRelationship] = useState('');
   const [gender, setGender] = useState('');
-  const [originalGender, setOriginalGender] = useState('');
   const [occasion, setOccasion] = useState('');
   const [milestoneDate, setMilestoneDate] = useState('');
   const [writingTone, setWritingTone] = useState('Warm and Conversational');
   const [fromLabel, setFromLabel] = useState('');
   const [authorLabel, setAuthorLabel] = useState('');
-  const [reseedUntouched, setReseedUntouched] = useState(true);
 
   useEffect(() => {
     if (!bookId) return;
