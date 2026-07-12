@@ -7,4 +7,4 @@
 //     reach the dashboard, book editor, or admin.
 //   - Sign-up will require email confirmation (also disable auto-confirm in
 //     backend auth settings at the same time).
-export const EMAIL_VERIFICATION_REQUIRED = false;
+export const EMAIL_VERIFICATION_REQUIRED = true;
