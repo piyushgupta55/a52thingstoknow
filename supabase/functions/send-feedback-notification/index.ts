@@ -97,7 +97,7 @@ Submitted: ${new Date(fb.created_at).toISOString()}
 
 Message:
 ${fb.message}
-${screenshotLink ? `\nScreenshot: ${screenshotLink}` : ""}`;
+${screenshotLinks.length > 0 ? `\nScreenshots:\n${screenshotLinks.map((u, i) => `  ${i + 1}. ${u}`).join("\n")}` : ""}`;
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
