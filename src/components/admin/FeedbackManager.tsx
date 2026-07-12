@@ -149,10 +149,27 @@ export default function FeedbackManager() {
 
                 <div className="whitespace-pre-wrap text-sm bg-muted/40 p-3 rounded-md mb-3">{r.message}</div>
 
-                {r.screenshot_url && signed[r.id] && (
-                  <a href={signed[r.id]} target="_blank" rel="noreferrer" className="block">
-                    <img src={signed[r.id]} alt="screenshot" className="max-h-72 rounded-md border object-contain bg-muted" />
-                  </a>
+                {signed[r.id] && signed[r.id].length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {signed[r.id].map((url, i) => (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block group relative rounded-md border overflow-hidden bg-muted aspect-video"
+                      >
+                        <img
+                          src={url}
+                          alt={`screenshot ${i + 1}`}
+                          className="w-full h-full object-cover group-hover:opacity-90 transition"
+                        />
+                        <span className="absolute bottom-1 right-1 text-[10px] bg-background/80 rounded px-1.5 py-0.5">
+                          {i + 1}/{signed[r.id].length}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
                 )}
               </div>
             );
