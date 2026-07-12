@@ -26,6 +26,7 @@ import ChapterLibrary from "./pages/ChapterLibrary";
 import BookReview from "./pages/BookReview";
 import QuickRead from "./pages/QuickRead";
 import ReviewPile from "./pages/ReviewPile";
+import BookSettings from "./pages/BookSettings";
 
 const queryClient = new QueryClient();
 
