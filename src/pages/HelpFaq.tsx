@@ -9,8 +9,9 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, HelpCircle, Search } from 'lucide-react';
+import { ArrowLeft, HelpCircle, Search, MessageSquareWarning } from 'lucide-react';
 import TutorialVideos from '@/components/TutorialVideos';
+import FeedbackDialog from '@/components/feedback/FeedbackDialog';
 
 type FaqItem = { q: string; a: React.ReactNode; aText: string };
 type FaqSection = { title: string; intro?: React.ReactNode; questions: FaqItem[] };
