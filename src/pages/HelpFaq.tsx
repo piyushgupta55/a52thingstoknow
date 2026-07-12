@@ -12,6 +12,8 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, HelpCircle, Search, MessageSquareWarning } from 'lucide-react';
 import TutorialVideos from '@/components/TutorialVideos';
 import FeedbackDialog from '@/components/feedback/FeedbackDialog';
+import { captureScreen } from '@/lib/screenCapture';
+import { Loader2 } from 'lucide-react';
 
 type FaqItem = { q: string; a: React.ReactNode; aText: string };
 type FaqSection = { title: string; intro?: React.ReactNode; questions: FaqItem[] };
@@ -929,6 +931,21 @@ const HelpFaq = () => {
   const [query, setQuery] = useState('');
   const [openItems, setOpenItems] = useState<string[]>([]);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackInitialFile, setFeedbackInitialFile] = useState<File | null>(null);
+  const [feedbackCapturing, setFeedbackCapturing] = useState(false);
+
+  const openFeedback = async () => {
+    setFeedbackCapturing(true);
+    try {
+      const file = await captureScreen();
+      setFeedbackInitialFile(file);
+    } catch {
+      setFeedbackInitialFile(null);
+    } finally {
+      setFeedbackCapturing(false);
+      setFeedbackOpen(true);
+    }
+  };
 
   const tokens = useMemo(() => query.trim().split(/\s+/).filter(Boolean), [query]);
   const regex = useMemo(() => buildTokenRegex(tokens), [tokens]);
@@ -993,11 +1010,22 @@ const HelpFaq = () => {
         <p className="text-muted-foreground mb-4">
           Everything you need to create your book. If you get stuck, email <MailLink />.
         </p>
-        <Button onClick={() => setFeedbackOpen(true)} className="mb-8 gap-1.5">
-          <MessageSquareWarning className="h-4 w-4" />
+        <Button onClick={openFeedback} disabled={feedbackCapturing} className="mb-8 gap-1.5">
+          {feedbackCapturing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <MessageSquareWarning className="h-4 w-4" />
+          )}
           Report a Problem / Send Feedback
         </Button>
-        <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+        <FeedbackDialog
+          open={feedbackOpen}
+          onOpenChange={(v) => {
+            setFeedbackOpen(v);
+            if (!v) setFeedbackInitialFile(null);
+          }}
+          initialFile={feedbackInitialFile}
+        />
 
         <TutorialVideos
           heading="Video Tutorials"

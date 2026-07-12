@@ -52,13 +52,18 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Signed URL for screenshot (7 days)
-    let screenshotLink = "";
-    if (fb.screenshot_url) {
+    // Signed URLs for all screenshots (7 days). Falls back to legacy single field.
+    const paths: string[] =
+      (Array.isArray(fb.screenshot_urls) && fb.screenshot_urls.length > 0)
+        ? fb.screenshot_urls
+        : (fb.screenshot_url ? [fb.screenshot_url] : []);
+
+    const screenshotLinks: string[] = [];
+    for (const p of paths) {
       const { data: signed } = await admin.storage
         .from("feedback-screenshots")
-        .createSignedUrl(fb.screenshot_url, 60 * 60 * 24 * 7);
-      if (signed?.signedUrl) screenshotLink = signed.signedUrl;
+        .createSignedUrl(p, 60 * 60 * 24 * 7);
+      if (signed?.signedUrl) screenshotLinks.push(signed.signedUrl);
     }
 
     const typeLabel: Record<string, string> = { bug: "Bug", question: "Question", suggestion: "Suggestion" };
@@ -75,7 +80,13 @@ Deno.serve(async (req) => {
   </table>
   <h3 style="margin:16px 0 4px;">Message</h3>
   <div style="white-space:pre-wrap; padding:12px; background:#f7f3ec; border-radius:8px; border:1px solid #e5ddc9;">${escapeHtml(fb.message)}</div>
-  ${screenshotLink ? `<p style="margin-top:16px;"><a href="${screenshotLink}" style="color:#C9A84C;">View screenshot</a> (link valid 7 days)</p><p><img src="${screenshotLink}" alt="screenshot" style="max-width:100%; border:1px solid #ddd; border-radius:6px;"/></p>` : ""}
+  ${screenshotLinks.length > 0 ? `
+    <h3 style="margin:16px 0 4px;">Screenshots (${screenshotLinks.length}) — links valid 7 days</h3>
+    <ol style="padding-left:18px; margin:4px 0 12px;">
+      ${screenshotLinks.map((u, i) => `<li style="margin-bottom:4px;"><a href="${u}" style="color:#C9A84C;">Screenshot ${i + 1}</a></li>`).join("")}
+    </ol>
+    ${screenshotLinks.map((u, i) => `<p style="margin:8px 0;"><img src="${u}" alt="screenshot ${i + 1}" style="max-width:100%; border:1px solid #ddd; border-radius:6px;"/></p>`).join("")}
+  ` : ""}
   <p style="font-size:12px; color:#999; margin-top:24px;">Reply directly to this email to respond to the tester.</p>
 </div>`.trim();
 
@@ -86,7 +97,7 @@ Submitted: ${new Date(fb.created_at).toISOString()}
 
 Message:
 ${fb.message}
-${screenshotLink ? `\nScreenshot: ${screenshotLink}` : ""}`;
+${screenshotLinks.length > 0 ? `\nScreenshots:\n${screenshotLinks.map((u, i) => `  ${i + 1}. ${u}`).join("\n")}` : ""}`;
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",

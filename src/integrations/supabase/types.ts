@@ -514,6 +514,7 @@ export type Database = {
           message: string
           page_url: string | null
           screenshot_url: string | null
+          screenshot_urls: string[]
           status: string
           updated_at: string
           user_email: string | null
@@ -527,6 +528,7 @@ export type Database = {
           message: string
           page_url?: string | null
           screenshot_url?: string | null
+          screenshot_urls?: string[]
           status?: string
           updated_at?: string
           user_email?: string | null
@@ -540,6 +542,7 @@ export type Database = {
           message?: string
           page_url?: string | null
           screenshot_url?: string | null
+          screenshot_urls?: string[]
           status?: string
           updated_at?: string
           user_email?: string | null

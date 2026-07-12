@@ -1,0 +1,1 @@
+ALTER TABLE public.feedback ADD COLUMN IF NOT EXISTS screenshot_urls text[] NOT NULL DEFAULT '{}';

@@ -17,6 +17,7 @@ interface FeedbackRow {
   message: string;
   page_url: string | null;
   screenshot_url: string | null;
+  screenshot_urls: string[] | null;
   status: 'open' | 'resolved' | 'dismissed';
   created_at: string;
 }
@@ -34,7 +35,7 @@ export default function FeedbackManager() {
   const [rows, setRows] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
-  const [signed, setSigned] = useState<Record<string, string>>({});
+  const [signed, setSigned] = useState<Record<string, string[]>>({});
 
   const fetchRows = async () => {
     setLoading(true);
@@ -44,15 +45,24 @@ export default function FeedbackManager() {
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      setRows(data || []);
-      // Sign screenshot URLs in parallel
-      const toSign = (data || []).filter((r) => r.screenshot_url);
+      const rows = (data || []) as FeedbackRow[];
+      setRows(rows);
+      // Sign all screenshots in parallel
       const entries = await Promise.all(
-        toSign.map(async (r) => {
-          const { data: s } = await supabase.storage
-            .from('feedback-screenshots')
-            .createSignedUrl(r.screenshot_url!, 60 * 60);
-          return [r.id, s?.signedUrl || ''] as const;
+        rows.map(async (r) => {
+          const paths = (r.screenshot_urls && r.screenshot_urls.length > 0)
+            ? r.screenshot_urls
+            : (r.screenshot_url ? [r.screenshot_url] : []);
+          if (paths.length === 0) return [r.id, [] as string[]] as const;
+          const urls = await Promise.all(
+            paths.map(async (p) => {
+              const { data: s } = await supabase.storage
+                .from('feedback-screenshots')
+                .createSignedUrl(p, 60 * 60);
+              return s?.signedUrl || '';
+            })
+          );
+          return [r.id, urls.filter(Boolean)] as const;
         })
       );
       setSigned(Object.fromEntries(entries));
@@ -139,10 +149,27 @@ export default function FeedbackManager() {
 
                 <div className="whitespace-pre-wrap text-sm bg-muted/40 p-3 rounded-md mb-3">{r.message}</div>
 
-                {r.screenshot_url && signed[r.id] && (
-                  <a href={signed[r.id]} target="_blank" rel="noreferrer" className="block">
-                    <img src={signed[r.id]} alt="screenshot" className="max-h-72 rounded-md border object-contain bg-muted" />
-                  </a>
+                {signed[r.id] && signed[r.id].length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {signed[r.id].map((url, i) => (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block group relative rounded-md border overflow-hidden bg-muted aspect-video"
+                      >
+                        <img
+                          src={url}
+                          alt={`screenshot ${i + 1}`}
+                          className="w-full h-full object-cover group-hover:opacity-90 transition"
+                        />
+                        <span className="absolute bottom-1 right-1 text-[10px] bg-background/80 rounded px-1.5 py-0.5">
+                          {i + 1}/{signed[r.id].length}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
                 )}
               </div>
             );
