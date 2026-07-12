@@ -122,29 +122,12 @@ const BookSettings = () => {
 
           <div>
             <Label>Recipient's Gender</Label>
-            <Select value={gender} onValueChange={setGender} required>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select gender" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Girl/Young Woman">Girl / Young Woman</SelectItem>
-                <SelectItem value="Boy/Young Man">Boy / Young Man</SelectItem>
-                <SelectItem value="Stepdaughter">Stepdaughter</SelectItem>
-                <SelectItem value="Stepson">Stepson</SelectItem>
-              </SelectContent>
-            </Select>
-            {genderChanged && (
-              <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-                <p className="font-medium mb-2">You changed the recipient's gender.</p>
-                <p className="mb-3">Chapters you've already edited will be left alone. For chapters you haven't touched yet, we can rewrite them from the new gender's template so pronouns and relationship words match.</p>
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={reseedUntouched}
-                    onCheckedChange={(v) => setReseedUntouched(v === true)}
-                    className="mt-0.5"
-                  />
-                  <span>Re-seed untouched chapters from the new gender's template</span>
-                </label>
-              </div>
-            )}
+            <div className="mt-1 flex items-center h-10 px-3 rounded-md border border-input bg-muted/40 text-sm text-muted-foreground">
+              {gender || '—'}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Gender is locked once a book is created. To change this, start a new book.
+            </p>
           </div>
 
           <div>
