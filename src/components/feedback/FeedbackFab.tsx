@@ -22,6 +22,13 @@ export default function FeedbackFab() {
   const [initialFile, setInitialFile] = useState<File | null>(null);
   const [capturing, setCapturing] = useState(false);
 
+  useEffect(() => {
+    const onOpen = () => handleClick();
+    window.addEventListener('lovable:open-feedback', onOpen);
+    return () => window.removeEventListener('lovable:open-feedback', onOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!user) return null;
 
   const handleClick = async () => {
