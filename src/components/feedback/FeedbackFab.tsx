@@ -52,7 +52,7 @@ export default function FeedbackFab() {
         onClick={handleClick}
         disabled={capturing}
         size="sm"
-        className="fixed bottom-4 right-4 z-40 shadow-lg gap-1.5"
+        className="fixed bottom-4 right-4 z-[60] shadow-lg gap-1.5"
         variant="secondary"
       >
         {capturing ? (
