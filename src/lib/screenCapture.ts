@@ -21,17 +21,21 @@ export async function captureScreen(): Promise<File | null> {
 
   try {
     const html2canvas = (await import('html2canvas')).default;
-    const canvas = await html2canvas(document.body, {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    // Capture only the visible viewport at real device resolution.
+    const canvas = await html2canvas(document.documentElement, {
       useCORS: true,
       logging: false,
-      scale: Math.min(window.devicePixelRatio || 1, 2),
-      windowWidth: document.documentElement.clientWidth,
-      windowHeight: document.documentElement.clientHeight,
-      // Capture what the user actually sees rather than the full page.
+      scale: dpr,
+      backgroundColor: null,
       x: window.scrollX,
       y: window.scrollY,
-      width: document.documentElement.clientWidth,
-      height: document.documentElement.clientHeight,
+      width: vw,
+      height: vh,
+      windowWidth: document.documentElement.scrollWidth,
+      windowHeight: document.documentElement.scrollHeight,
     });
 
     const blob: Blob | null = await new Promise((res) =>

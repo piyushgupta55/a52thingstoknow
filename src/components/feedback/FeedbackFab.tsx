@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquareWarning, Loader2 } from 'lucide-react';
 import FeedbackDialog from './FeedbackDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { captureScreen } from '@/lib/screenCapture';
+
+export const openFeedback = () => {
+  window.dispatchEvent(new CustomEvent('lovable:open-feedback'));
+};
+
+
 
 /**
  * Floating feedback button anchored to bottom-right on every logged-in screen.
@@ -15,6 +21,13 @@ export default function FeedbackFab() {
   const [open, setOpen] = useState(false);
   const [initialFile, setInitialFile] = useState<File | null>(null);
   const [capturing, setCapturing] = useState(false);
+
+  useEffect(() => {
+    const onOpen = () => handleClick();
+    window.addEventListener('lovable:open-feedback', onOpen);
+    return () => window.removeEventListener('lovable:open-feedback', onOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!user) return null;
 
@@ -39,7 +52,7 @@ export default function FeedbackFab() {
         onClick={handleClick}
         disabled={capturing}
         size="sm"
-        className="fixed bottom-4 right-4 z-40 shadow-lg gap-1.5"
+        className="fixed bottom-4 right-4 z-[60] shadow-lg gap-1.5"
         variant="secondary"
       >
         {capturing ? (

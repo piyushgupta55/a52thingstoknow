@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { BookOpen, HelpCircle, Menu, X } from 'lucide-react';
+import { BookOpen, HelpCircle, Menu, X, MessageSquareWarning } from 'lucide-react';
 import { useState } from 'react';
+import { openFeedback } from '@/components/feedback/FeedbackFab';
 
 const Navbar = () => {
   const { user, signOut } = useAuth();
@@ -22,6 +23,7 @@ const Navbar = () => {
           {user ? (
             <>
               <Button variant="ghost" onClick={() => navigate('/dashboard')}>My Books</Button>
+              <Button variant="ghost" onClick={openFeedback}><MessageSquareWarning className="h-4 w-4 mr-1.5" />Feedback</Button>
               <Button variant="ghost" onClick={() => navigate('/help')}><HelpCircle className="h-4 w-4 mr-1.5" />Help</Button>
               <Button variant="outline" onClick={() => { signOut(); navigate('/'); }}>Log Out</Button>
             </>
@@ -44,6 +46,7 @@ const Navbar = () => {
           {user ? (
             <>
               <Button variant="ghost" className="justify-start" onClick={() => { navigate('/dashboard'); setMobileOpen(false); }}>My Books</Button>
+              <Button variant="ghost" className="justify-start" onClick={() => { setMobileOpen(false); openFeedback(); }}><MessageSquareWarning className="h-4 w-4 mr-1.5" />Feedback</Button>
               <Button variant="ghost" className="justify-start" onClick={() => { navigate('/help'); setMobileOpen(false); }}><HelpCircle className="h-4 w-4 mr-1.5" />Help</Button>
               <Button variant="outline" className="justify-start" onClick={() => { signOut(); navigate('/'); setMobileOpen(false); }}>Log Out</Button>
             </>
