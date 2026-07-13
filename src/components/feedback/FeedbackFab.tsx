@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquareWarning, Loader2 } from 'lucide-react';
 import FeedbackDialog from './FeedbackDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { captureScreen } from '@/lib/screenCapture';
+
+export const openFeedback = () => {
+  window.dispatchEvent(new CustomEvent('lovable:open-feedback'));
+};
+
+
 
 /**
  * Floating feedback button anchored to bottom-right on every logged-in screen.
