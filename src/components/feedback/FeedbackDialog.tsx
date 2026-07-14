@@ -338,20 +338,6 @@ export default function FeedbackDialog({ open, onOpenChange, initialFile }: Prop
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
-                    variant="default"
-                    size="sm"
-                    onClick={doCapture}
-                    disabled={capturing}
-                  >
-                    {capturing ? (
-                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                    ) : (
-                      <Camera className="h-4 w-4 mr-1.5" />
-                    )}
-                    Attach screenshot of this page
-                  </Button>
-                  <Button
-                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => fileInput.current?.click()}
