@@ -243,7 +243,7 @@ export default function FeedbackDialog({ open, onOpenChange, initialFile }: Prop
           if (!v) onOpenChange(false);
         }}
       >
-        <DialogContent data-feedback-ui className="max-w-lg">
+        <DialogContent data-feedback-ui className="max-w-lg" overlayClassName="bg-transparent">
           <DialogHeader>
             <div className="flex items-start justify-between gap-2">
               <div>
