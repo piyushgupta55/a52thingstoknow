@@ -8,6 +8,7 @@ import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 const Navbar = () => {
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
