@@ -1,12 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { BookOpen, HelpCircle, Menu, X, MessageSquareWarning } from 'lucide-react';
+import { BookOpen, HelpCircle, Menu, X, MessageSquareWarning, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { openFeedback } from '@/components/feedback/FeedbackFab';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 const Navbar = () => {
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -25,6 +27,9 @@ const Navbar = () => {
               <Button variant="ghost" onClick={() => navigate('/dashboard')}>My Books</Button>
               <Button variant="ghost" onClick={openFeedback}><MessageSquareWarning className="h-4 w-4 mr-1.5" />Feedback</Button>
               <Button variant="ghost" onClick={() => navigate('/help')}><HelpCircle className="h-4 w-4 mr-1.5" />Help</Button>
+              {isAdmin && (
+                <Button variant="ghost" onClick={() => navigate('/admin')}><ShieldCheck className="h-4 w-4 mr-1.5" />Admin</Button>
+              )}
               <Button variant="outline" onClick={() => { signOut(); navigate('/'); }}>Log Out</Button>
             </>
           ) : (
@@ -48,6 +53,9 @@ const Navbar = () => {
               <Button variant="ghost" className="justify-start" onClick={() => { navigate('/dashboard'); setMobileOpen(false); }}>My Books</Button>
               <Button variant="ghost" className="justify-start" onClick={() => { setMobileOpen(false); openFeedback(); }}><MessageSquareWarning className="h-4 w-4 mr-1.5" />Feedback</Button>
               <Button variant="ghost" className="justify-start" onClick={() => { navigate('/help'); setMobileOpen(false); }}><HelpCircle className="h-4 w-4 mr-1.5" />Help</Button>
+              {isAdmin && (
+                <Button variant="ghost" className="justify-start" onClick={() => { navigate('/admin'); setMobileOpen(false); }}><ShieldCheck className="h-4 w-4 mr-1.5" />Admin</Button>
+              )}
               <Button variant="outline" className="justify-start" onClick={() => { signOut(); navigate('/'); setMobileOpen(false); }}>Log Out</Button>
             </>
           ) : (
