@@ -1,9 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { BookOpen, HelpCircle, Menu, X, MessageSquareWarning } from 'lucide-react';
+import { BookOpen, HelpCircle, Menu, X, MessageSquareWarning, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { openFeedback } from '@/components/feedback/FeedbackFab';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 const Navbar = () => {
   const { user, signOut } = useAuth();
