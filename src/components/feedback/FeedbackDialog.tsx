@@ -200,19 +200,24 @@ export default function FeedbackDialog({ open, onOpenChange, initialFile }: Prop
   const minimizedBar = open && minimized && (
     <div
       data-feedback-ui
-      className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full bg-card border shadow-lg pl-3 pr-1 py-1"
+      className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-full bg-card border-2 border-primary/20 shadow-xl pl-4 pr-2 py-2"
     >
-      <MessageSquareWarning className="h-4 w-4 text-primary" />
+      <MessageSquareWarning className="h-5 w-5 text-primary" />
       <span className="text-sm text-muted-foreground hidden sm:inline">
-        Feedback paused — scroll to the spot, then
+        Scroll to the spot, then
       </span>
-      <Button size="sm" onClick={doCapture} disabled={capturing} className="gap-1.5">
+      <Button
+        size="default"
+        onClick={doCapture}
+        disabled={capturing}
+        className="gap-2 font-semibold shadow-md"
+      >
         {capturing ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-5 w-5 animate-spin" />
         ) : (
-          <Camera className="h-4 w-4" />
+          <Camera className="h-5 w-5" />
         )}
-        Capture screen
+        Capture this screen
       </Button>
       <Button
         size="sm"
