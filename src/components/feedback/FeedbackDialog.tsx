@@ -243,7 +243,7 @@ export default function FeedbackDialog({ open, onOpenChange, initialFile }: Prop
           if (!v) onOpenChange(false);
         }}
       >
-        <DialogContent data-feedback-ui className="max-w-lg">
+        <DialogContent data-feedback-ui className="max-w-lg" overlayClassName="bg-transparent">
           <DialogHeader>
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -336,20 +336,6 @@ export default function FeedbackDialog({ open, onOpenChange, initialFile }: Prop
 
               {attachments.length < MAX_ATTACHMENTS && (
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="default"
-                    size="sm"
-                    onClick={doCapture}
-                    disabled={capturing}
-                  >
-                    {capturing ? (
-                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                    ) : (
-                      <Camera className="h-4 w-4 mr-1.5" />
-                    )}
-                    Attach screenshot of this page
-                  </Button>
                   <Button
                     type="button"
                     variant="outline"
