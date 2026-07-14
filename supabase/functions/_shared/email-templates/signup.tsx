@@ -9,8 +9,8 @@ import {
   Head,
   Heading,
   Html,
-  Link,
   Preview,
+  Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
 
@@ -22,36 +22,36 @@ interface SignupEmailProps {
 }
 
 export const SignupEmail = ({
-  siteName,
-  siteUrl,
-  recipient,
   confirmationUrl,
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Confirm your email for {siteName}</Preview>
+    <Preview>Welcome to 52 Things to Know — confirm your email to get started.</Preview>
     <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>Confirm your email</Heading>
-        <Text style={text}>
-          Thanks for signing up for{' '}
-          <Link href={siteUrl} style={link}>
-            <strong>{siteName}</strong>
-          </Link>
-          !
-        </Text>
-        <Text style={text}>
-          Please confirm your email address (
-          <Link href={`mailto:${recipient}`} style={link}>
-            {recipient}
-          </Link>
-          ) by clicking the button below:
-        </Text>
-        <Button style={button} href={confirmationUrl}>
-          Verify Email
-        </Button>
-        <Text style={footer}>
-          If you didn't create an account, you can safely ignore this email.
+      <Container style={outer}>
+        <Section style={card}>
+          <Heading style={h1}>Welcome to 52 Things to Know</Heading>
+          <Text style={text}>
+            Thank you for joining us! You are moments away from creating your
+            own personalized keepsake book — sharing your legacy, wisdom,
+            memories, and love.
+          </Text>
+          <Text style={text}>
+            First, let's confirm this is your email. Just tap the button below
+            and you're in.
+          </Text>
+          <Section style={{ textAlign: 'center', margin: '32px 0 8px' }}>
+            <Button style={button} href={confirmationUrl}>
+              Confirm my email
+            </Button>
+          </Section>
+          <Text style={footer}>
+            If you didn't create an account, you can safely ignore this email.
+          </Text>
+        </Section>
+        <Text style={signature}>
+          With warmth,<br />
+          The 52 Things to Know team
         </Text>
       </Container>
     </Body>
@@ -60,27 +60,58 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
+const main = {
+  backgroundColor: '#ffffff',
+  fontFamily: "Georgia, 'Times New Roman', serif",
+  margin: 0,
+  padding: 0,
+}
+const outer = {
+  backgroundColor: '#F5F0E8',
+  padding: '40px 20px',
+  maxWidth: '600px',
+  margin: '0 auto',
+}
+const card = {
+  backgroundColor: '#ffffff',
+  borderRadius: '12px',
+  padding: '40px 36px',
+  border: '1px solid #E8DFCE',
+}
 const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
+  fontSize: '26px',
+  fontWeight: 'normal' as const,
+  color: '#3A2E1F',
   margin: '0 0 20px',
+  textAlign: 'center' as const,
+  fontFamily: "Georgia, 'Times New Roman', serif",
 }
 const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
+  fontSize: '16px',
+  color: '#4A3F2E',
+  lineHeight: '1.6',
+  margin: '0 0 16px',
 }
-const link = { color: 'inherit', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: '#2C7A7B',
   color: '#ffffff',
-  fontSize: '14px',
+  fontSize: '16px',
+  fontWeight: 'bold' as const,
   borderRadius: '8px',
-  padding: '12px 20px',
+  padding: '14px 32px',
   textDecoration: 'none',
+  display: 'inline-block',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const footer = {
+  fontSize: '13px',
+  color: '#8A7F6E',
+  margin: '24px 0 0',
+  textAlign: 'center' as const,
+}
+const signature = {
+  fontSize: '13px',
+  color: '#8A7F6E',
+  textAlign: 'center' as const,
+  margin: '24px 0 0',
+  fontStyle: 'italic' as const,
+}
