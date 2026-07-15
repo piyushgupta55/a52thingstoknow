@@ -208,9 +208,21 @@ const MemoryManager = () => {
     toast({ title: 'Link copied' });
   };
 
-  const pending = memories.filter(m => m.status === 'pending_approval');
-  const placed = memories.filter(m => m.status === 'placed' || m.chapter_id !== null);
-  const unplaced = memories.filter(m => m.status === 'unplaced' && m.chapter_id === null);
+  const handleCopyWisdom = (text: string) => {
+    navigator.clipboard?.writeText(text).then(
+      () => toast({ title: 'Wisdom copied', description: 'Paste it into any chapter where it fits.' }),
+      () => toast({ title: 'Copy failed', variant: 'destructive' })
+    );
+  };
+
+  const isWisdom = (m: Memory) => m.entry_type === 'wisdom';
+  const isMemoryEntry = (m: Memory) => !isWisdom(m);
+
+  const pendingMemories = memories.filter(m => m.status === 'pending_approval' && isMemoryEntry(m));
+  const pendingWisdom = memories.filter(m => m.status === 'pending_approval' && isWisdom(m));
+  const wisdomApproved = memories.filter(m => m.status !== 'pending_approval' && isWisdom(m));
+  const placed = memories.filter(m => isMemoryEntry(m) && (m.status === 'placed' || m.chapter_id !== null));
+  const unplaced = memories.filter(m => isMemoryEntry(m) && m.status === 'unplaced' && m.chapter_id === null);
 
   if (loading) {
     return (
