@@ -474,4 +474,41 @@ const MemoryCard = ({
   );
 };
 
+const WisdomCard = ({
+  memory: m, onCopy, onDelete, onApprove,
+}: { memory: Memory; onCopy: () => void; onDelete: () => void; onApprove?: () => void }) => {
+  return (
+    <div className="bg-primary/[0.04] border border-primary/25 rounded-lg p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Lightbulb className="h-3.5 w-3.5 text-primary" />
+          <span className="text-sm font-semibold text-foreground">{m.contributor_name}</span>
+          <Badge className="text-[0.65rem] bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">wisdom</Badge>
+          {m.contributor_type === 'family' && (
+            <Badge variant="secondary" className="text-[0.65rem]">family</Badge>
+          )}
+          {m.status === 'pending_approval' && (
+            <Badge variant="outline" className="text-[0.65rem]">pending</Badge>
+          )}
+        </div>
+      </div>
+      <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap italic">"{m.memory_text}"</p>
+      <div className="flex gap-2 mt-3 flex-wrap">
+        {onApprove && (
+          <Button size="sm" onClick={onApprove}>
+            <Check className="h-3.5 w-3.5 mr-1.5" /> Approve
+          </Button>
+        )}
+        <Button size="sm" variant="outline" onClick={onCopy}>
+          <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onDelete} className="text-destructive hover:text-destructive">
+          <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Discard
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export default MemoryManager;
+
