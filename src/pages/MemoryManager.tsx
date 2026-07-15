@@ -12,7 +12,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Inbox, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Inbox, CheckCircle2, Clock, Copy, Lightbulb } from 'lucide-react';
 import { InviteFamilyForm } from '@/components/family/InviteFamilyForm';
 import { toast } from '@/hooks/use-toast';
 
