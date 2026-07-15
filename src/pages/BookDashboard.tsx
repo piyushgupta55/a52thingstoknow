@@ -251,7 +251,7 @@ const BookDashboard = () => {
       const tplGender = toBookGender(bookData?.recipient_gender);
       const [{ data: chapData }, { data: memData }, { data: tplData }, { data: ancData }, { data: fhData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
-        supabase.from('memories').select('*').eq('book_id', bookId),
+        supabase.from('memories').select('*').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content').eq('gender', tplGender),
         supabase.from('book_ancestry').select('status, content, pdf_url').eq('book_id', bookId).maybeSingle(),
         supabase.from('book_family_history').select('status, content').eq('book_id', bookId).maybeSingle(),

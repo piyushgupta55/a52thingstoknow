@@ -290,7 +290,7 @@ const ChapterEditor = () => {
         supabase.from('chapters').select('*').eq('id', chapterId).single(),
         supabase.from('chapters').select('id, chapter_number, title, status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls, photo_layout').eq('book_id', bookId).order('chapter_number'),
         supabase.from('books').select('recipient_name, recipient_gender, gender, user_id, author_label').eq('id', bookId).single(),
-        supabase.from('memories').select('id, chapter_id, memory_text, contributor_name, placed_at, created_at').eq('book_id', bookId).order('placed_at', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
+        supabase.from('memories').select('id, chapter_id, memory_text, contributor_name, placed_at, created_at').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory').order('placed_at', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
         supabase.from('app_settings').select('value').eq('key', 'photo_chapter_cap').single(),
         supabase.from('chapter_templates').select('chapter_number, is_photo_chapter, gender, title'),
       ]);
@@ -2033,6 +2033,7 @@ const ChapterEditor = () => {
               .from('memories')
               .select('id, chapter_id, memory_text, contributor_name, placed_at, created_at')
               .eq('book_id', bookId)
+              .or('entry_type.is.null,entry_type.eq.memory')
               .order('placed_at', { ascending: true, nullsFirst: false })
               .order('created_at', { ascending: true });
             if (data) {

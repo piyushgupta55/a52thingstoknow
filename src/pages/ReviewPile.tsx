@@ -50,7 +50,7 @@ const ReviewPile = () => {
           .eq('book_id', bookId)
           .gt('chapter_number', 0)
           .order('chapter_number'),
-        supabase.from('memories').select('id, chapter_id').eq('book_id', bookId),
+        supabase.from('memories').select('id, chapter_id').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
       ]);
       setChapters((chapData as Chapter[]) || []);
       setMemories((memData as Memory[]) || []);

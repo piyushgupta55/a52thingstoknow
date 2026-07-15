@@ -42,7 +42,7 @@ const ChapterGrid = () => {
       const [{ data: bookData }, { data: chapData }, { data: memData }] = await Promise.all([
         supabase.from('books').select('*').eq('id', bookId).single(),
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
-        supabase.from('memories').select('chapter_id').eq('book_id', bookId),
+        supabase.from('memories').select('chapter_id').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
       ]);
       setBook(bookData);
       setChapters((chapData as any) || []);

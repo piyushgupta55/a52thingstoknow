@@ -12,7 +12,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Inbox, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Inbox, CheckCircle2, Clock, Copy, Lightbulb } from 'lucide-react';
 import { InviteFamilyForm } from '@/components/family/InviteFamilyForm';
 import { toast } from '@/hooks/use-toast';
 
@@ -208,9 +208,21 @@ const MemoryManager = () => {
     toast({ title: 'Link copied' });
   };
 
-  const pending = memories.filter(m => m.status === 'pending_approval');
-  const placed = memories.filter(m => m.status === 'placed' || m.chapter_id !== null);
-  const unplaced = memories.filter(m => m.status === 'unplaced' && m.chapter_id === null);
+  const handleCopyWisdom = (text: string) => {
+    navigator.clipboard?.writeText(text).then(
+      () => toast({ title: 'Wisdom copied', description: 'Paste it into any chapter where it fits.' }),
+      () => toast({ title: 'Copy failed', variant: 'destructive' })
+    );
+  };
+
+  const isWisdom = (m: Memory) => m.entry_type === 'wisdom';
+  const isMemoryEntry = (m: Memory) => !isWisdom(m);
+
+  const pendingMemories = memories.filter(m => m.status === 'pending_approval' && isMemoryEntry(m));
+  const pendingWisdom = memories.filter(m => m.status === 'pending_approval' && isWisdom(m));
+  const wisdomApproved = memories.filter(m => m.status !== 'pending_approval' && isWisdom(m));
+  const placed = memories.filter(m => isMemoryEntry(m) && (m.status === 'placed' || m.chapter_id !== null));
+  const unplaced = memories.filter(m => isMemoryEntry(m) && m.status === 'unplaced' && m.chapter_id === null);
 
   if (loading) {
     return (
@@ -286,9 +298,9 @@ const MemoryManager = () => {
           </div>
         </form>
 
-        {pending.length > 0 && (
-          <Section title="Pending Approval" icon={<Clock className="h-4 w-4" />} count={pending.length}>
-            {pending.map(m => (
+        {pendingMemories.length > 0 && (
+          <Section title="Pending Approval — Memories" icon={<Clock className="h-4 w-4" />} count={pendingMemories.length}>
+            {pendingMemories.map(m => (
               <MemoryCard
                 key={m.id} memory={m} editingId={editingId} editFromValue={editFromValue}
                 setEditingId={setEditingId} setEditFromValue={setEditFromValue}
@@ -299,7 +311,28 @@ const MemoryManager = () => {
           </Section>
         )}
 
-        <Section title="Unplaced" icon={<Inbox className="h-4 w-4" />} count={unplaced.length}>
+        {(pendingWisdom.length > 0 || wisdomApproved.length > 0) && (
+          <Section
+            title="Wisdom from Family"
+            icon={<Lightbulb className="h-4 w-4" />}
+            count={pendingWisdom.length + wisdomApproved.length}
+          >
+            <p className="text-xs text-muted-foreground italic px-1 -mt-1 mb-2">
+              Wisdom stays here for you to read. Copy any line you'd like to weave into a chapter yourself, or discard it.
+            </p>
+            {[...pendingWisdom, ...wisdomApproved].map(m => (
+              <WisdomCard
+                key={m.id}
+                memory={m}
+                onCopy={() => handleCopyWisdom(m.memory_text)}
+                onDelete={() => setDeleteId(m.id)}
+                onApprove={m.status === 'pending_approval' ? () => handleApprove(m.id) : undefined}
+              />
+            ))}
+          </Section>
+        )}
+
+        <Section title="Unplaced Memories" icon={<Inbox className="h-4 w-4" />} count={unplaced.length}>
           {unplaced.length === 0 ? (
             <p className="text-sm text-muted-foreground italic px-1">No memories waiting in the pool yet.</p>
           ) : (
@@ -313,7 +346,7 @@ const MemoryManager = () => {
           )}
         </Section>
 
-        <Section title="Placed" icon={<CheckCircle2 className="h-4 w-4" />} count={placed.length}>
+        <Section title="Placed Memories" icon={<CheckCircle2 className="h-4 w-4" />} count={placed.length}>
           {placed.length === 0 ? (
             <p className="text-sm text-muted-foreground italic px-1">None placed yet.</p>
           ) : (
@@ -327,6 +360,7 @@ const MemoryManager = () => {
           )}
         </Section>
       </div>
+
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null); }}>
         <AlertDialogContent>
@@ -440,4 +474,41 @@ const MemoryCard = ({
   );
 };
 
+const WisdomCard = ({
+  memory: m, onCopy, onDelete, onApprove,
+}: { memory: Memory; onCopy: () => void; onDelete: () => void; onApprove?: () => void }) => {
+  return (
+    <div className="bg-primary/[0.04] border border-primary/25 rounded-lg p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Lightbulb className="h-3.5 w-3.5 text-primary" />
+          <span className="text-sm font-semibold text-foreground">{m.contributor_name}</span>
+          <Badge className="text-[0.65rem] bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">wisdom</Badge>
+          {m.contributor_type === 'family' && (
+            <Badge variant="secondary" className="text-[0.65rem]">family</Badge>
+          )}
+          {m.status === 'pending_approval' && (
+            <Badge variant="outline" className="text-[0.65rem]">pending</Badge>
+          )}
+        </div>
+      </div>
+      <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap italic">"{m.memory_text}"</p>
+      <div className="flex gap-2 mt-3 flex-wrap">
+        {onApprove && (
+          <Button size="sm" onClick={onApprove}>
+            <Check className="h-3.5 w-3.5 mr-1.5" /> Approve
+          </Button>
+        )}
+        <Button size="sm" variant="outline" onClick={onCopy}>
+          <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onDelete} className="text-destructive hover:text-destructive">
+          <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Discard
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export default MemoryManager;
+

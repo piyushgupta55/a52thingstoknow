@@ -84,7 +84,7 @@ const QuickRead = () => {
       const tplGender = toBookGender(bookData?.recipient_gender);
       const [{ data: chapData }, { data: memData }, { data: tplData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).gt('chapter_number', 0).order('chapter_number'),
-        supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId),
+        supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
         supabase.from('chapter_templates').select('chapter_number, reference_content').eq('gender', tplGender),
       ]);
 
