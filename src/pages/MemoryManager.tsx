@@ -298,9 +298,9 @@ const MemoryManager = () => {
           </div>
         </form>
 
-        {pending.length > 0 && (
-          <Section title="Pending Approval" icon={<Clock className="h-4 w-4" />} count={pending.length}>
-            {pending.map(m => (
+        {pendingMemories.length > 0 && (
+          <Section title="Pending Approval — Memories" icon={<Clock className="h-4 w-4" />} count={pendingMemories.length}>
+            {pendingMemories.map(m => (
               <MemoryCard
                 key={m.id} memory={m} editingId={editingId} editFromValue={editFromValue}
                 setEditingId={setEditingId} setEditFromValue={setEditFromValue}
@@ -311,7 +311,28 @@ const MemoryManager = () => {
           </Section>
         )}
 
-        <Section title="Unplaced" icon={<Inbox className="h-4 w-4" />} count={unplaced.length}>
+        {(pendingWisdom.length > 0 || wisdomApproved.length > 0) && (
+          <Section
+            title="Wisdom from Family"
+            icon={<Lightbulb className="h-4 w-4" />}
+            count={pendingWisdom.length + wisdomApproved.length}
+          >
+            <p className="text-xs text-muted-foreground italic px-1 -mt-1 mb-2">
+              Wisdom stays here for you to read. Copy any line you'd like to weave into a chapter yourself, or discard it.
+            </p>
+            {[...pendingWisdom, ...wisdomApproved].map(m => (
+              <WisdomCard
+                key={m.id}
+                memory={m}
+                onCopy={() => handleCopyWisdom(m.memory_text)}
+                onDelete={() => setDeleteId(m.id)}
+                onApprove={m.status === 'pending_approval' ? () => handleApprove(m.id) : undefined}
+              />
+            ))}
+          </Section>
+        )}
+
+        <Section title="Unplaced Memories" icon={<Inbox className="h-4 w-4" />} count={unplaced.length}>
           {unplaced.length === 0 ? (
             <p className="text-sm text-muted-foreground italic px-1">No memories waiting in the pool yet.</p>
           ) : (
@@ -325,7 +346,7 @@ const MemoryManager = () => {
           )}
         </Section>
 
-        <Section title="Placed" icon={<CheckCircle2 className="h-4 w-4" />} count={placed.length}>
+        <Section title="Placed Memories" icon={<CheckCircle2 className="h-4 w-4" />} count={placed.length}>
           {placed.length === 0 ? (
             <p className="text-sm text-muted-foreground italic px-1">None placed yet.</p>
           ) : (
@@ -339,6 +360,7 @@ const MemoryManager = () => {
           )}
         </Section>
       </div>
+
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null); }}>
         <AlertDialogContent>
