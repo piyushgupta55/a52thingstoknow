@@ -37,6 +37,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 
 // Configuration
 const SITE_NAME = "52 Things to Know"
+const APP_URL = "https://a52thingstoknow3.vercel.app"
 const SENDER_DOMAIN = "notify.mail.52thingstoknow.com"
 const ROOT_DOMAIN = "mail.52thingstoknow.com"
 const FROM_DOMAIN = "mail.52thingstoknow.com" // Domain shown in From address (may be root or sender subdomain)
@@ -46,7 +47,7 @@ const FROM_DOMAIN = "mail.52thingstoknow.com" // Domain shown in From address (m
 // The sample email uses a fixed placeholder (RFC 6761 .test TLD) so the Go backend
 // can always find-and-replace it with the actual recipient when sending test emails,
 // even if the project's domain has changed since the template was scaffolded.
-const SAMPLE_PROJECT_URL = "https://a52thingstoknow.lovable.app"
+const SAMPLE_PROJECT_URL = APP_URL
 const SAMPLE_EMAIL = "user@example.test"
 const SAMPLE_DATA: Record<string, object> = {
   signup: {
@@ -78,6 +79,50 @@ const SAMPLE_DATA: Record<string, object> = {
   reauthentication: {
     token: '123456',
   },
+}
+
+function getTokenHashFromUrl(url?: string): string | null {
+  if (!url) return null
+
+  try {
+    const parsed = new URL(url)
+    return parsed.searchParams.get('token_hash') || parsed.searchParams.get('token')
+  } catch (_error) {
+    return null
+  }
+}
+
+function buildAppAuthLink(data: any): string {
+  const emailType = data.action_type
+
+  if (emailType === 'reauthentication') {
+    return data.url
+  }
+
+  const tokenHash = data.token_hash || getTokenHashFromUrl(data.url)
+  const authType = emailType === 'signup'
+    ? 'signup'
+    : emailType === 'recovery'
+      ? 'recovery'
+      : emailType === 'magiclink'
+        ? 'magiclink'
+        : emailType === 'invite'
+          ? 'invite'
+          : emailType === 'email_change'
+            ? 'email_change'
+            : null
+
+  if (!tokenHash || !authType) {
+    return data.url
+  }
+
+  const nextPath = authType === 'recovery' ? '/reset-password' : '/dashboard'
+  const directUrl = new URL('/auth/confirm', APP_URL)
+  directUrl.searchParams.set('token_hash', tokenHash)
+  directUrl.searchParams.set('type', authType)
+  directUrl.searchParams.set('next', nextPath)
+
+  return directUrl.toString()
 }
 
 // Preview endpoint handler - returns rendered HTML without sending email
@@ -221,9 +266,9 @@ async function handleWebhook(req: Request): Promise<Response> {
   // Build template props from payload.data (HookData structure)
   const templateProps = {
     siteName: SITE_NAME,
-    siteUrl: `https://${ROOT_DOMAIN}`,
+    siteUrl: APP_URL,
     recipient: payload.data.email,
-    confirmationUrl: payload.data.url,
+    confirmationUrl: buildAppAuthLink(payload.data),
     token: payload.data.token,
     email: payload.data.email,
     oldEmail: payload.data.old_email,
