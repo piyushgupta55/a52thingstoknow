@@ -2033,6 +2033,7 @@ const ChapterEditor = () => {
               .from('memories')
               .select('id, chapter_id, memory_text, contributor_name, placed_at, created_at')
               .eq('book_id', bookId)
+              .or('entry_type.is.null,entry_type.eq.memory')
               .order('placed_at', { ascending: true, nullsFirst: false })
               .order('created_at', { ascending: true });
             if (data) {
