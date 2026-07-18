@@ -76,6 +76,7 @@ const QuickRead = () => {
   const [index, setIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [cueDismissed, setCueDismissed] = useState(false);
 
   useEffect(() => {
     if (!bookId) return;
