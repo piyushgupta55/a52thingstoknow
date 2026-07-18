@@ -76,6 +76,7 @@ const QuickRead = () => {
   const [index, setIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [cueDismissed, setCueDismissed] = useState(false);
 
   useEffect(() => {
     if (!bookId) return;
@@ -269,6 +270,19 @@ const QuickRead = () => {
           <h1 className="font-bold text-3xl md:text-4xl leading-tight" style={{ color: '#2a1f1a' }}>
             {tk(chapter.title)}
           </h1>
+          {chapter.chapter_number === 1 && !cueDismissed && (
+            <div className="mt-4 inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full" style={{ background: 'rgba(187,169,106,0.12)', color: '#5a4632' }}>
+              <span>Read it, then tell us how it feels at the end.</span>
+              <button
+                onClick={() => setCueDismissed(true)}
+                aria-label="Dismiss cue"
+                className="hover:opacity-70 transition-opacity"
+                style={{ color: '#8a7560' }}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
           <div className="mx-auto mt-6 h-px w-16" style={{ background: GOLD }} />
         </div>
 
@@ -371,8 +385,11 @@ const QuickRead = () => {
 
         {/* Review buttons */}
         <div className="space-y-3 pb-12">
-          <p className="text-center text-sm mb-4" style={{ color: '#8a7560' }}>
+          <p className="text-center text-sm mb-1" style={{ color: '#8a7560' }}>
             How do you feel about this chapter?
+          </p>
+          <p className="text-center text-xs italic mb-4" style={{ color: '#8a7560' }}>
+            You can change this anytime
           </p>
           <Button
             onClick={() => handleChoice('keep')}
