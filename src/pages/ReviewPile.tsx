@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Heart, Plus, PenLine, Camera, Circle, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { toast } from 'sonner';
 
 interface Chapter {
   id: string;
@@ -22,13 +23,14 @@ interface Memory {
 }
 
 type PileKey = 'kept' | 'add' | 'rewrite' | 'short' | 'notyet';
+type ReviewChoice = 'keep' | 'add' | 'rewrite';
 
 const PILE_META: Record<PileKey, { title: string; subtitle: string; Icon: typeof Heart }> = {
-  kept:    { title: 'Kept',       subtitle: 'good to go',           Icon: Heart },
-  add:     { title: 'To add to',  subtitle: 'expand later',         Icon: Plus },
-  rewrite: { title: 'To rewrite', subtitle: 'make your own',        Icon: PenLine },
-  short:   { title: 'Short ones', subtitle: 'add a photo or memory', Icon: Camera },
-  notyet:  { title: 'Not yet',    subtitle: 'waiting for you',      Icon: Circle },
+  kept:    { title: 'Kept',       subtitle: 'good to go — tap to change your choice',    Icon: Heart },
+  add:     { title: 'To add to',  subtitle: 'expand later — tap to change your choice',  Icon: Plus },
+  rewrite: { title: 'To rewrite', subtitle: 'make your own — tap to change your choice', Icon: PenLine },
+  short:   { title: 'Short ones', subtitle: 'add a photo or memory',                     Icon: Camera },
+  notyet:  { title: 'Not yet',    subtitle: 'waiting for you',                           Icon: Circle },
 };
 
 const SHORT_WORD_THRESHOLD = 180;
@@ -39,6 +41,7 @@ const ReviewPile = () => {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!bookId) return;
@@ -95,6 +98,25 @@ const ReviewPile = () => {
     }
   };
 
+  const changeChoice = async (c: Chapter, choice: ReviewChoice) => {
+    if (c.review_status === choice) return;
+    setUpdatingId(c.id);
+    const prev = c.review_status;
+    setChapters(list => list.map(x => x.id === c.id ? { ...x, review_status: choice } : x));
+    const { error } = await supabase
+      .from('chapters')
+      .update({ review_status: choice })
+      .eq('id', c.id);
+    setUpdatingId(null);
+    if (error) {
+      setChapters(list => list.map(x => x.id === c.id ? { ...x, review_status: prev } : x));
+      toast.error("Couldn't update — try again");
+      return;
+    }
+    const label = choice === 'keep' ? 'Kept' : choice === 'add' ? 'To add to' : 'To rewrite';
+    toast.success(`Moved to ${label}`);
+  };
+
   if (!meta) {
     return (
       <div className="min-h-screen bg-background">
@@ -110,6 +132,7 @@ const ReviewPile = () => {
   }
 
   const { Icon, title, subtitle } = meta;
+  const showChoiceControls = pile === 'kept' || pile === 'add' || pile === 'rewrite';
 
   return (
     <div className="min-h-screen bg-background">
@@ -139,28 +162,91 @@ const ReviewPile = () => {
           </div>
         ) : (
           <ul className="bg-card rounded-xl border border-border divide-y divide-border overflow-hidden shadow-sm">
-            {list.map((c) => (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => openChapter(c)}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left hover:bg-muted/40 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm text-muted-foreground">Chapter {c.chapter_number}</div>
-                    <div className="font-heading text-base font-semibold text-foreground truncate">
-                      {c.title}
-                    </div>
+            {list.map((c) => {
+              const isUpdating = updatingId === c.id;
+              return (
+                <li key={c.id} className="px-4 py-3.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => openChapter(c)}
+                      className="min-w-0 flex-1 text-left hover:opacity-80 transition-opacity"
+                    >
+                      <div className="text-sm text-muted-foreground">Chapter {c.chapter_number}</div>
+                      <div className="font-heading text-base font-semibold text-foreground truncate">
+                        {c.title}
+                      </div>
+                    </button>
+                    {!showChoiceControls && (
+                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    )}
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                </button>
-              </li>
-            ))}
+                  {showChoiceControls && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <ChoiceChip
+                        active={c.review_status === 'keep'}
+                        disabled={isUpdating}
+                        onClick={() => changeChoice(c, 'keep')}
+                        Icon={Heart}
+                        label="Keep"
+                      />
+                      <ChoiceChip
+                        active={c.review_status === 'add'}
+                        disabled={isUpdating}
+                        onClick={() => changeChoice(c, 'add')}
+                        Icon={Plus}
+                        label="Add to it"
+                      />
+                      <ChoiceChip
+                        active={c.review_status === 'rewrite'}
+                        disabled={isUpdating}
+                        onClick={() => changeChoice(c, 'rewrite')}
+                        Icon={PenLine}
+                        label="Rewrite"
+                      />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
     </div>
   );
 };
+
+function ChoiceChip({
+  active,
+  disabled,
+  onClick,
+  Icon,
+  label,
+}: {
+  active: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  Icon: typeof Heart;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={[
+        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors',
+        active
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-background text-foreground border-border hover:bg-muted',
+        disabled ? 'opacity-60 cursor-not-allowed' : '',
+      ].join(' ')}
+      aria-pressed={active}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </button>
+  );
+}
 
 export default ReviewPile;
