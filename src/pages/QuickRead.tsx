@@ -385,11 +385,8 @@ const QuickRead = () => {
 
         {/* Review buttons */}
         <div className="space-y-3 pb-12">
-          <p className="text-center text-sm mb-1" style={{ color: '#8a7560' }}>
+          <p className="text-center text-sm mb-4" style={{ color: '#8a7560' }}>
             How do you feel about this chapter?
-          </p>
-          <p className="text-center text-xs italic mb-4" style={{ color: '#8a7560' }}>
-            You can change this anytime
           </p>
           <Button
             onClick={() => handleChoice('keep')}
