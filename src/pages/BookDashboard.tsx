@@ -352,110 +352,28 @@ const BookDashboard = () => {
           </Button>
         </div>
 
-        {/* Start Here Review Summary */}
-        {numberedChapters.length > 0 && (
+        {/* Chapters to Review — first read-through pass */}
+        {numberedChapters.length > 0 && notReviewed > 0 && (
           <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
-            {reviewedCount === 0 ? (
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Zap className="h-5 w-5 text-primary" />
-                    <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Start with a read-through</h2>
-                  </div>
-                  <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
-                    Go through your book once — read each chapter and just tell us how it feels: keep it, add to it, or rewrite it later. No editing yet. It's the best way to begin.
-                  </p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Chapters to Review</h2>
                 </div>
-                <Button
-                  size="lg"
-                  className="md:flex-shrink-0"
-                  onClick={() => navigate(`/book/${bookId}/quick-read`)}
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  Begin read-through
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-primary" />
-                    <h2 className="font-heading text-lg font-bold text-foreground">Start Here Review</h2>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigate(`/book/${bookId}/quick-read`)}
-                  >
-                    {reviewedCount < numberedChapters.length ? 'Continue Review' : 'Review Again'}
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {reviewedCount === numberedChapters.length
-                    ? `You've reviewed every chapter — beautiful work.`
-                    : `You've reviewed ${reviewedCount} chapter${reviewedCount === 1 ? '' : 's'}.`}
-                  {' '}Your next step: open a chapter and mark it complete.
+                <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
+                  {notReviewed} chapter{notReviewed === 1 ? '' : 's'} left in your first read-through. Read each chapter and pick a pile — keep it, add to it, or rewrite it later.
                 </p>
-                <p className="text-xs text-muted-foreground/60 mb-3">First-pass sorting — tap to jump in:</p>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/book/${bookId}/pile/kept`)}
-                    className="text-left rounded-lg border border-border p-2.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Heart className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-[0.7rem] text-muted-foreground">Kept</span>
-                    </div>
-                    <div className="font-heading text-lg font-bold text-foreground">{reviewKept}</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/book/${bookId}/pile/add`)}
-                    className="text-left rounded-lg border border-border p-2.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Plus className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-[0.7rem] text-muted-foreground">To add to</span>
-                    </div>
-                    <div className="font-heading text-lg font-bold text-foreground">{reviewAdd}</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/book/${bookId}/pile/rewrite`)}
-                    className="text-left rounded-lg border border-border p-2.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <PenLine className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-[0.7rem] text-muted-foreground">To rewrite</span>
-                    </div>
-                    <div className="font-heading text-lg font-bold text-foreground">{reviewRewrite}</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/book/${bookId}/pile/short`)}
-                    className="text-left rounded-lg border border-border p-2.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Camera className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-[0.7rem] text-muted-foreground">Short ones</span>
-                    </div>
-                    <div className="font-heading text-lg font-bold text-foreground">{shortKept}</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/book/${bookId}/pile/notyet`)}
-                    className="text-left rounded-lg border border-border p-2.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Circle className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-[0.7rem] text-muted-foreground">Not yet</span>
-                    </div>
-                    <div className="font-heading text-lg font-bold text-foreground">{notReviewed}</div>
-                  </button>
-                </div>
-              </>
-            )}
+              </div>
+              <Button
+                size="lg"
+                className="md:flex-shrink-0"
+                onClick={() => navigate(`/book/${bookId}/quick-read`)}
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Continue Review
+              </Button>
+            </div>
           </div>
         )}
 
