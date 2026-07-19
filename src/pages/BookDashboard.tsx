@@ -377,8 +377,13 @@ const BookDashboard = () => {
           </div>
         )}
 
-        {/* Progress Section */}
+        {/* Continue Writing — editing section */}
         <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <PenLine className="h-5 w-5 text-primary" />
+            <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Continue Writing</h2>
+          </div>
+
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-foreground">
               {completed} of {numberedChapters.length} chapters complete
@@ -392,6 +397,55 @@ const BookDashboard = () => {
               Photo chapters: <span className="font-semibold text-foreground">{photosUploaded}</span> of <span className="font-semibold text-foreground">{photoChaptersDesignated}</span> have photos
             </span>
           </div>
+
+          <p className="text-xs text-muted-foreground/60 mb-3">Work chapter by chapter, or pick a pile from your read-through:</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <button
+              type="button"
+              onClick={() => navigate(`/book/${bookId}/pile/kept`)}
+              className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Heart className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Kept</span>
+              </div>
+              <div className="font-heading text-xl font-bold text-foreground">{reviewKept}</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/book/${bookId}/pile/add`)}
+              className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">To add to</span>
+              </div>
+              <div className="font-heading text-xl font-bold text-foreground">{reviewAdd}</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/book/${bookId}/pile/rewrite`)}
+              className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">To rewrite</span>
+              </div>
+              <div className="font-heading text-xl font-bold text-foreground">{reviewRewrite}</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/book/${bookId}/pile/short`)}
+              className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Camera className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Short ones</span>
+              </div>
+              <div className="font-heading text-xl font-bold text-foreground">{shortKept}</div>
+            </button>
+          </div>
+
           <div className="flex flex-wrap gap-2">
             {nextChapter && (
               <Button size="lg" onClick={() => navigate(`/book/${bookId}/chapter/${nextChapter.id}`)}>
