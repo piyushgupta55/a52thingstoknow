@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Heart, Plus, PenLine, Camera, Circle, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import { toast } from 'sonner';
 
 interface Chapter {
   id: string;
@@ -23,7 +22,6 @@ interface Memory {
 }
 
 type PileKey = 'kept' | 'add' | 'rewrite' | 'short' | 'notyet';
-type ReviewChoice = 'keep' | 'add' | 'rewrite';
 
 const PILE_META: Record<PileKey, { title: string; subtitle: string; Icon: typeof Heart }> = {
   kept:    { title: 'Kept',       subtitle: 'tap a chapter to open it and keep working', Icon: Heart },
@@ -41,7 +39,6 @@ const ReviewPile = () => {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!bookId) return;
@@ -98,25 +95,6 @@ const ReviewPile = () => {
     }
   };
 
-  const changeChoice = async (c: Chapter, choice: ReviewChoice) => {
-    if (c.review_status === choice) return;
-    setUpdatingId(c.id);
-    const prev = c.review_status;
-    setChapters(list => list.map(x => x.id === c.id ? { ...x, review_status: choice } : x));
-    const { error } = await supabase
-      .from('chapters')
-      .update({ review_status: choice })
-      .eq('id', c.id);
-    setUpdatingId(null);
-    if (error) {
-      setChapters(list => list.map(x => x.id === c.id ? { ...x, review_status: prev } : x));
-      toast.error("Couldn't update — try again");
-      return;
-    }
-    const label = choice === 'keep' ? 'Kept' : choice === 'add' ? 'To add to' : 'To rewrite';
-    toast.success(`Moved to ${label}`);
-  };
-
   if (!meta) {
     return (
       <div className="min-h-screen bg-background">
@@ -132,7 +110,6 @@ const ReviewPile = () => {
   }
 
   const { Icon, title, subtitle } = meta;
-  const showChoiceControls = pile === 'kept' || pile === 'add' || pile === 'rewrite';
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,101 +139,36 @@ const ReviewPile = () => {
           </div>
         ) : (
           <ul className="space-y-3">
-            {list.map((c) => {
-              const isUpdating = updatingId === c.id;
-              return (
-                <li
-                  key={c.id}
-                  className="bg-card rounded-xl border border-border shadow-sm overflow-hidden"
+            {list.map((c) => (
+              <li
+                key={c.id}
+                className="bg-card rounded-xl border border-border shadow-sm overflow-hidden"
+              >
+                <button
+                  type="button"
+                  onClick={() => openChapter(c)}
+                  className="w-full text-left group px-4 py-4 flex items-center justify-between gap-4 hover:bg-muted/40 transition-colors"
                 >
-                  <button
-                    type="button"
-                    onClick={() => openChapter(c)}
-                    className="w-full text-left group px-4 py-4 flex items-center justify-between gap-4 hover:bg-muted/40 transition-colors"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm text-muted-foreground">Chapter {c.chapter_number}</div>
-                      <div className="font-heading text-base font-semibold text-foreground truncate">
-                        {c.title}
-                      </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-muted-foreground">Chapter {c.chapter_number}</div>
+                    <div className="font-heading text-base font-semibold text-foreground truncate">
+                      {c.title}
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-sm font-medium text-primary group-hover:text-primary/80 hidden sm:inline">
-                        Work on it
-                      </span>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                    </div>
-                  </button>
-
-                  {showChoiceControls && (
-                    <div className="px-4 pb-4 pt-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-muted-foreground mr-1">Change choice:</span>
-                        <ChoiceChip
-                          active={c.review_status === 'keep'}
-                          disabled={isUpdating}
-                          onClick={() => changeChoice(c, 'keep')}
-                          Icon={Heart}
-                          label="Keep"
-                        />
-                        <ChoiceChip
-                          active={c.review_status === 'add'}
-                          disabled={isUpdating}
-                          onClick={() => changeChoice(c, 'add')}
-                          Icon={Plus}
-                          label="Add to it"
-                        />
-                        <ChoiceChip
-                          active={c.review_status === 'rewrite'}
-                          disabled={isUpdating}
-                          onClick={() => changeChoice(c, 'rewrite')}
-                          Icon={PenLine}
-                          label="Rewrite"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-sm font-medium text-primary group-hover:text-primary/80 hidden sm:inline">
+                      Work on it
+                    </span>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </div>
+                </button>
+              </li>
+            ))}
           </ul>
         )}
       </div>
     </div>
   );
 };
-
-function ChoiceChip({
-  active,
-  disabled,
-  onClick,
-  Icon,
-  label,
-}: {
-  active: boolean;
-  disabled: boolean;
-  onClick: () => void;
-  Icon: typeof Heart;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={[
-        'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors',
-        active
-          ? 'bg-primary text-primary-foreground border-primary'
-          : 'bg-background text-foreground border-border hover:bg-muted',
-        disabled ? 'opacity-60 cursor-not-allowed' : '',
-      ].join(' ')}
-      aria-pressed={active}
-    >
-      <Icon className="h-3 w-3" />
-      {label}
-    </button>
-  );
-}
 
 export default ReviewPile;
