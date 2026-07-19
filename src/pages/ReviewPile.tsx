@@ -26,10 +26,10 @@ type PileKey = 'kept' | 'add' | 'rewrite' | 'short' | 'notyet';
 type ReviewChoice = 'keep' | 'add' | 'rewrite';
 
 const PILE_META: Record<PileKey, { title: string; subtitle: string; Icon: typeof Heart }> = {
-  kept:    { title: 'Kept',       subtitle: 'good to go — tap to change your choice',    Icon: Heart },
-  add:     { title: 'To add to',  subtitle: 'expand later — tap to change your choice',  Icon: Plus },
-  rewrite: { title: 'To rewrite', subtitle: 'make your own — tap to change your choice', Icon: PenLine },
-  short:   { title: 'Short ones', subtitle: 'add a photo or memory',                     Icon: Camera },
+  kept:    { title: 'Kept',       subtitle: 'tap a chapter to open it and keep working', Icon: Heart },
+  add:     { title: 'To add to',  subtitle: 'tap a chapter to open it and add your words', Icon: Plus },
+  rewrite: { title: 'To rewrite', subtitle: 'tap a chapter to open it and rewrite', Icon: PenLine },
+  short:   { title: 'Short ones', subtitle: 'tap a chapter to open it and add a photo or memory', Icon: Camera },
   notyet:  { title: 'Not yet',    subtitle: 'waiting for you',                           Icon: Circle },
 };
 
@@ -161,49 +161,59 @@ const ReviewPile = () => {
             <p className="text-muted-foreground">All done here — nothing left in this pile.</p>
           </div>
         ) : (
-          <ul className="bg-card rounded-xl border border-border divide-y divide-border overflow-hidden shadow-sm">
+          <ul className="space-y-3">
             {list.map((c) => {
               const isUpdating = updatingId === c.id;
               return (
-                <li key={c.id} className="px-4 py-3.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => openChapter(c)}
-                      className="min-w-0 flex-1 text-left hover:opacity-80 transition-opacity"
-                    >
+                <li
+                  key={c.id}
+                  className="bg-card rounded-xl border border-border shadow-sm overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    onClick={() => openChapter(c)}
+                    className="w-full text-left group px-4 py-4 flex items-center justify-between gap-4 hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
                       <div className="text-sm text-muted-foreground">Chapter {c.chapter_number}</div>
                       <div className="font-heading text-base font-semibold text-foreground truncate">
                         {c.title}
                       </div>
-                    </button>
-                    {!showChoiceControls && (
-                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    )}
-                  </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm font-medium text-primary group-hover:text-primary/80 hidden sm:inline">
+                        Work on it
+                      </span>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    </div>
+                  </button>
+
                   {showChoiceControls && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      <ChoiceChip
-                        active={c.review_status === 'keep'}
-                        disabled={isUpdating}
-                        onClick={() => changeChoice(c, 'keep')}
-                        Icon={Heart}
-                        label="Keep"
-                      />
-                      <ChoiceChip
-                        active={c.review_status === 'add'}
-                        disabled={isUpdating}
-                        onClick={() => changeChoice(c, 'add')}
-                        Icon={Plus}
-                        label="Add to it"
-                      />
-                      <ChoiceChip
-                        active={c.review_status === 'rewrite'}
-                        disabled={isUpdating}
-                        onClick={() => changeChoice(c, 'rewrite')}
-                        Icon={PenLine}
-                        label="Rewrite"
-                      />
+                    <div className="px-4 pb-4 pt-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-muted-foreground mr-1">Change choice:</span>
+                        <ChoiceChip
+                          active={c.review_status === 'keep'}
+                          disabled={isUpdating}
+                          onClick={() => changeChoice(c, 'keep')}
+                          Icon={Heart}
+                          label="Keep"
+                        />
+                        <ChoiceChip
+                          active={c.review_status === 'add'}
+                          disabled={isUpdating}
+                          onClick={() => changeChoice(c, 'add')}
+                          Icon={Plus}
+                          label="Add to it"
+                        />
+                        <ChoiceChip
+                          active={c.review_status === 'rewrite'}
+                          disabled={isUpdating}
+                          onClick={() => changeChoice(c, 'rewrite')}
+                          Icon={PenLine}
+                          label="Rewrite"
+                        />
+                      </div>
                     </div>
                   )}
                 </li>
@@ -235,7 +245,7 @@ function ChoiceChip({
       onClick={onClick}
       disabled={disabled}
       className={[
-        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors',
+        'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors',
         active
           ? 'bg-primary text-primary-foreground border-primary'
           : 'bg-background text-foreground border-border hover:bg-muted',
@@ -243,7 +253,7 @@ function ChoiceChip({
       ].join(' ')}
       aria-pressed={active}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className="h-3 w-3" />
       {label}
     </button>
   );
