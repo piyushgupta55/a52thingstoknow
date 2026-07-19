@@ -390,71 +390,68 @@ const BookDashboard = () => {
                     {reviewedCount < numberedChapters.length ? 'Continue Review' : 'Review Again'}
                   </Button>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground mb-2">
                   {reviewedCount === numberedChapters.length
-                    ? `You've reviewed every chapter — beautiful work. Kept ${reviewKept} as-is, ${reviewAdd} to add to, ${reviewRewrite} to rewrite.`
-                    : `You've reviewed ${reviewedCount} chapter${reviewedCount === 1 ? '' : 's'} and kept ${reviewKept} — you're well on your way.`}
+                    ? `You've reviewed every chapter — beautiful work.`
+                    : `You've reviewed ${reviewedCount} chapter${reviewedCount === 1 ? '' : 's'}.`}
+                  {' '}Your next step: open a chapter and mark it complete.
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <p className="text-xs text-muted-foreground/60 mb-3">First-pass sorting — tap to jump in:</p>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                   <button
                     type="button"
                     onClick={() => navigate(`/book/${bookId}/pile/kept`)}
-                    className="text-left rounded-lg border border-border p-3 bg-muted/30 hover:bg-muted/60 hover:border-primary/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="text-left rounded-lg border border-border p-2.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <Heart className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs text-muted-foreground">Kept</span>
+                      <Heart className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[0.7rem] text-muted-foreground">Kept</span>
                     </div>
-                    <div className="font-heading text-2xl font-bold text-foreground">{reviewKept}</div>
-                    <div className="text-[0.7rem] text-muted-foreground">good to go</div>
+                    <div className="font-heading text-lg font-bold text-foreground">{reviewKept}</div>
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate(`/book/${bookId}/pile/add`)}
-                    className="text-left rounded-lg border border-border p-3 bg-muted/30 hover:bg-muted/60 hover:border-primary/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="text-left rounded-lg border border-border p-2.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <Plus className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs text-muted-foreground">To add to</span>
+                      <Plus className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[0.7rem] text-muted-foreground">To add to</span>
                     </div>
-                    <div className="font-heading text-2xl font-bold text-foreground">{reviewAdd}</div>
-                    <div className="text-[0.7rem] text-muted-foreground">expand later</div>
+                    <div className="font-heading text-lg font-bold text-foreground">{reviewAdd}</div>
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate(`/book/${bookId}/pile/rewrite`)}
-                    className="text-left rounded-lg border border-border p-3 bg-muted/30 hover:bg-muted/60 hover:border-primary/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="text-left rounded-lg border border-border p-2.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <PenLine className="h-3.5 w-3.5 text-accent" />
-                      <span className="text-xs text-muted-foreground">To rewrite</span>
+                      <PenLine className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[0.7rem] text-muted-foreground">To rewrite</span>
                     </div>
-                    <div className="font-heading text-2xl font-bold text-foreground">{reviewRewrite}</div>
-                    <div className="text-[0.7rem] text-muted-foreground">make your own</div>
+                    <div className="font-heading text-lg font-bold text-foreground">{reviewRewrite}</div>
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate(`/book/${bookId}/pile/short`)}
-                    className="text-left rounded-lg border border-border p-3 bg-muted/30 hover:bg-muted/60 hover:border-primary/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="text-left rounded-lg border border-border p-2.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <Camera className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs text-muted-foreground">Short ones</span>
+                      <Camera className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[0.7rem] text-muted-foreground">Short ones</span>
                     </div>
-                    <div className="font-heading text-2xl font-bold text-foreground">{shortKept}</div>
-                    <div className="text-[0.7rem] text-muted-foreground">add a photo or memory</div>
+                    <div className="font-heading text-lg font-bold text-foreground">{shortKept}</div>
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate(`/book/${bookId}/pile/notyet`)}
-                    className="text-left rounded-lg border border-border p-3 bg-muted/30 hover:bg-muted/60 hover:border-primary/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="text-left rounded-lg border border-border p-2.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <Circle className="h-3.5 w-3.5 text-muted-foreground/60" />
-                      <span className="text-xs text-muted-foreground">Not yet</span>
+                      <Circle className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[0.7rem] text-muted-foreground">Not yet</span>
                     </div>
-                    <div className="font-heading text-2xl font-bold text-foreground">{notReviewed}</div>
-                    <div className="text-[0.7rem] text-muted-foreground">waiting for you</div>
+                    <div className="font-heading text-lg font-bold text-foreground">{notReviewed}</div>
                   </button>
                 </div>
               </>
