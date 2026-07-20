@@ -122,6 +122,7 @@ Deno.serve(async (req) => {
         allowed_countries: ["US"],
       },
       automatic_tax: { enabled: true },
+      customer_update: { shipping: "auto", address: "auto", name: "auto" },
       payment_intent_data: {
         description: `Gift book unlock for ${book.recipient_name}`,
       },
