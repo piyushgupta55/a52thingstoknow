@@ -198,6 +198,11 @@ const Admin = () => {
             <TutorialsManager />
           </TabsContent>
 
+          <TabsContent value="pricing" className="mt-6">
+            <PricingManager />
+          </TabsContent>
+
+
 
           <TabsContent value="content" className="mt-6">
 
