@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ChevronRight, CheckCircle2, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronRight, CheckCircle2, BookOpen, Lock } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { BookLockBanner } from '@/components/BookLockBanner';
+import { useBookUnlocked } from '@/hooks/useBookUnlocked';
 import { THEME_GROUPS, getGroupSlugForTitle } from '@/data/chapterThemeGroups';
+
 
 const CREAM = '#F5F0E8';
 const GOLD = '#BBA96A';
@@ -21,9 +24,11 @@ interface Chapter {
 const QuickReadHub = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
+  const unlocked = useBookUnlocked(bookId);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [recipientName, setRecipientName] = useState<string>('');
+
 
   useEffect(() => {
     if (!bookId) return;
@@ -83,7 +88,9 @@ const QuickReadHub = () => {
   return (
     <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}>
       <Navbar />
+      <BookLockBanner bookId={bookId!} />
       <div className="container mx-auto px-4 py-8 max-w-3xl">
+
         <Button
           variant="ghost"
           size="sm"

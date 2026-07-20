@@ -142,6 +142,83 @@ export type Database = {
           },
         ]
       }
+      book_purchases: {
+        Row: {
+          amount_paid_cents: number
+          book_id: string
+          created_at: string
+          currency: string
+          discount_code: string | null
+          environment: string
+          extra_copies: number
+          guarantee_deadline: string
+          id: string
+          refund_reason: string | null
+          refund_reason_text: string | null
+          refunded_at: string | null
+          shipping_address: Json | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          target_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid_cents: number
+          book_id: string
+          created_at?: string
+          currency?: string
+          discount_code?: string | null
+          environment?: string
+          extra_copies?: number
+          guarantee_deadline: string
+          id?: string
+          refund_reason?: string | null
+          refund_reason_text?: string | null
+          refunded_at?: string | null
+          shipping_address?: Json | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          target_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid_cents?: number
+          book_id?: string
+          created_at?: string
+          currency?: string
+          discount_code?: string | null
+          environment?: string
+          extra_copies?: number
+          guarantee_deadline?: string
+          id?: string
+          refund_reason?: string | null
+          refund_reason_text?: string | null
+          refunded_at?: string | null
+          shipping_address?: Json | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          target_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_purchases_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_status_history: {
         Row: {
           book_id: string
@@ -918,6 +995,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      book_is_unlocked: { Args: { _book_id: string }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

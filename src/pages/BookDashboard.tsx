@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import { saveAs } from 'file-saver';
 import TutorialVideos from '@/components/TutorialVideos';
+import { BookLockBanner } from '@/components/BookLockBanner';
 import Navbar from '@/components/Navbar';
 import { normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 import { replaceTokens } from '@/lib/tokenReplacer';
@@ -335,7 +336,9 @@ const BookDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <BookLockBanner bookId={book.id} />
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+
 
         {/* Header */}
         <div className="mb-8 flex items-start justify-between gap-4">

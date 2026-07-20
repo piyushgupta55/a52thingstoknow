@@ -31,6 +31,10 @@ import QuickRead from "./pages/QuickRead";
 import QuickReadHub from "./pages/QuickReadHub";
 import ReviewPile from "./pages/ReviewPile";
 import BookSettings from "./pages/BookSettings";
+import BookPaywall from "./pages/BookPaywall";
+import BookCheckout from "./pages/BookCheckout";
+import BookCheckoutReturn from "./pages/BookCheckoutReturn";
+import BookRefund from "./pages/BookRefund";
 import FeedbackFab from "./components/feedback/FeedbackFab";
 
 const queryClient = new QueryClient();
@@ -67,6 +71,10 @@ const App = () => (
 
             <Route path="/book/:bookId/pile/:pile" element={<ProtectedRoute><ReviewPile /></ProtectedRoute>} />
             <Route path="/book/:bookId/settings" element={<ProtectedRoute><BookSettings /></ProtectedRoute>} />
+            <Route path="/book/:bookId/unlock" element={<ProtectedRoute><BookPaywall /></ProtectedRoute>} />
+            <Route path="/book/:bookId/checkout" element={<ProtectedRoute><BookCheckout /></ProtectedRoute>} />
+            <Route path="/book/:bookId/checkout/return" element={<ProtectedRoute><BookCheckoutReturn /></ProtectedRoute>} />
+            <Route path="/book/:bookId/refund" element={<ProtectedRoute><BookRefund /></ProtectedRoute>} />
             <Route path="/library" element={<ProtectedRoute><ChapterLibrary /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/admin-setup" element={<ProtectedRoute><AdminSetup /></ProtectedRoute>} />

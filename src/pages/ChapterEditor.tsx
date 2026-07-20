@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Save, CheckCircle, AlertTriangle, Settings2, Check, Sparkles, MessageCircleHeart, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
+import { LockedPage } from '@/components/BookLockBanner';
+import { useBookUnlocked } from '@/hooks/useBookUnlocked';
 import DevotionalVerse from '@/components/chapter/DevotionalVerse';
 import DevotionalQuote from '@/components/chapter/DevotionalQuote';
 import PhotoUploadZone from '@/components/chapter/PhotoUploadZone';
@@ -105,6 +107,7 @@ const ChapterEditor = () => {
 
   const { bookId, chapterId } = useParams<{ bookId: string; chapterId: string }>();
   const navigate = useNavigate();
+  const unlocked = useBookUnlocked(bookId);
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
   const returnLabel = searchParams.get('returnLabel');
@@ -1333,6 +1336,14 @@ const ChapterEditor = () => {
       <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Chapter not found.</div>
     </div>
   );
+
+  if (unlocked === false) return (
+    <div className="min-h-screen bg-[hsl(var(--devotional-bg))]">
+      <Navbar />
+      <LockedPage bookId={bookId!} title="Editing is part of the full book" message="Personalize any chapter after you unlock the book. Preview mode is for the first read-through only." />
+    </div>
+  );
+
 
   return (
     <div className="min-h-screen bg-[hsl(var(--devotional-bg))]">
