@@ -50,6 +50,19 @@ Deno.serve(async (req) => {
 
     const stripe = createStripeClient(env);
 
+    // Read pricing from admin settings at checkout time (spec: prices must be changeable in admin
+    // and take effect immediately). Fall back to seed defaults only if the row is missing.
+    const { data: pricingRow } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "pricing")
+      .maybeSingle();
+    const p = (pricingRow?.value ?? {}) as Record<string, number>;
+    const bookCents = Number.isFinite(p.book_cents) ? p.book_cents : PRICING_DEFAULTS.bookCents;
+    const extraCopyCents = Number.isFinite(p.extra_copy_cents) ? p.extra_copy_cents : PRICING_DEFAULTS.extraCopyCents;
+    const shippingFirstCents = Number.isFinite(p.shipping_first_cents) ? p.shipping_first_cents : PRICING_DEFAULTS.shippingFirstCents;
+    const shippingExtraCents = Number.isFinite(p.shipping_extra_cents) ? p.shipping_extra_cents : PRICING_DEFAULTS.shippingExtraCents;
+
     // Resolve/create Stripe customer with userId metadata
     let customerId: string | undefined;
     const found = await stripe.customers.search({
@@ -65,14 +78,14 @@ Deno.serve(async (req) => {
       customerId = created.id;
     }
 
-    const shippingCents = PRICING.shippingFirstCents + copies * PRICING.shippingExtraCents;
+    const shippingCents = shippingFirstCents + copies * shippingExtraCents;
 
     const lineItems: any[] = [
       {
         price_data: {
           currency: "usd",
           product_data: { name: `${book.recipient_name}'s Gift — Printed Keepsake Book` },
-          unit_amount: PRICING.bookCents,
+          unit_amount: bookCents,
           tax_behavior: "exclusive",
         },
         quantity: 1,
@@ -83,7 +96,7 @@ Deno.serve(async (req) => {
         price_data: {
           currency: "usd",
           product_data: { name: "Extra printed copy" },
-          unit_amount: PRICING.extraCopyCents,
+          unit_amount: extraCopyCents,
           tax_behavior: "exclusive",
         },
         quantity: copies,
