@@ -3,9 +3,10 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { toBookGender } from '@/lib/genderMap';
+import { getGroupBySlug, getGroupSlugForTitle } from '@/data/chapterThemeGroups';
 
 import { Button } from '@/components/ui/button';
-import { Heart, Plus, PenLine, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, Plus, PenLine, X, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
@@ -64,10 +65,11 @@ const stripHtml = (raw: string) =>
     .trim();
 
 const QuickRead = () => {
-  const { bookId } = useParams<{ bookId: string }>();
+  const { bookId, groupSlug } = useParams<{ bookId: string; groupSlug?: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const startChapterId = searchParams.get('chapterId');
+  const group = getGroupBySlug(groupSlug);
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -78,8 +80,15 @@ const QuickRead = () => {
   const [loading, setLoading] = useState(true);
   const [cueDismissed, setCueDismissed] = useState(false);
 
+  // If no group slug, this route now redirects to the hub.
   useEffect(() => {
-    if (!bookId) return;
+    if (bookId && !groupSlug) {
+      navigate(`/book/${bookId}/quick-read`, { replace: true });
+    }
+  }, [bookId, groupSlug, navigate]);
+
+  useEffect(() => {
+    if (!bookId || !group) return;
     (async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = toBookGender(bookData?.recipient_gender);
@@ -94,23 +103,25 @@ const QuickRead = () => {
       }
       setBook(bookData);
       setAuthorLabel(bookData?.from_label || null);
-      const loadedChapters = (chapData as Chapter[]) || [];
-      setChapters(loadedChapters);
+      // Filter to just the chapters in this topic group, preserving book order.
+      const allChapters = (chapData as Chapter[]) || [];
+      const inGroup = allChapters.filter(c => getGroupSlugForTitle(c.title) === group.slug);
+      setChapters(inGroup);
       setMemories((memData as Memory[]) || []);
       setTemplates((tplData as Template[]) || []);
-      // If launched with ?chapterId=..., start at that chapter. Otherwise
-      // resume at the first unreviewed chapter, or Chapter 1 if all reviewed.
+      // Prefer explicit chapterId, otherwise first unreviewed in this group.
       let startIdx = -1;
       if (startChapterId) {
-        startIdx = loadedChapters.findIndex(c => c.id === startChapterId);
+        startIdx = inGroup.findIndex(c => c.id === startChapterId);
       }
       if (startIdx < 0) {
-        startIdx = loadedChapters.findIndex(c => !c.review_status);
+        startIdx = inGroup.findIndex(c => !c.review_status);
       }
       setIndex(startIdx >= 0 ? startIdx : 0);
       setLoading(false);
     })();
-  }, [bookId, startChapterId]);
+  }, [bookId, group, startChapterId]);
+
 
 
   useEffect(() => {
@@ -155,14 +166,17 @@ const QuickRead = () => {
     : false;
 
 
+  const returnToHub = () => navigate(`/book/${bookId}/quick-read`);
+
   const advance = () => {
     if (index + 1 >= total) {
-      toast.success("All done — beautiful work.");
-      navigate(`/book/${bookId}`);
+      toast.success(group ? `Done with ${group.title} — nice work.` : 'All done — beautiful work.');
+      returnToHub();
     } else {
       setIndex(i => i + 1);
     }
   };
+
 
   const goPrev = () => {
     if (index > 0) setIndex(i => i - 1);
@@ -203,11 +217,12 @@ const QuickRead = () => {
   if (!chapter) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: CREAM, fontFamily: SERIF }}>
-        <p>No chapters to read yet.</p>
-        <Button onClick={() => navigate(`/book/${bookId}`)}>Back to dashboard</Button>
+        <p>No chapters in this group yet.</p>
+        <Button onClick={returnToHub}>Back to groups</Button>
       </div>
     );
   }
+
 
   const paragraphs = resolvedBody.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
 
@@ -220,28 +235,35 @@ const QuickRead = () => {
       <div className="sticky top-0 z-10 backdrop-blur-sm border-b" style={{ background: 'rgba(245,240,232,0.92)', borderColor: 'rgba(187,169,106,0.3)' }}>
         <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
           <button
-            onClick={() => navigate(`/book/${bookId}`)}
+            onClick={returnToHub}
             className="flex items-center gap-1 text-sm hover:opacity-70 transition-opacity"
             style={{ color: '#5a4632' }}
           >
-            <ChevronLeft className="h-4 w-4" /> Exit Start Here
+            <ChevronLeft className="h-4 w-4" /> All groups
           </button>
-          <div className="flex items-center gap-2 text-sm" style={{ color: '#5a4632' }}>
+          <div className="flex items-center gap-2 text-sm text-center min-w-0" style={{ color: '#5a4632' }}>
             <button
               onClick={goPrev}
               disabled={index === 0}
-              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex-shrink-0"
               aria-label="Previous chapter"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span>
-              Chapter <span className="font-semibold">{index + 1}</span> of {total}
-            </span>
+            <div className="min-w-0">
+              {group && (
+                <div className="text-[0.65rem] uppercase tracking-widest truncate" style={{ color: GOLD }}>
+                  {group.title}
+                </div>
+              )}
+              <div className="text-sm">
+                <span className="font-semibold">{index + 1}</span> of {total}
+              </div>
+            </div>
             <button
               onClick={goNext}
               disabled={index + 1 >= total}
-              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex-shrink-0"
               aria-label="Next chapter"
             >
               <ChevronRight className="h-4 w-4" />
@@ -261,6 +283,7 @@ const QuickRead = () => {
         </div>
       </div>
 
+
       {/* Chapter content */}
       <div className="max-w-3xl mx-auto px-6 md:px-10 py-12 md:py-16">
         <div className="text-center mb-10">
@@ -270,7 +293,13 @@ const QuickRead = () => {
           <h1 className="font-bold text-3xl md:text-4xl leading-tight" style={{ color: '#2a1f1a' }}>
             {tk(chapter.title)}
           </h1>
-          {chapter.chapter_number === 1 && !cueDismissed && (
+          {chapter.is_photo_chapter && (
+            <div className="mt-3 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,120,138,0.12)', color: '#8a4a5a' }}>
+              <Camera className="h-3.5 w-3.5" />
+              <span>This one's a photo chapter — we'll remind you about the picture later.</span>
+            </div>
+          )}
+          {index === 0 && !cueDismissed && (
             <div className="mt-4 inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full" style={{ background: 'rgba(187,169,106,0.12)', color: '#5a4632' }}>
               <span>Read it, then tell us how it feels at the end.</span>
               <button
@@ -285,6 +314,7 @@ const QuickRead = () => {
           )}
           <div className="mx-auto mt-6 h-px w-16" style={{ background: GOLD }} />
         </div>
+
 
         {chapter.bible_verse_text && (
           <blockquote className="text-center italic text-lg md:text-xl mb-8 px-4" style={{ color: '#5a4632' }}>
