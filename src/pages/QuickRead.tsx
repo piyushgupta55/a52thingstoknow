@@ -293,7 +293,13 @@ const QuickRead = () => {
           <h1 className="font-bold text-3xl md:text-4xl leading-tight" style={{ color: '#2a1f1a' }}>
             {tk(chapter.title)}
           </h1>
-          {chapter.chapter_number === 1 && !cueDismissed && (
+          {chapter.is_photo_chapter && (
+            <div className="mt-3 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,120,138,0.12)', color: '#8a4a5a' }}>
+              <Camera className="h-3.5 w-3.5" />
+              <span>This one's a photo chapter — we'll remind you about the picture later.</span>
+            </div>
+          )}
+          {index === 0 && !cueDismissed && (
             <div className="mt-4 inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full" style={{ background: 'rgba(187,169,106,0.12)', color: '#5a4632' }}>
               <span>Read it, then tell us how it feels at the end.</span>
               <button
@@ -308,6 +314,7 @@ const QuickRead = () => {
           )}
           <div className="mx-auto mt-6 h-px w-16" style={{ background: GOLD }} />
         </div>
+
 
         {chapter.bible_verse_text && (
           <blockquote className="text-center italic text-lg md:text-xl mb-8 px-4" style={{ color: '#5a4632' }}>
