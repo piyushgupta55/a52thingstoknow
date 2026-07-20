@@ -18,6 +18,7 @@ import PhotoChapterManager from '@/components/admin/PhotoChapterManager';
 import TestersManager from '@/components/admin/TestersManager';
 import TutorialsManager from '@/components/admin/TutorialsManager';
 import FeedbackManager from '@/components/admin/FeedbackManager';
+import PricingManager from '@/components/admin/PricingManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ContentEntry {
