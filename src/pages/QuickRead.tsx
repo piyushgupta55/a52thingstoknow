@@ -166,14 +166,17 @@ const QuickRead = () => {
     : false;
 
 
+  const returnToHub = () => navigate(`/book/${bookId}/quick-read`);
+
   const advance = () => {
     if (index + 1 >= total) {
-      toast.success("All done — beautiful work.");
-      navigate(`/book/${bookId}`);
+      toast.success(group ? `Done with ${group.title} — nice work.` : 'All done — beautiful work.');
+      returnToHub();
     } else {
       setIndex(i => i + 1);
     }
   };
+
 
   const goPrev = () => {
     if (index > 0) setIndex(i => i - 1);
