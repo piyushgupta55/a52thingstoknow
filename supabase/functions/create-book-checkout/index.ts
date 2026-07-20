@@ -121,8 +121,7 @@ Deno.serve(async (req) => {
       shipping_address_collection: {
         allowed_countries: ["US"],
       },
-      automatic_tax: { enabled: true },
-      customer_update: { shipping: "auto", address: "auto", name: "auto" },
+      // automatic_tax disabled until Stripe head office address is set in dashboard settings
       payment_intent_data: {
         description: `Gift book unlock for ${book.recipient_name}`,
       },
