@@ -235,28 +235,35 @@ const QuickRead = () => {
       <div className="sticky top-0 z-10 backdrop-blur-sm border-b" style={{ background: 'rgba(245,240,232,0.92)', borderColor: 'rgba(187,169,106,0.3)' }}>
         <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
           <button
-            onClick={() => navigate(`/book/${bookId}`)}
+            onClick={returnToHub}
             className="flex items-center gap-1 text-sm hover:opacity-70 transition-opacity"
             style={{ color: '#5a4632' }}
           >
-            <ChevronLeft className="h-4 w-4" /> Exit Start Here
+            <ChevronLeft className="h-4 w-4" /> All groups
           </button>
-          <div className="flex items-center gap-2 text-sm" style={{ color: '#5a4632' }}>
+          <div className="flex items-center gap-2 text-sm text-center min-w-0" style={{ color: '#5a4632' }}>
             <button
               onClick={goPrev}
               disabled={index === 0}
-              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex-shrink-0"
               aria-label="Previous chapter"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span>
-              Chapter <span className="font-semibold">{index + 1}</span> of {total}
-            </span>
+            <div className="min-w-0">
+              {group && (
+                <div className="text-[0.65rem] uppercase tracking-widest truncate" style={{ color: GOLD }}>
+                  {group.title}
+                </div>
+              )}
+              <div className="text-sm">
+                <span className="font-semibold">{index + 1}</span> of {total}
+              </div>
+            </div>
             <button
               onClick={goNext}
               disabled={index + 1 >= total}
-              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="p-1 rounded hover:bg-black/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors flex-shrink-0"
               aria-label="Next chapter"
             >
               <ChevronRight className="h-4 w-4" />
@@ -275,6 +282,7 @@ const QuickRead = () => {
           <div className="h-full transition-all duration-500" style={{ width: `${progressPct}%`, background: GOLD }} />
         </div>
       </div>
+
 
       {/* Chapter content */}
       <div className="max-w-3xl mx-auto px-6 md:px-10 py-12 md:py-16">
