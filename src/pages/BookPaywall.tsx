@@ -123,11 +123,11 @@ export default function BookPaywall() {
 
         <div className="bg-white rounded-xl p-5 mb-6 border-2" style={{ borderColor: GOLD }}>
           <div className="flex justify-between mb-1 text-sm" style={{ color: "#5a4632" }}>
-            <span>Book unlock</span><span>{formatUSD(PRICING.bookCents)}</span>
+            <span>Book unlock</span><span>{formatUSD(pricing.book_cents)}</span>
           </div>
           {extraCopies > 0 && (
             <div className="flex justify-between mb-1 text-sm" style={{ color: "#5a4632" }}>
-              <span>Extra copies × {extraCopies}</span><span>{formatUSD(PRICING.extraCopyCents * extraCopies)}</span>
+              <span>Extra copies × {extraCopies}</span><span>{formatUSD(pricing.extra_copy_cents * extraCopies)}</span>
             </div>
           )}
           <div className="flex justify-between mb-2 text-sm" style={{ color: "#5a4632" }}>
