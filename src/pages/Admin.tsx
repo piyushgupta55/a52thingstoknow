@@ -177,9 +177,9 @@ const Admin = () => {
             <TabsTrigger value="lifecycle" disabled>Book Lifecycle</TabsTrigger>
             <TabsTrigger value="qc" disabled>QC Review</TabsTrigger>
             <TabsTrigger value="moderation" disabled>Moderation</TabsTrigger>
-            <TabsTrigger value="pricing" disabled>Pricing</TabsTrigger>
-            <TabsTrigger value="reminders" disabled>Reminders</TabsTrigger>
-            <TabsTrigger value="orders" disabled>Orders</TabsTrigger>
+           <TabsTrigger value="pricing">Pricing</TabsTrigger>
+           <TabsTrigger value="reminders" disabled>Reminders</TabsTrigger>
+           <TabsTrigger value="orders" disabled>Orders</TabsTrigger>
           </TabsList>
 
           <TabsContent value="testers" className="mt-6">
