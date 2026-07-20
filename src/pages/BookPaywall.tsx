@@ -112,7 +112,7 @@ export default function BookPaywall() {
             <Truck className="h-4 w-4" style={{ color: GOLD }} /> Extra copies (optional)
           </h3>
           <p className="text-sm mb-3" style={{ color: "#5a4632" }}>
-            A great gift for grandparents or siblings. Extra copies are the printed book only (no sleeve or gift box) — {formatUSD(PRICING.extraCopyCents)} each, plus {formatUSD(PRICING.shippingExtraCents)} shipping per copy.
+            A great gift for grandparents or siblings. Extra copies are the printed book only (no sleeve or gift box) — {formatUSD(pricing.extra_copy_cents)} each, plus {formatUSD(pricing.shipping_extra_cents)} shipping per copy.
           </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setExtraCopies(Math.max(0, extraCopies - 1))}>−</Button>
