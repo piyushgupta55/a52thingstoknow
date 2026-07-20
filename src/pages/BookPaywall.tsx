@@ -10,22 +10,40 @@ const CREAM = "#F5F0E8";
 const GOLD = "#BBA96A";
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 
+interface Pricing {
+  book_cents: number;
+  extra_copy_cents: number;
+  shipping_first_cents: number;
+  shipping_extra_cents: number;
+}
+const DEFAULT_PRICING: Pricing = {
+  book_cents: PRICING.bookCents,
+  extra_copy_cents: PRICING.extraCopyCents,
+  shipping_first_cents: PRICING.shippingFirstCents,
+  shipping_extra_cents: PRICING.shippingExtraCents,
+};
+
 export default function BookPaywall() {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const [book, setBook] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [extraCopies, setExtraCopies] = useState(0);
+  const [pricing, setPricing] = useState<Pricing>(DEFAULT_PRICING);
 
   useEffect(() => {
     if (!bookId) return;
     (async () => {
-      const { data } = await supabase
-        .from("books")
-        .select("id, recipient_name, milestone_date")
-        .eq("id", bookId)
-        .maybeSingle();
-      setBook(data);
+      const [{ data: bookData }, { data: priceData }] = await Promise.all([
+        supabase
+          .from("books")
+          .select("id, recipient_name, milestone_date")
+          .eq("id", bookId)
+          .maybeSingle(),
+        supabase.from("app_settings").select("value").eq("key", "pricing").maybeSingle(),
+      ]);
+      setBook(bookData);
+      if (priceData?.value) setPricing({ ...DEFAULT_PRICING, ...(priceData.value as any) });
       setLoading(false);
     })();
   }, [bookId]);
@@ -49,8 +67,8 @@ export default function BookPaywall() {
     );
   }
 
-  const shippingCents = PRICING.shippingFirstCents + extraCopies * PRICING.shippingExtraCents;
-  const subtotal = PRICING.bookCents + extraCopies * PRICING.extraCopyCents + shippingCents;
+  const shippingCents = pricing.shipping_first_cents + extraCopies * pricing.shipping_extra_cents;
+  const subtotal = pricing.book_cents + extraCopies * pricing.extra_copy_cents + shippingCents;
 
   return (
     <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}>
