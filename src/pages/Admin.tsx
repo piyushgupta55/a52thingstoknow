@@ -18,6 +18,7 @@ import PhotoChapterManager from '@/components/admin/PhotoChapterManager';
 import TestersManager from '@/components/admin/TestersManager';
 import TutorialsManager from '@/components/admin/TutorialsManager';
 import FeedbackManager from '@/components/admin/FeedbackManager';
+import PricingManager from '@/components/admin/PricingManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ContentEntry {
@@ -176,9 +177,9 @@ const Admin = () => {
             <TabsTrigger value="lifecycle" disabled>Book Lifecycle</TabsTrigger>
             <TabsTrigger value="qc" disabled>QC Review</TabsTrigger>
             <TabsTrigger value="moderation" disabled>Moderation</TabsTrigger>
-            <TabsTrigger value="pricing" disabled>Pricing</TabsTrigger>
-            <TabsTrigger value="reminders" disabled>Reminders</TabsTrigger>
-            <TabsTrigger value="orders" disabled>Orders</TabsTrigger>
+           <TabsTrigger value="pricing">Pricing</TabsTrigger>
+           <TabsTrigger value="reminders" disabled>Reminders</TabsTrigger>
+           <TabsTrigger value="orders" disabled>Orders</TabsTrigger>
           </TabsList>
 
           <TabsContent value="testers" className="mt-6">
@@ -196,6 +197,11 @@ const Admin = () => {
           <TabsContent value="tutorials" className="mt-6">
             <TutorialsManager />
           </TabsContent>
+
+          <TabsContent value="pricing" className="mt-6">
+            <PricingManager />
+          </TabsContent>
+
 
 
           <TabsContent value="content" className="mt-6">

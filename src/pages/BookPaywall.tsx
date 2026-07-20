@@ -10,22 +10,40 @@ const CREAM = "#F5F0E8";
 const GOLD = "#BBA96A";
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 
+interface Pricing {
+  book_cents: number;
+  extra_copy_cents: number;
+  shipping_first_cents: number;
+  shipping_extra_cents: number;
+}
+const DEFAULT_PRICING: Pricing = {
+  book_cents: PRICING.bookCents,
+  extra_copy_cents: PRICING.extraCopyCents,
+  shipping_first_cents: PRICING.shippingFirstCents,
+  shipping_extra_cents: PRICING.shippingExtraCents,
+};
+
 export default function BookPaywall() {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const [book, setBook] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [extraCopies, setExtraCopies] = useState(0);
+  const [pricing, setPricing] = useState<Pricing>(DEFAULT_PRICING);
 
   useEffect(() => {
     if (!bookId) return;
     (async () => {
-      const { data } = await supabase
-        .from("books")
-        .select("id, recipient_name, milestone_date")
-        .eq("id", bookId)
-        .maybeSingle();
-      setBook(data);
+      const [{ data: bookData }, { data: priceData }] = await Promise.all([
+        supabase
+          .from("books")
+          .select("id, recipient_name, milestone_date")
+          .eq("id", bookId)
+          .maybeSingle(),
+        supabase.from("app_settings").select("value").eq("key", "pricing").maybeSingle(),
+      ]);
+      setBook(bookData);
+      if (priceData?.value) setPricing({ ...DEFAULT_PRICING, ...(priceData.value as any) });
       setLoading(false);
     })();
   }, [bookId]);
@@ -49,8 +67,8 @@ export default function BookPaywall() {
     );
   }
 
-  const shippingCents = PRICING.shippingFirstCents + extraCopies * PRICING.shippingExtraCents;
-  const subtotal = PRICING.bookCents + extraCopies * PRICING.extraCopyCents + shippingCents;
+  const shippingCents = pricing.shipping_first_cents + extraCopies * pricing.shipping_extra_cents;
+  const subtotal = pricing.book_cents + extraCopies * pricing.extra_copy_cents + shippingCents;
 
   return (
     <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}>
@@ -62,7 +80,7 @@ export default function BookPaywall() {
 
         <p className="uppercase tracking-[0.3em] text-xs mb-2" style={{ color: GOLD }}>Unlock the full book</p>
         <h1 className="font-heading text-4xl font-bold mb-4" style={{ color: "#2a1f1a" }}>
-          Build {book.recipient_name}'s gift for {formatUSD(PRICING.bookCents)}
+          Build {book.recipient_name}'s gift for {formatUSD(pricing.book_cents)}
         </h1>
         <p className="text-lg leading-relaxed mb-8" style={{ color: "#5a4632" }}>
           You've read the first group and felt the shape of the book. Unlock the rest to personalize every chapter, add memories and photos, invite family, and ship a printed hardcover keepsake.
@@ -94,7 +112,7 @@ export default function BookPaywall() {
             <Truck className="h-4 w-4" style={{ color: GOLD }} /> Extra copies (optional)
           </h3>
           <p className="text-sm mb-3" style={{ color: "#5a4632" }}>
-            A great gift for grandparents or siblings. Extra copies are the printed book only (no sleeve or gift box) — {formatUSD(PRICING.extraCopyCents)} each, plus {formatUSD(PRICING.shippingExtraCents)} shipping per copy.
+            A great gift for grandparents or siblings. Extra copies are the printed book only (no sleeve or gift box) — {formatUSD(pricing.extra_copy_cents)} each, plus {formatUSD(pricing.shipping_extra_cents)} shipping per copy.
           </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setExtraCopies(Math.max(0, extraCopies - 1))}>−</Button>
@@ -105,11 +123,11 @@ export default function BookPaywall() {
 
         <div className="bg-white rounded-xl p-5 mb-6 border-2" style={{ borderColor: GOLD }}>
           <div className="flex justify-between mb-1 text-sm" style={{ color: "#5a4632" }}>
-            <span>Book unlock</span><span>{formatUSD(PRICING.bookCents)}</span>
+            <span>Book unlock</span><span>{formatUSD(pricing.book_cents)}</span>
           </div>
           {extraCopies > 0 && (
             <div className="flex justify-between mb-1 text-sm" style={{ color: "#5a4632" }}>
-              <span>Extra copies × {extraCopies}</span><span>{formatUSD(PRICING.extraCopyCents * extraCopies)}</span>
+              <span>Extra copies × {extraCopies}</span><span>{formatUSD(pricing.extra_copy_cents * extraCopies)}</span>
             </div>
           )}
           <div className="flex justify-between mb-2 text-sm" style={{ color: "#5a4632" }}>
