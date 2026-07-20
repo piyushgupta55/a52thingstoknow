@@ -28,6 +28,7 @@ import FamilyHistorySection from "./pages/FamilyHistorySection";
 import ChapterLibrary from "./pages/ChapterLibrary";
 import BookReview from "./pages/BookReview";
 import QuickRead from "./pages/QuickRead";
+import QuickReadHub from "./pages/QuickReadHub";
 import ReviewPile from "./pages/ReviewPile";
 import BookSettings from "./pages/BookSettings";
 import FeedbackFab from "./components/feedback/FeedbackFab";
@@ -61,7 +62,9 @@ const App = () => (
             <Route path="/book/:bookId/family-history" element={<ProtectedRoute><FamilyHistorySection /></ProtectedRoute>} />
             <Route path="/book/:bookId/library" element={<ProtectedRoute><ChapterLibrary /></ProtectedRoute>} />
             <Route path="/book/:bookId/review" element={<ProtectedRoute><BookReview /></ProtectedRoute>} />
-            <Route path="/book/:bookId/quick-read" element={<ProtectedRoute><QuickRead /></ProtectedRoute>} />
+            <Route path="/book/:bookId/quick-read" element={<ProtectedRoute><QuickReadHub /></ProtectedRoute>} />
+            <Route path="/book/:bookId/quick-read/:groupSlug" element={<ProtectedRoute><QuickRead /></ProtectedRoute>} />
+
             <Route path="/book/:bookId/pile/:pile" element={<ProtectedRoute><ReviewPile /></ProtectedRoute>} />
             <Route path="/book/:bookId/settings" element={<ProtectedRoute><BookSettings /></ProtectedRoute>} />
             <Route path="/library" element={<ProtectedRoute><ChapterLibrary /></ProtectedRoute>} />
