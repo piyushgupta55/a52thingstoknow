@@ -141,20 +141,23 @@ const QuickReadHub = () => {
               const done = total > 0 && reviewed === total;
               const started = reviewed > 0 && !done;
               const isNext = g.slug === nextGroupSlug;
+              const locked = unlocked === false && i > 0;
 
               return (
                 <li key={g.slug}>
                   <button
                     type="button"
-                    onClick={() => navigate(`/book/${bookId}/quick-read/${g.slug}`)}
+                    onClick={() => locked ? navigate(`/book/${bookId}/unlock`) : navigate(`/book/${bookId}/quick-read/${g.slug}`)}
                     disabled={total === 0}
                     className="w-full text-left rounded-xl border transition-all group hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       background: done ? 'rgba(187,169,106,0.10)' : '#fff',
-                      borderColor: isNext ? GOLD : 'rgba(187,169,106,0.25)',
-                      boxShadow: isNext ? '0 0 0 2px rgba(187,169,106,0.25)' : 'none',
+                      borderColor: isNext && !locked ? GOLD : 'rgba(187,169,106,0.25)',
+                      boxShadow: isNext && !locked ? '0 0 0 2px rgba(187,169,106,0.25)' : 'none',
+                      opacity: locked ? 0.7 : 1,
                     }}
                   >
+
                     <div className="p-4 md:p-5 flex items-center gap-4">
                       <div
                         className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center font-heading text-sm font-bold"
@@ -193,8 +196,9 @@ const QuickReadHub = () => {
                         </div>
                       </div>
 
-                      <ChevronRight className="h-5 w-5 flex-shrink-0" style={{ color: isNext ? GOLD : '#8a7560' }} />
+                      {locked ? <Lock className="h-5 w-5 flex-shrink-0" style={{ color: GOLD }} /> : <ChevronRight className="h-5 w-5 flex-shrink-0" style={{ color: isNext ? GOLD : '#8a7560' }} />}
                     </div>
+
                   </button>
                 </li>
               );
