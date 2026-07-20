@@ -80,7 +80,7 @@ export default function BookPaywall() {
 
         <p className="uppercase tracking-[0.3em] text-xs mb-2" style={{ color: GOLD }}>Unlock the full book</p>
         <h1 className="font-heading text-4xl font-bold mb-4" style={{ color: "#2a1f1a" }}>
-          Build {book.recipient_name}'s gift for {formatUSD(PRICING.bookCents)}
+          Build {book.recipient_name}'s gift for {formatUSD(pricing.book_cents)}
         </h1>
         <p className="text-lg leading-relaxed mb-8" style={{ color: "#5a4632" }}>
           You've read the first group and felt the shape of the book. Unlock the rest to personalize every chapter, add memories and photos, invite family, and ship a printed hardcover keepsake.
