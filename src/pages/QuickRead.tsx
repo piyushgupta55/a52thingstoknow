@@ -3,9 +3,10 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { toBookGender } from '@/lib/genderMap';
+import { getGroupBySlug, getGroupSlugForTitle } from '@/data/chapterThemeGroups';
 
 import { Button } from '@/components/ui/button';
-import { Heart, Plus, PenLine, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, Plus, PenLine, X, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
