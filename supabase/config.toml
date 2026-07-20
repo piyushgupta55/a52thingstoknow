@@ -5,4 +5,9 @@ project_id = "ukxtkanujwfsyttjklrj"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
-
+  [functions.create-book-checkout]
+    verify_jwt = false
+  [functions.payments-webhook]
+    verify_jwt = false
+  [functions.request-book-refund]
+    verify_jwt = false

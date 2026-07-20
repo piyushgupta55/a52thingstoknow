@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ChevronRight, CheckCircle2, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronRight, CheckCircle2, BookOpen, Lock } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { BookLockBanner } from '@/components/BookLockBanner';
+import { useBookUnlocked } from '@/hooks/useBookUnlocked';
 import { THEME_GROUPS, getGroupSlugForTitle } from '@/data/chapterThemeGroups';
+
 
 const CREAM = '#F5F0E8';
 const GOLD = '#BBA96A';
@@ -21,9 +24,11 @@ interface Chapter {
 const QuickReadHub = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
+  const unlocked = useBookUnlocked(bookId);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [recipientName, setRecipientName] = useState<string>('');
+
 
   useEffect(() => {
     if (!bookId) return;
@@ -83,7 +88,9 @@ const QuickReadHub = () => {
   return (
     <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}>
       <Navbar />
+      <BookLockBanner bookId={bookId!} />
       <div className="container mx-auto px-4 py-8 max-w-3xl">
+
         <Button
           variant="ghost"
           size="sm"
@@ -134,20 +141,23 @@ const QuickReadHub = () => {
               const done = total > 0 && reviewed === total;
               const started = reviewed > 0 && !done;
               const isNext = g.slug === nextGroupSlug;
+              const locked = unlocked === false && i > 0;
 
               return (
                 <li key={g.slug}>
                   <button
                     type="button"
-                    onClick={() => navigate(`/book/${bookId}/quick-read/${g.slug}`)}
+                    onClick={() => locked ? navigate(`/book/${bookId}/unlock`) : navigate(`/book/${bookId}/quick-read/${g.slug}`)}
                     disabled={total === 0}
                     className="w-full text-left rounded-xl border transition-all group hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       background: done ? 'rgba(187,169,106,0.10)' : '#fff',
-                      borderColor: isNext ? GOLD : 'rgba(187,169,106,0.25)',
-                      boxShadow: isNext ? '0 0 0 2px rgba(187,169,106,0.25)' : 'none',
+                      borderColor: isNext && !locked ? GOLD : 'rgba(187,169,106,0.25)',
+                      boxShadow: isNext && !locked ? '0 0 0 2px rgba(187,169,106,0.25)' : 'none',
+                      opacity: locked ? 0.7 : 1,
                     }}
                   >
+
                     <div className="p-4 md:p-5 flex items-center gap-4">
                       <div
                         className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center font-heading text-sm font-bold"
@@ -186,8 +196,9 @@ const QuickReadHub = () => {
                         </div>
                       </div>
 
-                      <ChevronRight className="h-5 w-5 flex-shrink-0" style={{ color: isNext ? GOLD : '#8a7560' }} />
+                      {locked ? <Lock className="h-5 w-5 flex-shrink-0" style={{ color: GOLD }} /> : <ChevronRight className="h-5 w-5 flex-shrink-0" style={{ color: isNext ? GOLD : '#8a7560' }} />}
                     </div>
+
                   </button>
                 </li>
               );

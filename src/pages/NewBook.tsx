@@ -187,8 +187,9 @@ const NewBook = () => {
           </div>
 
           <div>
-            <Label htmlFor="milestoneDate">Expected Date (optional)</Label>
-            <Input id="milestoneDate" type="date" value={milestoneDate} onChange={e => setMilestoneDate(e.target.value)} className="mt-1" />
+            <Label htmlFor="milestoneDate">Target Date</Label>
+            <Input id="milestoneDate" type="date" value={milestoneDate} onChange={e => setMilestoneDate(e.target.value)} className="mt-1" required />
+            <p className="text-xs text-muted-foreground mt-1">The day you want to give the book. Sets your money-back guarantee window (full refund until 90 days before, or 30 days from purchase — whichever is later).</p>
           </div>
 
           <div>

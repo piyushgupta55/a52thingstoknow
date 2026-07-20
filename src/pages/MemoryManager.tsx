@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
+import { LockedPage } from '@/components/BookLockBanner';
+import { useBookUnlocked } from '@/hooks/useBookUnlocked';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -46,6 +48,8 @@ const MemoryManager = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const unlocked = useBookUnlocked(bookId);
+
 
   const [book, setBook] = useState<BookInfo | null>(null);
   const [authorName, setAuthorName] = useState('');
@@ -241,10 +245,22 @@ const MemoryManager = () => {
     );
   }
 
+  if (unlocked === false) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <LockedPage bookId={bookId!} title="Memories are part of the full book" message="Family memories and photos unlock with your book. Preview mode covers the first read-through only." />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
+
+
+
         <Button variant="ghost" size="sm" onClick={() => navigate(`/book/${bookId}`)} className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Book
         </Button>
