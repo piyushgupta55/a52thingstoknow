@@ -364,11 +364,13 @@ export type Database = {
           created_at: string
           id: string
           is_photo_chapter: boolean
+          photo_declined: boolean
           photo_layout: string
           photo_urls: string[]
           quote_attribution: string | null
           quote_id: string | null
           quote_text: string | null
+          reading_reward_decision: string | null
           reference_text: string | null
           review_status: string | null
           seed_content: string | null
@@ -388,11 +390,13 @@ export type Database = {
           created_at?: string
           id?: string
           is_photo_chapter?: boolean
+          photo_declined?: boolean
           photo_layout?: string
           photo_urls?: string[]
           quote_attribution?: string | null
           quote_id?: string | null
           quote_text?: string | null
+          reading_reward_decision?: string | null
           reference_text?: string | null
           review_status?: string | null
           seed_content?: string | null
@@ -412,11 +416,13 @@ export type Database = {
           created_at?: string
           id?: string
           is_photo_chapter?: boolean
+          photo_declined?: boolean
           photo_layout?: string
           photo_urls?: string[]
           quote_attribution?: string | null
           quote_id?: string | null
           quote_text?: string | null
+          reading_reward_decision?: string | null
           reference_text?: string | null
           review_status?: string | null
           seed_content?: string | null
