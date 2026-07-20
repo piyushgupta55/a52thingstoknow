@@ -65,10 +65,11 @@ const stripHtml = (raw: string) =>
     .trim();
 
 const QuickRead = () => {
-  const { bookId } = useParams<{ bookId: string }>();
+  const { bookId, groupSlug } = useParams<{ bookId: string; groupSlug?: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const startChapterId = searchParams.get('chapterId');
+  const group = getGroupBySlug(groupSlug);
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -79,8 +80,15 @@ const QuickRead = () => {
   const [loading, setLoading] = useState(true);
   const [cueDismissed, setCueDismissed] = useState(false);
 
+  // If no group slug, this route now redirects to the hub.
   useEffect(() => {
-    if (!bookId) return;
+    if (bookId && !groupSlug) {
+      navigate(`/book/${bookId}/quick-read`, { replace: true });
+    }
+  }, [bookId, groupSlug, navigate]);
+
+  useEffect(() => {
+    if (!bookId || !group) return;
     (async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = toBookGender(bookData?.recipient_gender);
@@ -95,23 +103,25 @@ const QuickRead = () => {
       }
       setBook(bookData);
       setAuthorLabel(bookData?.from_label || null);
-      const loadedChapters = (chapData as Chapter[]) || [];
-      setChapters(loadedChapters);
+      // Filter to just the chapters in this topic group, preserving book order.
+      const allChapters = (chapData as Chapter[]) || [];
+      const inGroup = allChapters.filter(c => getGroupSlugForTitle(c.title) === group.slug);
+      setChapters(inGroup);
       setMemories((memData as Memory[]) || []);
       setTemplates((tplData as Template[]) || []);
-      // If launched with ?chapterId=..., start at that chapter. Otherwise
-      // resume at the first unreviewed chapter, or Chapter 1 if all reviewed.
+      // Prefer explicit chapterId, otherwise first unreviewed in this group.
       let startIdx = -1;
       if (startChapterId) {
-        startIdx = loadedChapters.findIndex(c => c.id === startChapterId);
+        startIdx = inGroup.findIndex(c => c.id === startChapterId);
       }
       if (startIdx < 0) {
-        startIdx = loadedChapters.findIndex(c => !c.review_status);
+        startIdx = inGroup.findIndex(c => !c.review_status);
       }
       setIndex(startIdx >= 0 ? startIdx : 0);
       setLoading(false);
     })();
-  }, [bookId, startChapterId]);
+  }, [bookId, group, startChapterId]);
+
 
 
   useEffect(() => {
