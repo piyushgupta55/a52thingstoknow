@@ -9,15 +9,11 @@ import { Loader2, DollarSign } from 'lucide-react';
 interface Pricing {
   book_cents: number;
   extra_copy_cents: number;
-  shipping_first_cents: number;
-  shipping_extra_cents: number;
 }
 
 const DEFAULTS: Pricing = {
-  book_cents: 8900,
-  extra_copy_cents: 3400,
-  shipping_first_cents: 1200,
-  shipping_extra_cents: 400,
+  book_cents: 9100,
+  extra_copy_cents: 3800,
 };
 
 const centsToDollars = (c: number) => (c / 100).toFixed(2);
@@ -36,7 +32,13 @@ export default function PricingManager() {
         .select('value')
         .eq('key', 'pricing')
         .maybeSingle();
-      if (data?.value) setPricing({ ...DEFAULTS, ...(data.value as any) });
+      if (data?.value) {
+        const v = data.value as any;
+        setPricing({
+          book_cents: Number.isFinite(v.book_cents) ? v.book_cents : DEFAULTS.book_cents,
+          extra_copy_cents: Number.isFinite(v.extra_copy_cents) ? v.extra_copy_cents : DEFAULTS.extra_copy_cents,
+        });
+      }
       setLoading(false);
     })();
   }, []);
@@ -95,15 +97,13 @@ export default function PricingManager() {
     <div className="max-w-2xl">
       <h2 className="text-xl font-semibold mb-1">Pricing</h2>
       <p className="text-sm text-muted-foreground mb-6">
-        Amounts charged at checkout are read from these settings at the moment of purchase.
-        Changes take effect immediately — no Stripe dashboard edits required.
+        Prices are shipping-inclusive — buyers see one price at checkout, no separate shipping line.
+        Changes take effect on the next checkout.
       </p>
 
       <div className="bg-white rounded-lg border p-5 mb-6">
-        {row('Book unlock', 'book_cents', 'One-time charge to unlock the full book and receive the first printed copy.')}
-        {row('Extra printed copy', 'extra_copy_cents', 'Per additional copy (no sleeve or gift box).')}
-        {row('Shipping — first book', 'shipping_first_cents', 'USPS Ground Advantage, insured.')}
-        {row('Shipping — each additional copy', 'shipping_extra_cents', 'Added on top of the first-book shipping.')}
+        {row('Book unlock (shipping included)', 'book_cents', 'One-time charge to unlock the full book and receive the first printed copy, shipped.')}
+        {row('Extra printed copy (shipping included)', 'extra_copy_cents', 'Per additional copy, shipped. No sleeve or gift box.')}
       </div>
 
       <Button onClick={save} disabled={saving}>
