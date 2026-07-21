@@ -254,6 +254,14 @@ const ChapterEditor = () => {
     autoResize(refTextareaRef.current);
   }, [loading, previewMode, mergedText, content, autoResize]);
 
+  // Trial gating: chapters in trial_readable (but not trial_editable) are
+  // read-only until the book is unlocked. Force preview mode on.
+  useEffect(() => {
+    if (loading || !chapter) return;
+    const editable = unlocked === true || isInSet(chapter.title, previewSets.trial_editable);
+    if (!editable && !previewMode) setPreviewMode(true);
+  }, [loading, chapter, unlocked, previewSets, previewMode]);
+
   useEffect(() => {
     const handleScroll = () => {
       scrollPositionRef.current = window.scrollY;
