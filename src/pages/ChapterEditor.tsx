@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import { LockedPage } from '@/components/BookLockBanner';
 import { useBookUnlocked } from '@/hooks/useBookUnlocked';
+import { usePreviewSets, isInSet } from '@/lib/previewSets';
 import DevotionalVerse from '@/components/chapter/DevotionalVerse';
 import DevotionalQuote from '@/components/chapter/DevotionalQuote';
 import PhotoUploadZone from '@/components/chapter/PhotoUploadZone';
@@ -108,6 +109,7 @@ const ChapterEditor = () => {
   const { bookId, chapterId } = useParams<{ bookId: string; chapterId: string }>();
   const navigate = useNavigate();
   const unlocked = useBookUnlocked(bookId);
+  const { sets: previewSets } = usePreviewSets();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
   const returnLabel = searchParams.get('returnLabel');
@@ -251,6 +253,14 @@ const ChapterEditor = () => {
     autoResize(wisdomTextareaRef.current);
     autoResize(refTextareaRef.current);
   }, [loading, previewMode, mergedText, content, autoResize]);
+
+  // Trial gating: chapters in trial_readable (but not trial_editable) are
+  // read-only until the book is unlocked. Force preview mode on.
+  useEffect(() => {
+    if (loading || !chapter) return;
+    const editable = unlocked === true || isInSet(chapter.title, previewSets.trial_editable);
+    if (!editable && !previewMode) setPreviewMode(true);
+  }, [loading, chapter, unlocked, previewSets, previewMode]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -1337,10 +1347,15 @@ const ChapterEditor = () => {
     </div>
   );
 
-  if (unlocked === false) return (
+  const chapterInReadable = isInSet(chapter?.title, previewSets.trial_readable);
+  const chapterInEditable = isInSet(chapter?.title, previewSets.trial_editable);
+  const canEdit = unlocked === true || chapterInEditable;
+  const canReadChapter = unlocked === true || chapterInReadable || chapterInEditable;
+
+  if (unlocked === false && !canReadChapter) return (
     <div className="min-h-screen bg-[hsl(var(--devotional-bg))]">
       <Navbar />
-      <LockedPage bookId={bookId!} title="Editing is part of the full book" message="Personalize any chapter after you unlock the book. Preview mode is for the first read-through only." />
+      <LockedPage bookId={bookId!} title="This chapter is part of the full book" message="Unlock the book to open every chapter. Your trial gives you a sample from every theme, plus one chapter you can edit yourself." />
     </div>
   );
 

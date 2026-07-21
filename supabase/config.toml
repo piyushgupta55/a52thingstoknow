@@ -11,3 +11,5 @@ project_id = "ukxtkanujwfsyttjklrj"
     verify_jwt = false
   [functions.request-book-refund]
     verify_jwt = false
+  [functions.public-preview]
+    verify_jwt = false

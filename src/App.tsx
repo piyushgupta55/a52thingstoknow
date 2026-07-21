@@ -35,6 +35,8 @@ import BookPaywall from "./pages/BookPaywall";
 import BookCheckout from "./pages/BookCheckout";
 import BookCheckoutReturn from "./pages/BookCheckoutReturn";
 import BookRefund from "./pages/BookRefund";
+import PublicSamples from "./pages/PublicSamples";
+import PublicSample from "./pages/PublicSample";
 import FeedbackFab from "./components/feedback/FeedbackFab";
 
 const queryClient = new QueryClient();
@@ -53,6 +55,8 @@ const App = () => (
             <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/samples" element={<PublicSamples />} />
+            <Route path="/sample/:templateId" element={<PublicSample />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/new-book" element={<ProtectedRoute><NewBook /></ProtectedRoute>} />
             <Route path="/book/:bookId" element={<ProtectedRoute><BookDashboard /></ProtectedRoute>} />

@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Shield } from "lucide-react";
+import { toast } from "sonner";
 
 const CREAM = "#F5F0E8";
 const GOLD = "#BBA96A";
@@ -27,8 +28,10 @@ export default function BookCheckoutReturn() {
         .eq("stripe_session_id", sessionId)
         .maybeSingle();
       if (cancelled) return;
-      if (data) setPurchase(data);
-      else if (tries < 20) setTimeout(() => setTries((t) => t + 1), 1000);
+      if (data) {
+        setPurchase(data);
+        toast.success("Your trial edits were saved — nothing was lost.");
+      } else if (tries < 20) setTimeout(() => setTries((t) => t + 1), 1000);
     };
     poll();
     return () => { cancelled = true; };
