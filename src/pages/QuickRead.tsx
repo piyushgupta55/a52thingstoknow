@@ -323,6 +323,32 @@ const QuickRead = () => {
           <div className="mx-auto mt-6 h-px w-16" style={{ background: GOLD }} />
         </div>
 
+        {chapterLocked ? (
+          <div className="rounded-xl border p-8 text-center bg-white/70" style={{ borderColor: 'rgba(187,169,106,0.4)' }}>
+            <Lock className="h-7 w-7 mx-auto mb-3" style={{ color: GOLD }} />
+            <h3 className="font-heading text-xl font-bold mb-2" style={{ color: '#2a1f1a' }}>
+              This chapter is part of the full book
+            </h3>
+            <p className="text-sm mb-5 max-w-md mx-auto" style={{ color: '#5a4632' }}>
+              You've got one open chapter in this group during the trial. Unlock the book to read every chapter and personalize them for {book?.recipient_name || 'your child'}.
+            </p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Button variant="outline" onClick={goPrev} disabled={index === 0}>
+                <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+              </Button>
+              <Button style={{ background: GOLD, color: '#fff' }} onClick={() => navigate(`/book/${bookId}/unlock`)}>
+                Unlock full book
+              </Button>
+              <Button variant="outline" onClick={goNext} disabled={index + 1 >= total}>
+                Next <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+
+
+
 
         {chapter.bible_verse_text && (
           <blockquote className="text-center italic text-lg md:text-xl mb-8 px-4" style={{ color: '#5a4632' }}>
