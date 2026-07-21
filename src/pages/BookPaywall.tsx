@@ -63,8 +63,7 @@ export default function BookPaywall() {
     );
   }
 
-  const shippingCents = pricing.shipping_first_cents + extraCopies * pricing.shipping_extra_cents;
-  const subtotal = pricing.book_cents + extraCopies * pricing.extra_copy_cents + shippingCents;
+  const subtotal = pricing.book_cents + extraCopies * pricing.extra_copy_cents;
 
   return (
     <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}>
