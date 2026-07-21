@@ -4,9 +4,11 @@ import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { toBookGender } from '@/lib/genderMap';
 import { getGroupBySlug, getGroupSlugForTitle } from '@/data/chapterThemeGroups';
+import { useBookUnlocked } from '@/hooks/useBookUnlocked';
+import { usePreviewSets, isInSet } from '@/lib/previewSets';
 
 import { Button } from '@/components/ui/button';
-import { Heart, Plus, PenLine, X, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
+import { Heart, Plus, PenLine, X, ChevronLeft, ChevronRight, Camera, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
@@ -70,6 +72,8 @@ const QuickRead = () => {
   const [searchParams] = useSearchParams();
   const startChapterId = searchParams.get('chapterId');
   const group = getGroupBySlug(groupSlug);
+  const unlocked = useBookUnlocked(bookId);
+  const { sets } = usePreviewSets();
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
