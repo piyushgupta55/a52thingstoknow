@@ -210,6 +210,10 @@ const Admin = () => {
             <PreviewSetsManager />
           </TabsContent>
 
+          <TabsContent value="comps" className="mt-6">
+            <CompsManager />
+          </TabsContent>
+
 
 
           <TabsContent value="content" className="mt-6">
