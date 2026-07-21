@@ -14,7 +14,7 @@ export function BookLockBanner({ bookId }: { bookId: string }) {
       <div className="container mx-auto px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
         <div className="flex items-center gap-2 text-sm" style={{ color: "#5a4632" }}>
           <Sparkles className="h-4 w-4" style={{ color: GOLD }} />
-          <span><b>Preview mode.</b> Read through the first group free. Unlock $89 to personalize every chapter and ship the printed keepsake.</span>
+          <span><b>Preview mode.</b> Read through the first group free. Unlock for $89 to personalize every chapter and ship the printed keepsake.</span>
         </div>
         <Button size="sm" style={{ background: GOLD, color: "#fff" }} onClick={() => navigate(`/book/${bookId}/unlock`)}>
           Unlock full book

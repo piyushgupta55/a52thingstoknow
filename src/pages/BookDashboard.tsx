@@ -374,7 +374,7 @@ const BookDashboard = () => {
                 onClick={() => navigate(`/book/${bookId}/quick-read`)}
               >
                 <Zap className="h-4 w-4 mr-2" />
-                Continue Review
+                {reviewedCount === 0 ? 'Start Review' : 'Continue Review'}
               </Button>
             </div>
           </div>
@@ -384,7 +384,7 @@ const BookDashboard = () => {
         <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <PenLine className="h-5 w-5 text-primary" />
-            <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Continue Writing</h2>
+            <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Your Chapters</h2>
           </div>
 
           <div className="flex items-center justify-between mb-3">
@@ -453,7 +453,7 @@ const BookDashboard = () => {
             {nextChapter && (
               <Button size="lg" onClick={() => navigate(`/book/${bookId}/chapter/${nextChapter.id}`)}>
                 <PenLine className="h-4 w-4 mr-2" />
-                Continue Writing
+                {completed === 0 ? 'Start Writing' : 'Continue Writing'}
               </Button>
             )}
           </div>
