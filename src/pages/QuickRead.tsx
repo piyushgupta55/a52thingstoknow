@@ -141,6 +141,10 @@ const QuickRead = () => {
   const total = chapters.length;
   const chapter = chapters[index];
 
+  const chapterLocked = !!chapter && unlocked === false
+    && !isInSet(chapter.title, sets.trial_readable)
+    && !isInSet(chapter.title, sets.trial_editable);
+
   const tk = (t: string | null | undefined) => replaceTokens(t || '', ctx);
 
   const chapterMemories = chapter ? memories.filter(m => m.chapter_id === chapter.id) : [];
