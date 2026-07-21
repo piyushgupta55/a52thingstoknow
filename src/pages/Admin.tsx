@@ -20,6 +20,7 @@ import TutorialsManager from '@/components/admin/TutorialsManager';
 import FeedbackManager from '@/components/admin/FeedbackManager';
 import PricingManager from '@/components/admin/PricingManager';
 import PreviewSetsManager from '@/components/admin/PreviewSetsManager';
+import CompsManager from '@/components/admin/CompsManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ContentEntry {
