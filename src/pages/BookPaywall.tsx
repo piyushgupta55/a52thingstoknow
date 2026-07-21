@@ -13,14 +13,10 @@ const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 interface Pricing {
   book_cents: number;
   extra_copy_cents: number;
-  shipping_first_cents: number;
-  shipping_extra_cents: number;
 }
 const DEFAULT_PRICING: Pricing = {
   book_cents: PRICING.bookCents,
   extra_copy_cents: PRICING.extraCopyCents,
-  shipping_first_cents: PRICING.shippingFirstCents,
-  shipping_extra_cents: PRICING.shippingExtraCents,
 };
 
 export default function BookPaywall() {
