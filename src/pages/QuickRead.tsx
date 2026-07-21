@@ -520,6 +520,8 @@ const QuickRead = () => {
             </p>
           )}
         </div>
+        </>
+        )}
       </div>
     </div>
   );
