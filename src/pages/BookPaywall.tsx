@@ -125,13 +125,13 @@ export default function BookPaywall() {
               <span>Extra copies × {extraCopies}</span><span>{formatUSD(pricing.extra_copy_cents * extraCopies)}</span>
             </div>
           )}
-          <div className="flex justify-between mb-2 text-sm" style={{ color: "#5a4632" }}>
-            <span>Shipping</span><span>{formatUSD(shippingCents)}</span>
+          <div className="flex justify-between mb-2 text-sm font-medium" style={{ color: "#3d7f6b" }}>
+            <span>Shipping</span><span>Included</span>
           </div>
           <div className="flex justify-between font-heading text-xl font-bold pt-2 border-t" style={{ color: "#2a1f1a", borderColor: "rgba(187,169,106,0.3)" }}>
-            <span>Subtotal</span><span>{formatUSD(subtotal)}</span>
+            <span>Total</span><span>{formatUSD(subtotal)}</span>
           </div>
-          <p className="text-xs mt-2" style={{ color: "#8a7560" }}>Tax calculated at checkout based on shipping address.</p>
+          <p className="text-xs mt-2" style={{ color: "#8a7560" }}>Shipping included. Tax calculated at checkout based on shipping address.</p>
         </div>
 
         <Button
