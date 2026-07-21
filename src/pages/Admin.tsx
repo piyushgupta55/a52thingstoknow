@@ -20,6 +20,7 @@ import TutorialsManager from '@/components/admin/TutorialsManager';
 import FeedbackManager from '@/components/admin/FeedbackManager';
 import PricingManager from '@/components/admin/PricingManager';
 import PreviewSetsManager from '@/components/admin/PreviewSetsManager';
+import CompsManager from '@/components/admin/CompsManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ContentEntry {
@@ -180,6 +181,7 @@ const Admin = () => {
             <TabsTrigger value="moderation" disabled>Moderation</TabsTrigger>
            <TabsTrigger value="pricing">Pricing</TabsTrigger>
            <TabsTrigger value="preview">Preview Sets</TabsTrigger>
+           <TabsTrigger value="comps">Comps</TabsTrigger>
            <TabsTrigger value="reminders" disabled>Reminders</TabsTrigger>
            <TabsTrigger value="orders" disabled>Orders</TabsTrigger>
           </TabsList>
@@ -206,6 +208,10 @@ const Admin = () => {
 
           <TabsContent value="preview" className="mt-6">
             <PreviewSetsManager />
+          </TabsContent>
+
+          <TabsContent value="comps" className="mt-6">
+            <CompsManager />
           </TabsContent>
 
 
