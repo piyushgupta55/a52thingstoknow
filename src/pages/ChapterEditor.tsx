@@ -1339,10 +1339,15 @@ const ChapterEditor = () => {
     </div>
   );
 
-  if (unlocked === false) return (
+  const chapterInReadable = isInSet(chapter?.title, previewSets.trial_readable);
+  const chapterInEditable = isInSet(chapter?.title, previewSets.trial_editable);
+  const canEdit = unlocked === true || chapterInEditable;
+  const canReadChapter = unlocked === true || chapterInReadable || chapterInEditable;
+
+  if (unlocked === false && !canReadChapter) return (
     <div className="min-h-screen bg-[hsl(var(--devotional-bg))]">
       <Navbar />
-      <LockedPage bookId={bookId!} title="Editing is part of the full book" message="Personalize any chapter after you unlock the book. Preview mode is for the first read-through only." />
+      <LockedPage bookId={bookId!} title="This chapter is part of the full book" message="Unlock the book to open every chapter. Your trial gives you a sample from every theme, plus one chapter you can edit yourself." />
     </div>
   );
 
