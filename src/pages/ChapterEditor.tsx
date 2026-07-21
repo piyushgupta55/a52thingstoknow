@@ -108,6 +108,7 @@ const ChapterEditor = () => {
   const { bookId, chapterId } = useParams<{ bookId: string; chapterId: string }>();
   const navigate = useNavigate();
   const unlocked = useBookUnlocked(bookId);
+  const { sets: previewSets } = usePreviewSets();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
   const returnLabel = searchParams.get('returnLabel');
