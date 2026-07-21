@@ -13,14 +13,10 @@ const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 interface Pricing {
   book_cents: number;
   extra_copy_cents: number;
-  shipping_first_cents: number;
-  shipping_extra_cents: number;
 }
 const DEFAULT_PRICING: Pricing = {
   book_cents: PRICING.bookCents,
   extra_copy_cents: PRICING.extraCopyCents,
-  shipping_first_cents: PRICING.shippingFirstCents,
-  shipping_extra_cents: PRICING.shippingExtraCents,
 };
 
 export default function BookPaywall() {
@@ -67,8 +63,7 @@ export default function BookPaywall() {
     );
   }
 
-  const shippingCents = pricing.shipping_first_cents + extraCopies * pricing.shipping_extra_cents;
-  const subtotal = pricing.book_cents + extraCopies * pricing.extra_copy_cents + shippingCents;
+  const subtotal = pricing.book_cents + extraCopies * pricing.extra_copy_cents;
 
   return (
     <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}>
@@ -112,7 +107,7 @@ export default function BookPaywall() {
             <Truck className="h-4 w-4" style={{ color: GOLD }} /> Extra copies (optional)
           </h3>
           <p className="text-sm mb-3" style={{ color: "#5a4632" }}>
-            A great gift for grandparents or siblings. Extra copies are the printed book only (no sleeve or gift box) — {formatUSD(pricing.extra_copy_cents)} each, plus {formatUSD(pricing.shipping_extra_cents)} shipping per copy.
+            A great gift for grandparents or siblings. Extra copies are the printed book only (no sleeve or gift box) — {formatUSD(pricing.extra_copy_cents)} each, shipped.
           </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setExtraCopies(Math.max(0, extraCopies - 1))}>−</Button>
@@ -130,13 +125,13 @@ export default function BookPaywall() {
               <span>Extra copies × {extraCopies}</span><span>{formatUSD(pricing.extra_copy_cents * extraCopies)}</span>
             </div>
           )}
-          <div className="flex justify-between mb-2 text-sm" style={{ color: "#5a4632" }}>
-            <span>Shipping</span><span>{formatUSD(shippingCents)}</span>
+          <div className="flex justify-between mb-2 text-sm font-medium" style={{ color: "#3d7f6b" }}>
+            <span>Shipping</span><span>Included</span>
           </div>
           <div className="flex justify-between font-heading text-xl font-bold pt-2 border-t" style={{ color: "#2a1f1a", borderColor: "rgba(187,169,106,0.3)" }}>
-            <span>Subtotal</span><span>{formatUSD(subtotal)}</span>
+            <span>Total</span><span>{formatUSD(subtotal)}</span>
           </div>
-          <p className="text-xs mt-2" style={{ color: "#8a7560" }}>Tax calculated at checkout based on shipping address.</p>
+          <p className="text-xs mt-2" style={{ color: "#8a7560" }}>Shipping included. Tax calculated at checkout based on shipping address.</p>
         </div>
 
         <Button

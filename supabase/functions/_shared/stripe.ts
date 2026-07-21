@@ -76,12 +76,10 @@ export async function verifyWebhook(req: Request, env: StripeEnv): Promise<{ typ
   return JSON.parse(body);
 }
 
-// Default catalog (Phase 1 — matches spec defaults; move to admin in Phase 2).
+// Shipping-inclusive defaults. There is no separate shipping charge.
 export const PRICING = {
-  bookCents: 8900,           // $89
-  extraCopyCents: 3400,      // $34
-  shippingFirstCents: 1200,  // $12
-  shippingExtraCents: 400,   // +$4 per additional copy
+  bookCents: 9100,       // $91, shipping included
+  extraCopyCents: 3800,  // $38 each, shipping included
 };
 
 export function computeGuaranteeDeadline(targetDate: string | null | undefined, purchaseDate: Date): Date {

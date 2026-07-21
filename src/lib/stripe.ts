@@ -27,10 +27,8 @@ export function getStripeEnvironment(): StripeEnv {
 }
 
 export const PRICING = {
-  bookCents: 8900,
-  extraCopyCents: 3400,
-  shippingFirstCents: 1200,
-  shippingExtraCents: 400,
+  bookCents: 9100,
+  extraCopyCents: 3800,
 };
 
 export function formatUSD(cents: number) {

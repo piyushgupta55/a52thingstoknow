@@ -60,8 +60,6 @@ Deno.serve(async (req) => {
     const p = (pricingRow?.value ?? {}) as Record<string, number>;
     const bookCents = Number.isFinite(p.book_cents) ? p.book_cents : PRICING_DEFAULTS.bookCents;
     const extraCopyCents = Number.isFinite(p.extra_copy_cents) ? p.extra_copy_cents : PRICING_DEFAULTS.extraCopyCents;
-    const shippingFirstCents = Number.isFinite(p.shipping_first_cents) ? p.shipping_first_cents : PRICING_DEFAULTS.shippingFirstCents;
-    const shippingExtraCents = Number.isFinite(p.shipping_extra_cents) ? p.shipping_extra_cents : PRICING_DEFAULTS.shippingExtraCents;
 
     // Resolve/create Stripe customer with userId metadata
     let customerId: string | undefined;
@@ -78,13 +76,15 @@ Deno.serve(async (req) => {
       customerId = created.id;
     }
 
-    const shippingCents = shippingFirstCents + copies * shippingExtraCents;
-
+    // Prices are shipping-inclusive — no separate shipping line item.
     const lineItems: any[] = [
       {
         price_data: {
           currency: "usd",
-          product_data: { name: `${book.recipient_name}'s Gift — Printed Keepsake Book` },
+          product_data: {
+            name: `${book.recipient_name}'s Gift — Printed Keepsake Book`,
+            description: "Shipping included",
+          },
           unit_amount: bookCents,
           tax_behavior: "exclusive",
         },
@@ -95,22 +95,13 @@ Deno.serve(async (req) => {
       lineItems.push({
         price_data: {
           currency: "usd",
-          product_data: { name: "Extra printed copy" },
+          product_data: { name: "Extra printed copy", description: "Shipping included" },
           unit_amount: extraCopyCents,
           tax_behavior: "exclusive",
         },
         quantity: copies,
       });
     }
-    lineItems.push({
-      price_data: {
-        currency: "usd",
-        product_data: { name: "Shipping (USPS Ground Advantage, insured)" },
-        unit_amount: shippingCents,
-        tax_behavior: "exclusive",
-      },
-      quantity: 1,
-    });
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
