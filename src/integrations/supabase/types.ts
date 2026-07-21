@@ -146,6 +146,8 @@ export type Database = {
         Row: {
           amount_paid_cents: number
           book_id: string
+          comp_granted_by: string | null
+          comp_reason: string | null
           created_at: string
           currency: string
           discount_code: string | null
@@ -153,6 +155,7 @@ export type Database = {
           extra_copies: number
           guarantee_deadline: string
           id: string
+          is_comp: boolean
           refund_reason: string | null
           refund_reason_text: string | null
           refunded_at: string | null
@@ -168,6 +171,8 @@ export type Database = {
         Insert: {
           amount_paid_cents: number
           book_id: string
+          comp_granted_by?: string | null
+          comp_reason?: string | null
           created_at?: string
           currency?: string
           discount_code?: string | null
@@ -175,6 +180,7 @@ export type Database = {
           extra_copies?: number
           guarantee_deadline: string
           id?: string
+          is_comp?: boolean
           refund_reason?: string | null
           refund_reason_text?: string | null
           refunded_at?: string | null
@@ -190,6 +196,8 @@ export type Database = {
         Update: {
           amount_paid_cents?: number
           book_id?: string
+          comp_granted_by?: string | null
+          comp_reason?: string | null
           created_at?: string
           currency?: string
           discount_code?: string | null
@@ -197,6 +205,7 @@ export type Database = {
           extra_copies?: number
           guarantee_deadline?: string
           id?: string
+          is_comp?: boolean
           refund_reason?: string | null
           refund_reason_text?: string | null
           refunded_at?: string | null
@@ -855,6 +864,44 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_comps: {
+        Row: {
+          created_at: string
+          email: string
+          granted_by: string | null
+          id: string
+          reason: string | null
+          redeemed_at: string | null
+          redeemed_book_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          redeemed_at?: string | null
+          redeemed_book_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          redeemed_at?: string | null
+          redeemed_book_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_comps_redeemed_book_id_fkey"
+            columns: ["redeemed_book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -995,6 +1042,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_grant_book_comp: {
+        Args: { _book_id: string; _reason: string }
+        Returns: string
+      }
+      admin_grant_comp_by_email: {
+        Args: { _email: string; _reason: string }
+        Returns: Json
+      }
+      admin_revoke_book_comp: { Args: { _book_id: string }; Returns: undefined }
       book_is_unlocked: { Args: { _book_id: string }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
