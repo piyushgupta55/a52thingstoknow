@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import { LockedPage } from '@/components/BookLockBanner';
 import { useBookUnlocked } from '@/hooks/useBookUnlocked';
+import { usePreviewSets, isInSet } from '@/lib/previewSets';
 import DevotionalVerse from '@/components/chapter/DevotionalVerse';
 import DevotionalQuote from '@/components/chapter/DevotionalQuote';
 import PhotoUploadZone from '@/components/chapter/PhotoUploadZone';
