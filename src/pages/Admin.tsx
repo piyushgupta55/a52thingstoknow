@@ -181,6 +181,7 @@ const Admin = () => {
             <TabsTrigger value="moderation" disabled>Moderation</TabsTrigger>
            <TabsTrigger value="pricing">Pricing</TabsTrigger>
            <TabsTrigger value="preview">Preview Sets</TabsTrigger>
+           <TabsTrigger value="comps">Comps</TabsTrigger>
            <TabsTrigger value="reminders" disabled>Reminders</TabsTrigger>
            <TabsTrigger value="orders" disabled>Orders</TabsTrigger>
           </TabsList>
