@@ -12,6 +12,9 @@ import { usePreviewSets, isInSet } from '@/lib/previewSets';
 
 const CREAM = '#F5F0E8';
 const GOLD = '#BBA96A';
+const TEAL = 'hsl(187, 82%, 31%)';
+const TEAL_SOFT = 'hsl(187, 82%, 31%, 0.08)';
+const TEAL_BORDER = 'hsl(187, 82%, 31%, 0.35)';
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 
 interface Chapter {
