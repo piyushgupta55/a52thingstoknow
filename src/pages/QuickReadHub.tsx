@@ -12,6 +12,9 @@ import { usePreviewSets, isInSet } from '@/lib/previewSets';
 
 const CREAM = '#F5F0E8';
 const GOLD = '#BBA96A';
+const TEAL = 'hsl(187, 82%, 31%)';
+const TEAL_SOFT = 'hsl(187, 82%, 31%, 0.08)';
+const TEAL_BORDER = 'hsl(187, 82%, 31%, 0.35)';
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 
 interface Chapter {
@@ -163,18 +166,20 @@ const QuickReadHub = () => {
                         <button
                           type="button"
                           onClick={onClick}
-                          className="w-full text-left px-4 md:px-5 py-3.5 flex items-center gap-4 transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          className="w-full text-left px-4 md:px-5 py-3.5 flex items-center gap-4 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                           style={{
-                            background: accessible ? 'transparent' : 'rgba(0,0,0,0.02)',
+                            background: accessible ? TEAL_SOFT : 'rgba(0,0,0,0.02)',
                             cursor: 'pointer',
+                            borderLeft: accessible ? `3px solid ${TEAL}` : '3px solid transparent',
                           }}
                           aria-label={`${c.title}${accessible ? '' : ' — locked'}`}
                         >
                           <div
                             className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold"
                             style={{
-                              background: reviewed && accessible ? GOLD : accessible ? 'rgba(187,169,106,0.15)' : 'rgba(0,0,0,0.05)',
-                              color: reviewed && accessible ? '#fff' : accessible ? '#5a4632' : '#a89478',
+                              background: reviewed && accessible ? TEAL : accessible ? '#fff' : 'rgba(0,0,0,0.05)',
+                              color: reviewed && accessible ? '#fff' : accessible ? TEAL : '#a89478',
+                              border: accessible && !reviewed ? `1.5px solid ${TEAL}` : 'none',
                             }}
                           >
                             {reviewed && accessible ? <CheckCircle2 className="h-4 w-4" /> : c.chapter_number}
@@ -184,32 +189,42 @@ const QuickReadHub = () => {
                             <div
                               className="font-heading text-base md:text-lg font-semibold truncate"
                               style={{
-                                color: accessible ? '#2a1f1a' : '#a89478',
+                                color: accessible ? '#2a1f1a' : '#b8a894',
                               }}
                             >
                               {c.title}
                             </div>
                             {accessible ? (
                               reviewed ? (
-                                <div className="text-xs mt-0.5" style={{ color: '#8a7560' }}>
-                                  Reviewed · {c.review_status === 'keep' ? 'Keep' : c.review_status === 'add' ? 'Add to it' : 'Rewrite'}
+                                <div className="text-xs mt-0.5" style={{ color: TEAL }}>
+                                  Reviewed · {c.review_status === 'keep' ? 'Kept' : c.review_status === 'add' ? 'Add to it' : 'Rewrite'}
                                 </div>
                               ) : (
-                                <div className="text-xs mt-0.5" style={{ color: GOLD }}>
-                                  Open — tap to read
+                                <div className="text-xs mt-0.5" style={{ color: '#5a4632' }}>
+                                  Tap to read
                                 </div>
                               )
                             ) : (
-                              <div className="text-xs mt-0.5" style={{ color: '#a89478' }}>
+                              <div className="text-xs mt-0.5" style={{ color: '#b8a894' }}>
                                 Locked — unlock the full book
                               </div>
                             )}
                           </div>
 
                           {accessible ? (
-                            <ChevronRight className="h-4 w-4 flex-shrink-0" style={{ color: '#8a7560' }} />
+                            <span
+                              className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[0.7rem] font-semibold uppercase tracking-wider"
+                              style={{
+                                background: TEAL,
+                                color: '#fff',
+                                border: `1px solid ${TEAL}`,
+                              }}
+                            >
+                              {reviewed ? 'Open' : 'Read'}
+                              <ChevronRight className="h-3 w-3" />
+                            </span>
                           ) : (
-                            <Lock className="h-4 w-4 flex-shrink-0" style={{ color: '#a89478' }} />
+                            <Lock className="h-4 w-4 flex-shrink-0" style={{ color: '#c9b8a4' }} />
                           )}
                         </button>
                       </li>
