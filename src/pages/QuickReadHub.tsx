@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ChevronRight, CheckCircle2, BookOpen, Lock } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, BookOpen, Lock, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { BookLockBanner } from '@/components/BookLockBanner';
 import { useBookUnlocked } from '@/hooks/useBookUnlocked';
@@ -68,15 +68,10 @@ const QuickReadHub = () => {
     return { reviewed, total: chapters.length };
   }, [chapters]);
 
-  const nextGroupSlug = useMemo(() => {
-    for (const g of THEME_GROUPS) {
-      const list = byGroup.get(g.slug) || [];
-      if (list.some(c => !c.review_status)) return g.slug;
-    }
-    return null;
-  }, [byGroup]);
-
-  const allDone = totals.total > 0 && totals.reviewed === totals.total;
+  const isAccessible = (c: Chapter) =>
+    unlocked === true
+    || isInSet(c.title, sets.trial_readable)
+    || isInSet(c.title, sets.trial_editable);
 
   if (loading) {
     return (
@@ -105,11 +100,11 @@ const QuickReadHub = () => {
         <div className="mb-8">
           <p className="uppercase tracking-[0.3em] text-xs mb-2" style={{ color: GOLD }}>Start Here</p>
           <h1 className="font-heading text-3xl md:text-4xl font-bold" style={{ color: '#2a1f1a' }}>
-            {recipientName ? `${recipientName}'s book, one theme at a time` : 'Your read-through'}
+            {recipientName ? `${recipientName}'s book — the whole map` : 'Your read-through'}
           </h1>
           <p className="mt-3 text-sm md:text-base leading-relaxed" style={{ color: '#5a4632' }}>
-            Ten themed groups. Read through one at a time — each is a short, finishable chunk. At the end of every
-            chapter, tell us how it feels: keep it, add to it, or rewrite it later.
+            Every chapter of the book, grouped by theme. Tap the ones that are open to read them and tell us how
+            they feel. Locked chapters unlock when you get the full book.
           </p>
 
           <div className="mt-5 flex items-center gap-3">
@@ -119,108 +114,116 @@ const QuickReadHub = () => {
                 style={{ width: `${totals.total ? (totals.reviewed / totals.total) * 100 : 0}%`, background: GOLD }}
               />
             </div>
-            <span className="text-sm font-semibold" style={{ color: '#5a4632' }}>
+            <span className="text-sm font-semibold whitespace-nowrap" style={{ color: '#5a4632' }}>
               {totals.reviewed} of {totals.total} reviewed
             </span>
           </div>
         </div>
 
-        {allDone ? (
-          <div className="bg-white/60 border rounded-xl p-6 text-center" style={{ borderColor: 'rgba(187,169,106,0.35)' }}>
-            <CheckCircle2 className="h-6 w-6 mx-auto mb-2" style={{ color: GOLD }} />
-            <p className="font-semibold" style={{ color: '#2a1f1a' }}>All 52 reviewed — beautiful work.</p>
-            <p className="text-sm mt-1" style={{ color: '#5a4632' }}>
-              The work from here is finishing chapters. Open a pile from the dashboard.
-            </p>
-            <Button className="mt-4" onClick={() => navigate(`/book/${bookId}`)}>Back to dashboard</Button>
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {THEME_GROUPS.map((g, i) => {
-              const list = byGroup.get(g.slug) || [];
-              const reviewed = list.filter(c => !!c.review_status).length;
-              const total = list.length;
-              const done = total > 0 && reviewed === total;
-              const started = reviewed > 0 && !done;
-              const isNext = g.slug === nextGroupSlug;
+        <div className="space-y-8">
+          {THEME_GROUPS.map((g, gi) => {
+            const list = byGroup.get(g.slug) || [];
+            if (list.length === 0) return null;
+            const openInGroup = list.filter(isAccessible).length;
 
-              // Per-chapter access: a chapter is accessible if the book is
-              // unlocked, or if its title is in the admin trial readable OR
-              // editable sets.
-              const openCount = unlocked
-                ? total
-                : list.filter(c => isInSet(c.title, sets.trial_readable) || isInSet(c.title, sets.trial_editable)).length;
-              const fullyLocked = !unlocked && openCount === 0;
-              const partiallyLocked = !unlocked && openCount > 0 && openCount < total;
-
-              return (
-                <li key={g.slug}>
-                  <button
-                    type="button"
-                    onClick={() => fullyLocked ? navigate(`/book/${bookId}/unlock`) : navigate(`/book/${bookId}/quick-read/${g.slug}`)}
-                    disabled={total === 0}
-                    className="w-full text-left rounded-xl border transition-all group hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{
-                      background: done ? 'rgba(187,169,106,0.10)' : '#fff',
-                      borderColor: isNext && !fullyLocked ? GOLD : 'rgba(187,169,106,0.25)',
-                      boxShadow: isNext && !fullyLocked ? '0 0 0 2px rgba(187,169,106,0.25)' : 'none',
-                      opacity: fullyLocked ? 0.7 : 1,
-                    }}
-                  >
-
-                    <div className="p-4 md:p-5 flex items-center gap-4">
-                      <div
-                        className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center font-heading text-sm font-bold"
-                        style={{
-                          background: done ? GOLD : (started ? 'rgba(187,169,106,0.2)' : 'rgba(187,169,106,0.1)'),
-                          color: done ? '#fff' : '#5a4632',
-                        }}
-                      >
-                        {done ? <CheckCircle2 className="h-5 w-5" /> : i + 1}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-2 flex-wrap">
-                          <span className="font-heading text-lg md:text-xl font-bold" style={{ color: '#2a1f1a' }}>
-                            {g.title}
-                          </span>
-                          <span className="text-xs md:text-sm" style={{ color: '#8a7560' }}>
-                            — {g.subtitle}
-                          </span>
-                        </div>
-                        <div className="mt-1 text-sm" style={{ color: '#5a4632' }}>
-                          {total === 0 ? (
-                            <span className="italic">no chapters in this book</span>
-                          ) : done ? (
-                            <span className="font-semibold">Complete · {total} chapters</span>
-                          ) : partiallyLocked ? (
-                            <span><span className="font-semibold">{openCount} of {total} open</span> — unlock the rest</span>
-                          ) : started ? (
-                            <span><span className="font-semibold">{reviewed} of {total} read</span></span>
-                          ) : (
-                            <span>{total} chapters · not started</span>
-                          )}
-                          {isNext && !done && (
-                            <span className="ml-2 uppercase tracking-widest text-[0.65rem] font-semibold" style={{ color: GOLD }}>
-                              Next
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {fullyLocked ? <Lock className="h-5 w-5 flex-shrink-0" style={{ color: GOLD }} /> : <ChevronRight className="h-5 w-5 flex-shrink-0" style={{ color: isNext ? GOLD : '#8a7560' }} />}
+            return (
+              <section key={g.slug}>
+                <div className="mb-3 flex items-baseline justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="uppercase tracking-[0.2em] text-[0.65rem] font-semibold" style={{ color: GOLD }}>
+                        Part {gi + 1}
+                      </span>
+                      <h2 className="font-heading text-xl md:text-2xl font-bold" style={{ color: '#2a1f1a' }}>
+                        {g.title}
+                      </h2>
                     </div>
+                    <p className="text-xs md:text-sm" style={{ color: '#8a7560' }}>{g.subtitle}</p>
+                  </div>
+                  {!unlocked && (
+                    <span className="text-[0.65rem] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8a7560' }}>
+                      {openInGroup} of {list.length} open
+                    </span>
+                  )}
+                </div>
 
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                <ul className="rounded-xl overflow-hidden border bg-white/60" style={{ borderColor: 'rgba(187,169,106,0.25)' }}>
+                  {list.map((c, ci) => {
+                    const accessible = isAccessible(c);
+                    const reviewed = !!c.review_status;
+                    const onClick = () => {
+                      if (accessible) {
+                        navigate(`/book/${bookId}/quick-read/${g.slug}?chapterId=${c.id}`);
+                      } else {
+                        navigate(`/book/${bookId}/unlock`);
+                      }
+                    };
+                    return (
+                      <li key={c.id} className={ci > 0 ? 'border-t' : ''} style={{ borderColor: 'rgba(187,169,106,0.2)' }}>
+                        <button
+                          type="button"
+                          onClick={onClick}
+                          className="w-full text-left px-4 md:px-5 py-3.5 flex items-center gap-4 transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          style={{
+                            background: accessible ? 'transparent' : 'rgba(0,0,0,0.02)',
+                            cursor: 'pointer',
+                          }}
+                          aria-label={`${c.title}${accessible ? '' : ' — locked'}`}
+                        >
+                          <div
+                            className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold"
+                            style={{
+                              background: reviewed && accessible ? GOLD : accessible ? 'rgba(187,169,106,0.15)' : 'rgba(0,0,0,0.05)',
+                              color: reviewed && accessible ? '#fff' : accessible ? '#5a4632' : '#a89478',
+                            }}
+                          >
+                            {reviewed && accessible ? <CheckCircle2 className="h-4 w-4" /> : c.chapter_number}
+                          </div>
 
-        <div className="mt-8 flex items-center justify-center gap-2 text-xs" style={{ color: '#8a7560' }}>
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className="font-heading text-base md:text-lg font-semibold truncate"
+                              style={{
+                                color: accessible ? '#2a1f1a' : '#a89478',
+                              }}
+                            >
+                              {c.title}
+                            </div>
+                            {accessible ? (
+                              reviewed ? (
+                                <div className="text-xs mt-0.5" style={{ color: '#8a7560' }}>
+                                  Reviewed · {c.review_status === 'keep' ? 'Keep' : c.review_status === 'add' ? 'Add to it' : 'Rewrite'}
+                                </div>
+                              ) : (
+                                <div className="text-xs mt-0.5" style={{ color: GOLD }}>
+                                  Open — tap to read
+                                </div>
+                              )
+                            ) : (
+                              <div className="text-xs mt-0.5" style={{ color: '#a89478' }}>
+                                Locked — unlock the full book
+                              </div>
+                            )}
+                          </div>
+
+                          {accessible ? (
+                            <ChevronRight className="h-4 w-4 flex-shrink-0" style={{ color: '#8a7560' }} />
+                          ) : (
+                            <Lock className="h-4 w-4 flex-shrink-0" style={{ color: '#a89478' }} />
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
+
+        <div className="mt-10 flex items-center justify-center gap-2 text-xs" style={{ color: '#8a7560' }}>
           <BookOpen className="h-3.5 w-3.5" />
-          <span>Every choice is reversible. You can jump between groups anytime.</span>
+          <span>Every choice is reversible. Jump around freely.</span>
         </div>
       </div>
     </div>
