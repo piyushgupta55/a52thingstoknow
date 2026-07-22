@@ -327,6 +327,9 @@ const QuickRead = () => {
             })}
           </div>
         )}
+      </div>
+
+
 
 
       {/* Chapter content */}
