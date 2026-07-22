@@ -153,6 +153,7 @@ const QuickReadHub = () => {
                 <ul className="rounded-xl overflow-hidden border bg-white/60" style={{ borderColor: 'rgba(187,169,106,0.25)' }}>
                   {list.map((c, ci) => {
                     const accessible = isAccessible(c);
+                    const editable = !unlocked && isInSet(c.title, sets.trial_editable);
                     const reviewed = !!c.review_status;
                     const onClick = () => {
                       if (accessible) {
@@ -199,6 +200,10 @@ const QuickReadHub = () => {
                                 <div className="text-xs mt-0.5" style={{ color: TEAL }}>
                                   Reviewed · {c.review_status === 'keep' ? 'Kept' : c.review_status === 'add' ? 'Add to it' : 'Rewrite'}
                                 </div>
+                              ) : editable ? (
+                                <div className="text-xs mt-0.5 italic" style={{ color: '#b8875a' }}>
+                                  ✨ Try editing this one — make it yours
+                                </div>
                               ) : (
                                 <div className="text-xs mt-0.5" style={{ color: '#5a4632' }}>
                                   Tap to read
@@ -212,17 +217,31 @@ const QuickReadHub = () => {
                           </div>
 
                           {accessible ? (
-                            <span
-                              className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[0.7rem] font-semibold uppercase tracking-wider"
-                              style={{
-                                background: TEAL,
-                                color: '#fff',
-                                border: `1px solid ${TEAL}`,
-                              }}
-                            >
-                              {reviewed ? 'Open' : 'Read'}
-                              <ChevronRight className="h-3 w-3" />
-                            </span>
+                            editable ? (
+                              <span
+                                className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[0.7rem] font-semibold uppercase tracking-wider"
+                                style={{
+                                  background: '#b8875a',
+                                  color: '#fff',
+                                  border: '1px solid #b8875a',
+                                }}
+                              >
+                                ✨ Try editing
+                                <ChevronRight className="h-3 w-3" />
+                              </span>
+                            ) : (
+                              <span
+                                className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[0.7rem] font-semibold uppercase tracking-wider"
+                                style={{
+                                  background: TEAL,
+                                  color: '#fff',
+                                  border: `1px solid ${TEAL}`,
+                                }}
+                              >
+                                {reviewed ? 'Open' : 'Read'}
+                                <ChevronRight className="h-3 w-3" />
+                              </span>
+                            )
                           ) : (
                             <Lock className="h-4 w-4 flex-shrink-0" style={{ color: '#c9b8a4' }} />
                           )}
