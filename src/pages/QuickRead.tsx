@@ -113,18 +113,27 @@ const QuickRead = () => {
       setChapters(inGroup);
       setMemories((memData as Memory[]) || []);
       setTemplates((tplData as Template[]) || []);
-      // Prefer explicit chapterId, otherwise first unreviewed in this group.
+      // Prefer explicit chapterId; otherwise prefer first ACCESSIBLE unreviewed,
+      // then first accessible, then 0. Never auto-land on a locked chapter
+      // when an open one exists in the group.
+      const isAccessible = (c: Chapter) =>
+        unlocked === true
+        || isInSet(c.title, sets.trial_readable)
+        || isInSet(c.title, sets.trial_editable);
       let startIdx = -1;
       if (startChapterId) {
         startIdx = inGroup.findIndex(c => c.id === startChapterId);
       }
       if (startIdx < 0) {
-        startIdx = inGroup.findIndex(c => !c.review_status);
+        startIdx = inGroup.findIndex(c => isAccessible(c) && !c.review_status);
+      }
+      if (startIdx < 0) {
+        startIdx = inGroup.findIndex(c => isAccessible(c));
       }
       setIndex(startIdx >= 0 ? startIdx : 0);
       setLoading(false);
     })();
-  }, [bookId, group, startChapterId]);
+  }, [bookId, group, startChapterId, unlocked, sets]);
 
 
 
@@ -289,7 +298,38 @@ const QuickRead = () => {
         <div className="h-1 w-full" style={{ background: 'rgba(187,169,106,0.15)' }}>
           <div className="h-full transition-all duration-500" style={{ width: `${progressPct}%`, background: GOLD }} />
         </div>
+        {total > 1 && (
+          <div className="max-w-3xl mx-auto px-6 pb-2 pt-2 flex items-center justify-center gap-1.5 flex-wrap">
+            {chapters.map((c, i) => {
+              const accessible = unlocked === true
+                || isInSet(c.title, sets.trial_readable)
+                || isInSet(c.title, sets.trial_editable);
+              const active = i === index;
+              const reviewed = !!c.review_status;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setIndex(i)}
+                  aria-label={`Chapter ${i + 1}${accessible ? '' : ' (locked)'}`}
+                  title={`${c.title}${accessible ? '' : ' — locked'}`}
+                  className="h-6 min-w-6 px-1.5 rounded-full text-[0.65rem] font-semibold flex items-center justify-center gap-0.5 transition-all border"
+                  style={{
+                    background: active ? GOLD : reviewed ? 'rgba(187,169,106,0.25)' : 'transparent',
+                    color: active ? '#fff' : accessible ? '#5a4632' : '#a89478',
+                    borderColor: active ? GOLD : accessible ? 'rgba(187,169,106,0.5)' : 'rgba(187,169,106,0.25)',
+                    opacity: accessible ? 1 : 0.65,
+                  }}
+                >
+                  {!accessible && <Lock className="h-2.5 w-2.5" />}
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+
 
 
       {/* Chapter content */}
