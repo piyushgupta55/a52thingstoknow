@@ -113,18 +113,27 @@ const QuickRead = () => {
       setChapters(inGroup);
       setMemories((memData as Memory[]) || []);
       setTemplates((tplData as Template[]) || []);
-      // Prefer explicit chapterId, otherwise first unreviewed in this group.
+      // Prefer explicit chapterId; otherwise prefer first ACCESSIBLE unreviewed,
+      // then first accessible, then 0. Never auto-land on a locked chapter
+      // when an open one exists in the group.
+      const isAccessible = (c: Chapter) =>
+        unlocked === true
+        || isInSet(c.title, sets.trial_readable)
+        || isInSet(c.title, sets.trial_editable);
       let startIdx = -1;
       if (startChapterId) {
         startIdx = inGroup.findIndex(c => c.id === startChapterId);
       }
       if (startIdx < 0) {
-        startIdx = inGroup.findIndex(c => !c.review_status);
+        startIdx = inGroup.findIndex(c => isAccessible(c) && !c.review_status);
+      }
+      if (startIdx < 0) {
+        startIdx = inGroup.findIndex(c => isAccessible(c));
       }
       setIndex(startIdx >= 0 ? startIdx : 0);
       setLoading(false);
     })();
-  }, [bookId, group, startChapterId]);
+  }, [bookId, group, startChapterId, unlocked, sets]);
 
 
 
