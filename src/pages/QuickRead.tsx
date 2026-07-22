@@ -219,7 +219,14 @@ const QuickRead = () => {
     // Optimistically update local state
     setChapters(prev => prev.map(c => c.id === chapter.id ? { ...c, review_status: choice } : c));
     if (!wasAlreadyReviewed) {
-      advance();
+      // In trial mode, return to the overview so users see the whole book
+      // (including everything still locked) instead of dead-ending at a paywall.
+      if (unlocked === false) {
+        toast.success('Saved — pick another open chapter.');
+        returnToHub();
+      } else {
+        advance();
+      }
     }
   };
 
