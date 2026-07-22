@@ -15,6 +15,13 @@ interface TemplateRow {
   is_photo_chapter: boolean;
 }
 
+interface TopicRow {
+  slotKey: string;
+  displayNumber: number;
+  titles: string[]; // all gender variants for this topic
+  anyPhoto: boolean;
+}
+
 type Field = keyof PreviewSets;
 
 const FIELD_LABELS: Record<Field, string> = {
@@ -31,9 +38,21 @@ const FIELD_HELP: Record<Field, string> = {
 
 const emptySets: PreviewSets = { website_samples: [], trial_readable: [], trial_editable: [] };
 
+// Step-version books shift chapters by +1 (they open with "I Got You").
+// Group templates into one row per TOPIC by aligning slot numbers across
+// the 4 gender variants so every version toggles together.
+const isStep = (g: string) => g === "stepdaughter" || g === "stepson";
+const slotFor = (t: TemplateRow): string => {
+  if (isStep(t.gender) && t.chapter_number === 1) return "step-intro"; // "I Got You"
+  const n = isStep(t.gender) ? t.chapter_number - 1 : t.chapter_number;
+  return `slot-${n}`;
+};
+const slotSortValue = (key: string): number =>
+  key === "step-intro" ? 0.5 : Number(key.replace("slot-", ""));
+
 export default function PreviewSetsManager() {
   const { toast } = useToast();
-  const [templates, setTemplates] = useState<TemplateRow[]>([]);
+  const [topics, setTopics] = useState<TopicRow[]>([]);
   const [sets, setSets] = useState<PreviewSets>(emptySets);
   const [initial, setInitial] = useState<PreviewSets>(emptySets);
   const [loading, setLoading] = useState(true);
@@ -49,14 +68,35 @@ export default function PreviewSetsManager() {
           .order("chapter_number"),
         fetchPreviewSets(true),
       ]);
-      // Deduplicate templates by title (across gender variants) so the admin
-      // toggles a single row per chapter.
-      const seen = new Map<string, TemplateRow>();
+      const groups = new Map<string, TopicRow>();
       for (const t of (tpls || []) as TemplateRow[]) {
-        const key = normalizeTitle(t.title);
-        if (!seen.has(key) || t.gender === "female") seen.set(key, t);
+        const key = slotFor(t);
+        const existing = groups.get(key);
+        const displayNumber =
+          key === "step-intro"
+            ? 0
+            : isStep(t.gender)
+            ? t.chapter_number - 1
+            : t.chapter_number;
+        if (!existing) {
+          groups.set(key, {
+            slotKey: key,
+            displayNumber,
+            titles: [t.title],
+            anyPhoto: t.is_photo_chapter,
+          });
+        } else {
+          if (!existing.titles.some((x) => normalizeTitle(x) === normalizeTitle(t.title))) {
+            existing.titles.push(t.title);
+          }
+          existing.anyPhoto = existing.anyPhoto || t.is_photo_chapter;
+        }
       }
-      setTemplates(Array.from(seen.values()).sort((a, b) => a.chapter_number - b.chapter_number));
+      setTopics(
+        Array.from(groups.values()).sort(
+          (a, b) => slotSortValue(a.slotKey) - slotSortValue(b.slotKey),
+        ),
+      );
       setSets(s);
       setInitial(s);
       setLoading(false);
@@ -65,24 +105,27 @@ export default function PreviewSetsManager() {
 
   const filtered = useMemo(() => {
     const q = normalizeTitle(filter);
-    if (!q) return templates;
-    return templates.filter((t) => normalizeTitle(t.title).includes(q));
-  }, [templates, filter]);
+    if (!q) return topics;
+    return topics.filter((row) =>
+      row.titles.some((t) => normalizeTitle(t).includes(q)),
+    );
+  }, [topics, filter]);
 
-  const isChecked = (field: Field, title: string): boolean => {
-    const n = normalizeTitle(title);
-    return sets[field].some((t) => normalizeTitle(t) === n);
+  const isChecked = (field: Field, titles: string[]): boolean => {
+    return titles.some((t) => {
+      const n = normalizeTitle(t);
+      return sets[field].some((x) => normalizeTitle(x) === n);
+    });
   };
 
-  const toggle = (field: Field, title: string) => {
-    const n = normalizeTitle(title);
+  const toggle = (field: Field, titles: string[]) => {
     setSets((prev) => {
       const existing = prev[field];
-      const has = existing.some((t) => normalizeTitle(t) === n);
-      return {
-        ...prev,
-        [field]: has ? existing.filter((t) => normalizeTitle(t) !== n) : [...existing, title],
-      };
+      const normalizedVariants = new Set(titles.map(normalizeTitle));
+      const alreadyIn = existing.some((x) => normalizedVariants.has(normalizeTitle(x)));
+      const stripped = existing.filter((x) => !normalizedVariants.has(normalizeTitle(x)));
+      const next = alreadyIn ? stripped : [...stripped, ...titles];
+      return { ...prev, [field]: next };
     });
   };
 
@@ -104,9 +147,9 @@ export default function PreviewSetsManager() {
   };
 
   const counts: Record<Field, number> = {
-    website_samples: sets.website_samples.length,
-    trial_readable: sets.trial_readable.length,
-    trial_editable: sets.trial_editable.length,
+    website_samples: topics.filter((r) => isChecked("website_samples", r.titles)).length,
+    trial_readable: topics.filter((r) => isChecked("trial_readable", r.titles)).length,
+    trial_editable: topics.filter((r) => isChecked("trial_editable", r.titles)).length,
   };
 
   if (loading) return <div className="text-muted-foreground">Loading…</div>;
@@ -116,8 +159,8 @@ export default function PreviewSetsManager() {
       <div>
         <h2 className="text-xl font-semibold mb-1">Preview sets</h2>
         <p className="text-sm text-muted-foreground max-w-3xl">
-          Control which chapters are shown before purchase. Website samples are public (no login). Trial sets apply to signed-up users who
-          haven't paid yet. Changes take effect immediately for new page loads.
+          One row per topic. Toggling a topic applies to all book versions (daughter, son, stepdaughter, stepson) — each
+          reader sees their own matching chapter title. Changes take effect immediately for new page loads.
         </p>
       </div>
 
@@ -133,7 +176,7 @@ export default function PreviewSetsManager() {
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <Input
-          placeholder="Filter chapters…"
+          placeholder="Filter topics…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="max-w-xs"
@@ -149,7 +192,7 @@ export default function PreviewSetsManager() {
           <thead className="bg-muted/40 text-left">
             <tr>
               <th className="p-2 w-12">#</th>
-              <th className="p-2">Chapter</th>
+              <th className="p-2">Topic (all version titles)</th>
               <th className="p-2 w-24 text-center">Photo?</th>
               {(Object.keys(FIELD_LABELS) as Field[]).map((f) => (
                 <th key={f} className="p-2 w-32 text-center">{FIELD_LABELS[f]}</th>
@@ -157,16 +200,29 @@ export default function PreviewSetsManager() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((t) => (
-              <tr key={t.id} className="border-t hover:bg-muted/20">
-                <td className="p-2 text-muted-foreground">{t.chapter_number}</td>
-                <td className="p-2 font-medium">{t.title}</td>
-                <td className="p-2 text-center text-xs text-muted-foreground">{t.is_photo_chapter ? "yes" : ""}</td>
+            {filtered.map((row) => (
+              <tr key={row.slotKey} className="border-t hover:bg-muted/20 align-top">
+                <td className="p-2 text-muted-foreground">
+                  {row.slotKey === "step-intro" ? "—" : row.displayNumber}
+                </td>
+                <td className="p-2">
+                  {row.titles.length === 1 ? (
+                    <span className="font-medium">{row.titles[0]}</span>
+                  ) : (
+                    <div className="space-y-0.5">
+                      <div className="font-medium">{row.titles[0]}</div>
+                      <div className="text-xs text-muted-foreground">
+                        also: {row.titles.slice(1).join(" · ")}
+                      </div>
+                    </div>
+                  )}
+                </td>
+                <td className="p-2 text-center text-xs text-muted-foreground">{row.anyPhoto ? "yes" : ""}</td>
                 {(Object.keys(FIELD_LABELS) as Field[]).map((f) => (
                   <td key={f} className="p-2 text-center">
                     <Checkbox
-                      checked={isChecked(f, t.title)}
-                      onCheckedChange={() => toggle(f, t.title)}
+                      checked={isChecked(f, row.titles)}
+                      onCheckedChange={() => toggle(f, row.titles)}
                     />
                   </td>
                 ))}
