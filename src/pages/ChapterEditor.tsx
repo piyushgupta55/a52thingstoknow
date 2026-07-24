@@ -258,9 +258,12 @@ const ChapterEditor = () => {
   // read-only until the book is unlocked. Force preview mode on.
   useEffect(() => {
     if (loading || !chapter) return;
+    // Wait until both access signals have resolved so we don't misclassify an
+    // editable trial chapter as locked during the initial render race.
+    if (unlocked === null || previewSetsLoading) return;
     const editable = unlocked === true || isInSet(chapter.title, previewSets.trial_editable);
     if (!editable && !previewMode) setPreviewMode(true);
-  }, [loading, chapter, unlocked, previewSets, previewMode]);
+  }, [loading, chapter, unlocked, previewSets, previewSetsLoading, previewMode]);
 
   useEffect(() => {
     const handleScroll = () => {
