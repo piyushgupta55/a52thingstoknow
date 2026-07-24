@@ -156,7 +156,11 @@ const QuickReadHub = () => {
                     const editable = !unlocked && isInSet(c.title, sets.trial_editable);
                     const reviewed = !!c.review_status;
                     const onClick = () => {
-                      if (accessible) {
+                      if (editable) {
+                        const returnTo = encodeURIComponent(`/book/${bookId}/quick-read`);
+                        const returnLabel = encodeURIComponent('Start Here');
+                        navigate(`/book/${bookId}/chapter/${c.id}?returnTo=${returnTo}&returnLabel=${returnLabel}`);
+                      } else if (accessible) {
                         navigate(`/book/${bookId}/quick-read/${g.slug}?chapterId=${c.id}`);
                       } else {
                         navigate(`/book/${bookId}/unlock`);

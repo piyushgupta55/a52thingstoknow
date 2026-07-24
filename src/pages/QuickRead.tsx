@@ -153,6 +153,14 @@ const QuickRead = () => {
   const chapterLocked = !!chapter && unlocked === false
     && !isInSet(chapter.title, sets.trial_readable)
     && !isInSet(chapter.title, sets.trial_editable);
+  const chapterEditable = !!chapter && unlocked === false && isInSet(chapter.title, sets.trial_editable);
+
+  const openEditor = () => {
+    if (!chapter) return;
+    const returnTo = encodeURIComponent(`/book/${bookId}/quick-read`);
+    const returnLabel = encodeURIComponent('Start Here');
+    navigate(`/book/${bookId}/chapter/${chapter.id}?returnTo=${returnTo}&returnLabel=${returnLabel}`);
+  };
 
   const tk = (t: string | null | undefined) => replaceTokens(t || '', ctx);
 
@@ -352,6 +360,18 @@ const QuickRead = () => {
             <div className="mt-3 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,120,138,0.12)', color: '#8a4a5a' }}>
               <Camera className="h-3.5 w-3.5" />
               <span>This one's a photo chapter — we'll remind you about the picture later.</span>
+            </div>
+          )}
+          {chapterEditable && (
+            <div className="mt-4">
+              <Button
+                type="button"
+                onClick={openEditor}
+                className="rounded-full px-5 shadow-sm"
+                style={{ background: GOLD, color: '#fff' }}
+              >
+                ✨ Try editing this one
+              </Button>
             </div>
           )}
           {index === 0 && !cueDismissed && (
