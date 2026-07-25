@@ -153,7 +153,7 @@ const QuickReadHub = () => {
                 <ul className="rounded-xl overflow-hidden border bg-white/60" style={{ borderColor: 'rgba(187,169,106,0.25)' }}>
                   {list.map((c, ci) => {
                     const accessible = isAccessible(c);
-                    const editable = !unlocked && isInSet(c.title, sets.trial_editable);
+                    const editable = isInSet(c.title, sets.trial_editable);
                     const reviewed = !!c.review_status;
                     const onClick = () => {
                       if (editable) {
@@ -200,7 +200,11 @@ const QuickReadHub = () => {
                               {c.title}
                             </div>
                             {accessible ? (
-                              reviewed ? (
+                              editable && reviewed ? (
+                                <div className="text-xs mt-0.5" style={{ color: TEAL }}>
+                                  Open to test edit
+                                </div>
+                              ) : reviewed ? (
                                 <div className="text-xs mt-0.5" style={{ color: TEAL }}>
                                   Reviewed · {c.review_status === 'keep' ? 'Kept' : c.review_status === 'add' ? 'Add to it' : 'Rewrite'}
                                 </div>
@@ -242,7 +246,7 @@ const QuickReadHub = () => {
                                   border: `1px solid ${TEAL}`,
                                 }}
                               >
-                                {reviewed ? 'Open' : 'Read'}
+                                {reviewed ? 'Read again' : 'Read'}
                                 <ChevronRight className="h-3 w-3" />
                               </span>
                             )
