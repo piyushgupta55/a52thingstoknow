@@ -74,6 +74,8 @@ const CompsManager = () => {
     const res = data as any;
     if (res?.kind === 'pending') {
       toast({ title: 'Held for signup', description: `Comp will apply when ${res.email} creates their first book.` });
+    } else if (res?.kind === 'pending_existing_user') {
+      toast({ title: 'Queued', description: `${res.email} has an account but no book yet — comp will apply to their first book.` });
     } else {
       toast({ title: 'Access granted', description: `${res?.books ?? 0} book(s) comped.` });
     }
