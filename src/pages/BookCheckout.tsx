@@ -36,6 +36,10 @@ export default function BookCheckout() {
         returnUrl: `${window.location.origin}/book/${bookId}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
       },
     });
+    if ((data as { compApplied?: boolean } | null)?.compApplied) {
+      navigate(`/book/${bookId}?unlocked=comp`, { replace: true });
+      throw new Error("Complimentary access applied");
+    }
     if (error || !data?.clientSecret) {
       throw new Error(data?.error || error?.message || "Could not start checkout");
     }
