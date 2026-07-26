@@ -27,9 +27,23 @@ export default function BookPaywall() {
   const [extraCopies, setExtraCopies] = useState(0);
   const [pricing, setPricing] = useState<Pricing>(DEFAULT_PRICING);
 
+  const [claiming, setClaiming] = useState(true);
+
   useEffect(() => {
     if (!bookId) return;
     (async () => {
+      // If an admin granted this account complimentary access, unlock without payment.
+      try {
+        const { data: comp } = await supabase.rpc("claim_pending_comp", { _book_id: bookId });
+        if ((comp as any)?.claimed) {
+          navigate(`/book/${bookId}?unlocked=comp`, { replace: true });
+          return;
+        }
+      } catch {
+        /* fall through to normal checkout */
+      }
+      setClaiming(false);
+
       const [{ data: bookData }, { data: priceData }] = await Promise.all([
         supabase
           .from("books")
@@ -42,9 +56,10 @@ export default function BookPaywall() {
       if (priceData?.value) setPricing({ ...DEFAULT_PRICING, ...(priceData.value as any) });
       setLoading(false);
     })();
-  }, [bookId]);
+  }, [bookId, navigate]);
 
-  if (loading) return <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}><Navbar /><div className="p-8 text-center">Loading…</div></div>;
+  if (loading || claiming) return <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}><Navbar /><div className="p-8 text-center">Loading…</div></div>;
+
 
   if (!book) return <div className="p-8">Book not found</div>;
 
