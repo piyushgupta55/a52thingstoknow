@@ -126,6 +126,16 @@ const NewBook = () => {
       const { error: chapError } = await supabase.from('chapters').insert([letterChapter, ...chapters]);
       if (chapError) throw chapError;
 
+      // Safety net for comped testers: the database trigger should unlock the
+      // book immediately, but this explicit claim keeps newly-created books
+      // from ever falling through to the payment flow if the user clicks fast.
+      try {
+        await supabase.rpc('claim_pending_comp', { _book_id: book.id });
+        window.dispatchEvent(new CustomEvent('book-unlocked', { detail: { bookId: book.id } }));
+      } catch {
+        // Non-comped users continue normally in preview mode.
+      }
+
       toast({ title: 'Book created!', description: `Your book for ${recipientName} is ready to write.` });
       navigate(`/book/${book.id}`);
     } catch (err: any) {
