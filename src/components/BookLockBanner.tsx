@@ -4,6 +4,7 @@ import { Lock, Sparkles } from "lucide-react";
 import { useBookUnlocked } from "@/hooks/useBookUnlocked";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const GOLD = "#BBA96A";
 
@@ -11,14 +12,22 @@ export function BookLockBanner({ bookId }: { bookId: string }) {
   const navigate = useNavigate();
   const unlocked = useBookUnlocked(bookId);
   const [claiming, setClaiming] = useState(false);
-  if (unlocked === null || unlocked) return null;
+  const [justUnlocked, setJustUnlocked] = useState(false);
+  if (unlocked === null || unlocked || justUnlocked) return null;
+
+  const finishCompUnlock = () => {
+    setJustUnlocked(true);
+    window.dispatchEvent(new CustomEvent("book-unlocked", { detail: { bookId } }));
+    toast.success("Complimentary access applied. Your book is unlocked.");
+    navigate(`/book/${bookId}`, { replace: true });
+  };
 
   const handleUnlock = async () => {
     setClaiming(true);
     try {
       const { data } = await supabase.rpc("claim_pending_comp", { _book_id: bookId });
       if ((data as { claimed?: boolean } | null)?.claimed) {
-        navigate(`/book/${bookId}?unlocked=comp`, { replace: true });
+        finishCompUnlock();
         return;
       }
     } catch {
@@ -49,12 +58,18 @@ export function LockedPage({ bookId, title, message }: { bookId: string; title: 
   const navigate = useNavigate();
   const [claiming, setClaiming] = useState(false);
 
+  const finishCompUnlock = () => {
+    window.dispatchEvent(new CustomEvent("book-unlocked", { detail: { bookId } }));
+    toast.success("Complimentary access applied. Your book is unlocked.");
+    navigate(`/book/${bookId}`, { replace: true });
+  };
+
   const handleUnlock = async () => {
     setClaiming(true);
     try {
       const { data } = await supabase.rpc("claim_pending_comp", { _book_id: bookId });
       if ((data as { claimed?: boolean } | null)?.claimed) {
-        navigate(`/book/${bookId}?unlocked=comp`, { replace: true });
+        finishCompUnlock();
         return;
       }
     } catch {

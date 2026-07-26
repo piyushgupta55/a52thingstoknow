@@ -5,6 +5,17 @@ export function useBookUnlocked(bookId: string | undefined) {
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
 
   useEffect(() => {
+    const handleUnlocked = (event: Event) => {
+      const detail = (event as CustomEvent<{ bookId?: string }>).detail;
+      if (!bookId || detail?.bookId !== bookId) return;
+      setUnlocked(true);
+    };
+
+    window.addEventListener("book-unlocked", handleUnlocked);
+    return () => window.removeEventListener("book-unlocked", handleUnlocked);
+  }, [bookId]);
+
+  useEffect(() => {
     if (!bookId) { setUnlocked(false); return; }
     let cancelled = false;
     (async () => {
