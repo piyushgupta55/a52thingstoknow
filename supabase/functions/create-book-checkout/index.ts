@@ -46,7 +46,51 @@ Deno.serve(async (req) => {
       .eq("book_id", bookId)
       .eq("status", "active")
       .maybeSingle();
-    if (existing) throw new Error("Book already unlocked");
+    if (existing) {
+      return new Response(JSON.stringify({ compApplied: true, reason: "already_unlocked" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userEmail = user.email?.toLowerCase();
+    if (userEmail) {
+      const { data: pendingComp } = await supabase
+        .from("pending_comps")
+        .select("id, reason, granted_by, redeemed_at, redeemed_book_id")
+        .eq("email", userEmail)
+        .or(`redeemed_at.is.null,redeemed_book_id.is.null,redeemed_book_id.eq.${bookId}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingComp) {
+        const deadline = new Date();
+        deadline.setDate(deadline.getDate() + 365);
+
+        const { error: insertError } = await supabase.from("book_purchases").insert({
+          book_id: bookId,
+          user_id: user.id,
+          amount_paid_cents: 0,
+          currency: "usd",
+          status: "active",
+          environment: "comp",
+          guarantee_deadline: deadline.toISOString().slice(0, 10),
+          is_comp: true,
+          comp_reason: pendingComp.reason,
+          comp_granted_by: pendingComp.granted_by,
+        });
+        if (insertError) throw insertError;
+
+        await supabase
+          .from("pending_comps")
+          .update({ redeemed_at: new Date().toISOString(), redeemed_book_id: bookId })
+          .eq("id", pendingComp.id);
+
+        return new Response(JSON.stringify({ compApplied: true, reason: "comped" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     const stripe = createStripeClient(env);
 
