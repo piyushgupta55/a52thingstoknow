@@ -1052,6 +1052,7 @@ export type Database = {
       }
       admin_revoke_book_comp: { Args: { _book_id: string }; Returns: undefined }
       book_is_unlocked: { Args: { _book_id: string }; Returns: boolean }
+      claim_pending_comp: { Args: { _book_id: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
