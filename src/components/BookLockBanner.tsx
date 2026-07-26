@@ -2,13 +2,33 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Lock, Sparkles } from "lucide-react";
 import { useBookUnlocked } from "@/hooks/useBookUnlocked";
+import { supabase } from "@/lib/supabase";
+import { useState } from "react";
 
 const GOLD = "#BBA96A";
 
 export function BookLockBanner({ bookId }: { bookId: string }) {
   const navigate = useNavigate();
   const unlocked = useBookUnlocked(bookId);
+  const [claiming, setClaiming] = useState(false);
   if (unlocked === null || unlocked) return null;
+
+  const handleUnlock = async () => {
+    setClaiming(true);
+    try {
+      const { data } = await supabase.rpc("claim_pending_comp", { _book_id: bookId });
+      if ((data as { claimed?: boolean } | null)?.claimed) {
+        navigate(`/book/${bookId}?unlocked=comp`, { replace: true });
+        return;
+      }
+    } catch {
+      /* continue to normal unlock page */
+    } finally {
+      setClaiming(false);
+    }
+    navigate(`/book/${bookId}/unlock`);
+  };
+
   return (
     <div className="w-full border-b" style={{ background: "rgba(187,169,106,0.12)", borderColor: "rgba(187,169,106,0.35)" }}>
       <div className="container mx-auto px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
@@ -16,8 +36,8 @@ export function BookLockBanner({ bookId }: { bookId: string }) {
           <Sparkles className="h-4 w-4" style={{ color: GOLD }} />
           <span><b>Preview mode.</b> Read through the first group free. Unlock for $89 to personalize every chapter and ship the printed keepsake.</span>
         </div>
-        <Button size="sm" style={{ background: GOLD, color: "#fff" }} onClick={() => navigate(`/book/${bookId}/unlock`)}>
-          Unlock full book
+        <Button size="sm" style={{ background: GOLD, color: "#fff" }} onClick={handleUnlock} disabled={claiming}>
+          {claiming ? "Checking access…" : "Unlock full book"}
         </Button>
       </div>
     </div>
@@ -27,6 +47,24 @@ export function BookLockBanner({ bookId }: { bookId: string }) {
 /** Full-page redirect notice for gated pages when not unlocked. */
 export function LockedPage({ bookId, title, message }: { bookId: string; title: string; message: string }) {
   const navigate = useNavigate();
+  const [claiming, setClaiming] = useState(false);
+
+  const handleUnlock = async () => {
+    setClaiming(true);
+    try {
+      const { data } = await supabase.rpc("claim_pending_comp", { _book_id: bookId });
+      if ((data as { claimed?: boolean } | null)?.claimed) {
+        navigate(`/book/${bookId}?unlocked=comp`, { replace: true });
+        return;
+      }
+    } catch {
+      /* continue to normal unlock page */
+    } finally {
+      setClaiming(false);
+    }
+    navigate(`/book/${bookId}/unlock`);
+  };
+
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="max-w-md text-center bg-white/70 rounded-xl p-8 border" style={{ borderColor: "rgba(187,169,106,0.3)" }}>
@@ -35,7 +73,9 @@ export function LockedPage({ bookId, title, message }: { bookId: string; title: 
         <p className="mb-5 text-sm" style={{ color: "#5a4632" }}>{message}</p>
         <div className="flex gap-2 justify-center">
           <Button variant="outline" onClick={() => navigate(`/book/${bookId}`)}>Back to book</Button>
-          <Button style={{ background: GOLD, color: "#fff" }} onClick={() => navigate(`/book/${bookId}/unlock`)}>Unlock $89</Button>
+          <Button style={{ background: GOLD, color: "#fff" }} onClick={handleUnlock} disabled={claiming}>
+            {claiming ? "Checking access…" : "Unlock $89"}
+          </Button>
         </div>
       </div>
     </div>
