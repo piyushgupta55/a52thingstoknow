@@ -71,7 +71,11 @@ const QuickRead = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const startChapterId = searchParams.get('chapterId');
-  const group = getGroupBySlug(groupSlug);
+  // `all` is a pseudo-group: the full straight-through read of every chapter.
+  const isAllMode = groupSlug === 'all';
+  const group = isAllMode
+    ? ({ slug: 'all', title: 'Full read-through' } as any)
+    : getGroupBySlug(groupSlug);
   const unlocked = useBookUnlocked(bookId);
   const { sets } = usePreviewSets();
   const [book, setBook] = useState<Book | null>(null);
