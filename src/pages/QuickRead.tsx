@@ -113,7 +113,9 @@ const QuickRead = () => {
       setAuthorLabel(bookData?.from_label || null);
       // Filter to just the chapters in this topic group, preserving book order.
       const allChapters = (chapData as Chapter[]) || [];
-      const inGroup = allChapters.filter(c => getGroupSlugForTitle(c.title) === group.slug);
+      const inGroup = isAllMode
+        ? allChapters
+        : allChapters.filter(c => getGroupSlugForTitle(c.title) === group.slug);
       setChapters(inGroup);
       setMemories((memData as Memory[]) || []);
       setTemplates((tplData as Template[]) || []);
