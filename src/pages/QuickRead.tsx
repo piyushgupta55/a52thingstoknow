@@ -277,7 +277,7 @@ const QuickRead = () => {
             className="flex items-center gap-1 text-sm hover:opacity-70 transition-opacity"
             style={{ color: '#5a4632' }}
           >
-            <ChevronLeft className="h-4 w-4" /> All groups
+            <ChevronLeft className="h-4 w-4" /> {isAllMode ? 'Back to book' : 'All groups'}
           </button>
           <div className="flex items-center gap-2 text-sm text-center min-w-0" style={{ color: '#5a4632' }}>
             <button
