@@ -256,7 +256,7 @@ const QuickRead = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: CREAM, fontFamily: SERIF }}>
         <p>No chapters in this group yet.</p>
-        <Button onClick={returnToHub}>Back to groups</Button>
+        <Button onClick={returnToHub}>{isAllMode ? 'Back to book' : 'Back to groups'}</Button>
       </div>
     );
   }
