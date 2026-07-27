@@ -70,6 +70,7 @@ interface Memory {
 const BookDashboard = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
+  const bookUnlocked = useBookUnlocked(bookId);
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
