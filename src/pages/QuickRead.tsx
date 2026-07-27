@@ -197,7 +197,7 @@ const QuickRead = () => {
     : false;
 
 
-  const returnToHub = () => navigate(`/book/${bookId}/quick-read`);
+  const returnToHub = () => navigate(isAllMode ? `/book/${bookId}` : `/book/${bookId}/quick-read`);
 
   const advance = () => {
     if (index + 1 >= total) {
