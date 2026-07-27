@@ -71,7 +71,11 @@ const QuickRead = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const startChapterId = searchParams.get('chapterId');
-  const group = getGroupBySlug(groupSlug);
+  // `all` is a pseudo-group: the full straight-through read of every chapter.
+  const isAllMode = groupSlug === 'all';
+  const group = isAllMode
+    ? ({ slug: 'all', title: 'Full read-through' } as any)
+    : getGroupBySlug(groupSlug);
   const unlocked = useBookUnlocked(bookId);
   const { sets } = usePreviewSets();
   const [book, setBook] = useState<Book | null>(null);
@@ -109,7 +113,9 @@ const QuickRead = () => {
       setAuthorLabel(bookData?.from_label || null);
       // Filter to just the chapters in this topic group, preserving book order.
       const allChapters = (chapData as Chapter[]) || [];
-      const inGroup = allChapters.filter(c => getGroupSlugForTitle(c.title) === group.slug);
+      const inGroup = isAllMode
+        ? allChapters
+        : allChapters.filter(c => getGroupSlugForTitle(c.title) === group.slug);
       setChapters(inGroup);
       setMemories((memData as Memory[]) || []);
       setTemplates((tplData as Template[]) || []);
@@ -157,8 +163,10 @@ const QuickRead = () => {
 
   const openEditor = () => {
     if (!chapter) return;
-    const returnTo = encodeURIComponent(`/book/${bookId}/quick-read`);
-    const returnLabel = encodeURIComponent('Start Here');
+    const returnTo = encodeURIComponent(
+      isAllMode ? `/book/${bookId}/quick-read/all?chapterId=${chapter.id}` : `/book/${bookId}/quick-read`
+    );
+    const returnLabel = encodeURIComponent(isAllMode ? 'Review' : 'Start Here');
     navigate(`/book/${bookId}/chapter/${chapter.id}?returnTo=${returnTo}&returnLabel=${returnLabel}`);
   };
 
@@ -191,7 +199,7 @@ const QuickRead = () => {
     : false;
 
 
-  const returnToHub = () => navigate(`/book/${bookId}/quick-read`);
+  const returnToHub = () => navigate(isAllMode ? `/book/${bookId}` : `/book/${bookId}/quick-read`);
 
   const advance = () => {
     if (index + 1 >= total) {
@@ -250,7 +258,7 @@ const QuickRead = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: CREAM, fontFamily: SERIF }}>
         <p>No chapters in this group yet.</p>
-        <Button onClick={returnToHub}>Back to groups</Button>
+        <Button onClick={returnToHub}>{isAllMode ? 'Back to book' : 'Back to groups'}</Button>
       </div>
     );
   }
@@ -271,7 +279,7 @@ const QuickRead = () => {
             className="flex items-center gap-1 text-sm hover:opacity-70 transition-opacity"
             style={{ color: '#5a4632' }}
           >
-            <ChevronLeft className="h-4 w-4" /> All groups
+            <ChevronLeft className="h-4 w-4" /> {isAllMode ? 'Back to book' : 'All groups'}
           </button>
           <div className="flex items-center gap-2 text-sm text-center min-w-0" style={{ color: '#5a4632' }}>
             <button

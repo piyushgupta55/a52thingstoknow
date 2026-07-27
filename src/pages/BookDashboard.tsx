@@ -20,6 +20,7 @@ import { BookLockBanner } from '@/components/BookLockBanner';
 import Navbar from '@/components/Navbar';
 import { normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 import { replaceTokens } from '@/lib/tokenReplacer';
+import { useBookUnlocked } from '@/hooks/useBookUnlocked';
 
 interface Book {
   id: string;
@@ -70,6 +71,7 @@ interface Memory {
 const BookDashboard = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
+  const bookUnlocked = useBookUnlocked(bookId);
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -371,7 +373,7 @@ const BookDashboard = () => {
               <Button
                 size="lg"
                 className="md:flex-shrink-0"
-                onClick={() => navigate(`/book/${bookId}/quick-read`)}
+                onClick={() => navigate(bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/quick-read/all`)}
               >
                 <Zap className="h-4 w-4 mr-2" />
                 {reviewedCount === 0 ? 'Start Review' : 'Continue Review'}
