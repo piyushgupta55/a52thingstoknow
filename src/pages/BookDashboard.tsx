@@ -373,7 +373,7 @@ const BookDashboard = () => {
               <Button
                 size="lg"
                 className="md:flex-shrink-0"
-                onClick={() => navigate(`/book/${bookId}/quick-read`)}
+                onClick={() => navigate(bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/quick-read/all`)}
               >
                 <Zap className="h-4 w-4 mr-2" />
                 {reviewedCount === 0 ? 'Start Review' : 'Continue Review'}
