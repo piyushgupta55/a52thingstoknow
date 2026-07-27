@@ -321,7 +321,7 @@ const QuickRead = () => {
         <div className="h-1 w-full" style={{ background: 'rgba(187,169,106,0.15)' }}>
           <div className="h-full transition-all duration-500" style={{ width: `${progressPct}%`, background: GOLD }} />
         </div>
-        {total > 1 && (
+        {total > 1 && !isAllMode && (
           <div className="max-w-3xl mx-auto px-6 pb-2 pt-2 flex items-center justify-center gap-1.5 flex-wrap">
             {chapters.map((c, i) => {
               const accessible = unlocked === true
