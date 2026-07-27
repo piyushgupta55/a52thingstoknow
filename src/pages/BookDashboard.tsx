@@ -20,6 +20,7 @@ import { BookLockBanner } from '@/components/BookLockBanner';
 import Navbar from '@/components/Navbar';
 import { normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 import { replaceTokens } from '@/lib/tokenReplacer';
+import { useBookUnlocked } from '@/hooks/useBookUnlocked';
 
 interface Book {
   id: string;
