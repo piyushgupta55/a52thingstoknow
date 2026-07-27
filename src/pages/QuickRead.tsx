@@ -163,8 +163,10 @@ const QuickRead = () => {
 
   const openEditor = () => {
     if (!chapter) return;
-    const returnTo = encodeURIComponent(`/book/${bookId}/quick-read`);
-    const returnLabel = encodeURIComponent('Start Here');
+    const returnTo = encodeURIComponent(
+      isAllMode ? `/book/${bookId}/quick-read/all?chapterId=${chapter.id}` : `/book/${bookId}/quick-read`
+    );
+    const returnLabel = encodeURIComponent(isAllMode ? 'Review' : 'Start Here');
     navigate(`/book/${bookId}/chapter/${chapter.id}?returnTo=${returnTo}&returnLabel=${returnLabel}`);
   };
 
