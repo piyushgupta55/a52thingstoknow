@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
@@ -8,7 +8,9 @@ import { fetchMemoryInviteChapters } from '@/lib/memoryChapters';
 import { PREVIEW_PAGE_WIDTH } from '@/features/preview/geometry';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Camera, ChevronLeft, ChevronRight, LayoutList, MessageCircleHeart, PenLine, Plus } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, LayoutList, MessageCircleHeart, PenLine, Plus, X } from 'lucide-react';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const GOLD = '#BBA96A';
@@ -40,7 +42,9 @@ interface Chapter {
   is_photo_chapter: boolean;
   review_status: string | null;
   review_note: string | null;
+  read_at: string | null;
 }
+
 
 interface Template {
   chapter_number: number;
