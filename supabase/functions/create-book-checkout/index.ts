@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { createStripeClient, PRICING as PRICING_DEFAULTS, type StripeEnv } from "../_shared/stripe.ts";
+import { createStripeClient, type StripeEnv } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -94,16 +94,18 @@ Deno.serve(async (req) => {
 
     const stripe = createStripeClient(env);
 
-    // Read pricing from admin settings at checkout time (spec: prices must be changeable in admin
-    // and take effect immediately). Fall back to seed defaults only if the row is missing.
+    // Read pricing from admin settings at checkout time — the single source of truth.
     const { data: pricingRow } = await supabase
       .from("app_settings")
       .select("value")
       .eq("key", "pricing")
       .maybeSingle();
     const p = (pricingRow?.value ?? {}) as Record<string, number>;
-    const bookCents = Number.isFinite(p.book_cents) ? p.book_cents : PRICING_DEFAULTS.bookCents;
-    const extraCopyCents = Number.isFinite(p.extra_copy_cents) ? p.extra_copy_cents : PRICING_DEFAULTS.extraCopyCents;
+    if (!Number.isFinite(p.book_cents) || p.book_cents <= 0) {
+      throw new Error("Pricing is not configured. Set prices in the admin pricing settings.");
+    }
+    const bookCents = p.book_cents;
+    const extraCopyCents = Number.isFinite(p.extra_copy_cents) ? p.extra_copy_cents : 0;
 
     // Resolve/create Stripe customer with userId metadata
     let customerId: string | undefined;

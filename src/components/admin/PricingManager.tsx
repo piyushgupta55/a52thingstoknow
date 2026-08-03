@@ -11,9 +11,10 @@ interface Pricing {
   extra_copy_cents: number;
 }
 
+// No hardcoded prices: the stored setting is the single source of truth.
 const DEFAULTS: Pricing = {
-  book_cents: 9100,
-  extra_copy_cents: 3800,
+  book_cents: 0,
+  extra_copy_cents: 0,
 };
 
 const centsToDollars = (c: number) => (c / 100).toFixed(2);

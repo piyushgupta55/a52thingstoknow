@@ -26,11 +26,5 @@ export function getStripeEnvironment(): StripeEnv {
   return paymentsEnvironment();
 }
 
-export const PRICING = {
-  bookCents: 9100,
-  extraCopyCents: 3800,
-};
-
-export function formatUSD(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
-}
+// Prices live in the admin pricing setting only — see src/hooks/usePricing.ts.
+export { formatUSD } from "@/hooks/usePricing";
