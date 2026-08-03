@@ -27,7 +27,7 @@ const PILE_META: Record<PileKey, { title: string; subtitle: string; Icon: typeof
   kept:    { title: 'Kept',       subtitle: 'tap a chapter to open it and keep working', Icon: Heart },
   add:     { title: 'To add to',  subtitle: 'tap a chapter to open it and add your words', Icon: Plus },
   rewrite: { title: 'To rewrite', subtitle: 'tap a chapter to open it and rewrite', Icon: PenLine },
-  short:   { title: 'Short ones', subtitle: 'tap a chapter to open it and add a photo or memory', Icon: Camera },
+  short:   { title: 'Photos & Decisions', subtitle: 'tap a chapter to open it and add a photo or memory', Icon: Camera },
   notyet:  { title: 'Not yet',    subtitle: 'waiting for you',                           Icon: Circle },
 };
 
