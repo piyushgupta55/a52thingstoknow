@@ -364,6 +364,44 @@ const BookOverview = () => {
           </p>
         </div>
 
+        {/* Letter from the Author — complete by default, but a gentle open item */}
+        {letterChapter && (
+          <div
+            className="bg-white shadow-md rounded-sm w-full"
+            style={{ maxWidth: `${PREVIEW_PAGE_WIDTH}px`, padding: '2.75rem 2.25rem 2rem' }}
+          >
+            <h2 className="text-center font-bold mb-4" style={{ fontFamily: SERIF, fontSize: '19px', color: '#2D3748' }}>
+              {letterChapter.title || 'A Letter to You'}
+            </h2>
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <span style={{ height: '1px', width: '60px', background: GOLD }} />
+              <span style={{ color: GOLD, fontSize: '8px' }}>✦</span>
+              <span style={{ height: '1px', width: '60px', background: GOLD }} />
+            </div>
+            {toPlainText(replaceTokens(letterChapter.content || '', tokenCtx))
+              ? toPlainText(replaceTokens(letterChapter.content || '', tokenCtx))
+                  .split(/\n\n+/)
+                  .map((para, i) => (
+                    <p key={i} style={{ fontFamily: SERIF, fontSize: '11pt', color: '#263445', lineHeight: 1.7, marginBottom: '0.85em' }}>
+                      {para}
+                    </p>
+                  ))
+              : (
+                <p className="italic" style={{ fontFamily: SERIF, fontSize: '11pt', color: '#9CA3AF' }}>
+                  A warm opening letter to {name} — ready as written, and lovely in your own voice.
+                </p>
+              )}
+            <Cue
+              tone="gold"
+              icon={<PenLine className="h-4 w-4" />}
+              label="Make this letter yours."
+              detail="Personalize it and set your sign-off. Left untouched, it prints exactly as written."
+              onClick={() => navigate(editorUrl(letterChapter))}
+            />
+          </div>
+        )}
+
+
         {/* Chapter pages */}
         {bodyChapters.map((ch, idx) => {
           const body = bodyFor(ch);
