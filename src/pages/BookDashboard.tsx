@@ -368,18 +368,38 @@ const BookDashboard = () => {
           <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
               <div className="flex-1">
+        {/* Chapters to Review — first read-through pass */}
+        {numberedChapters.length > 0 && notReviewed > 0 && (
+          <div
+            className={
+              reviewNotStarted
+                ? 'bg-card rounded-xl border-2 border-primary p-7 md:p-8 mb-8 shadow-lg ring-4 ring-primary/10'
+                : 'bg-card rounded-xl border border-border p-6 mb-8 shadow-sm'
+            }
+          >
+            {reviewNotStarted && (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary mb-3">
+                Step 1 · Start here
+              </div>
+            )}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+              <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="h-5 w-5 text-primary" />
-                  <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Chapters to Review</h2>
+                  <h2 className={`font-heading font-bold text-foreground ${reviewNotStarted ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'}`}>
+                    Chapters to Review
+                  </h2>
                 </div>
                 <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
-                  {notReviewed} chapter{notReviewed === 1 ? '' : 's'} left in your first read-through. Read each chapter and pick a pile — keep it, add to it, or rewrite it later.
+                  {reviewNotStarted
+                    ? `Your book already has ${numberedChapters.length} chapters written for you. Read them one at a time and pick a pile — keep it, add to it, or rewrite it later. This is the first step.`
+                    : `${notReviewed} chapter${notReviewed === 1 ? '' : 's'} left in your first read-through. Read each chapter and pick a pile — keep it, add to it, or rewrite it later.`}
                 </p>
               </div>
               <Button
                 size="lg"
-                className="md:flex-shrink-0"
-                onClick={() => navigate(bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/quick-read/all`)}
+                className={reviewNotStarted ? 'md:flex-shrink-0 text-base px-8 py-6 h-auto shadow-md' : 'md:flex-shrink-0'}
+                onClick={() => navigate(reviewPath)}
               >
                 <Zap className="h-4 w-4 mr-2" />
                 {reviewedCount === 0 ? 'Start Review' : 'Continue Review'}
@@ -389,10 +409,15 @@ const BookDashboard = () => {
         )}
 
         {/* Continue Writing — editing section */}
-        <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
+        <div className={`bg-card rounded-xl border border-border p-6 mb-8 shadow-sm ${reviewNotStarted ? 'opacity-60' : ''}`}>
           <div className="flex items-center gap-2 mb-4">
-            <PenLine className="h-5 w-5 text-primary" />
-            <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Your Chapters</h2>
+            <PenLine className={`h-5 w-5 ${reviewNotStarted ? 'text-muted-foreground' : 'text-primary'}`} />
+            <h2 className={`font-heading text-xl md:text-2xl font-bold ${reviewNotStarted ? 'text-muted-foreground' : 'text-foreground'}`}>Your Chapters</h2>
+            {reviewNotStarted && (
+              <span className="text-xs font-medium text-muted-foreground border border-border rounded-full px-2 py-0.5">
+                Step 2
+              </span>
+            )}
           </div>
 
           <div className="flex items-center justify-between mb-3">
@@ -457,23 +482,28 @@ const BookDashboard = () => {
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {nextChapter && (
-              <Button size="lg" onClick={() => navigate(`/book/${bookId}/chapter/${nextChapter.id}`)}>
-                <PenLine className="h-4 w-4 mr-2" />
-                {completed === 0 ? 'Start Writing' : 'Continue Writing'}
-              </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {reviewNotStarted ? (
+              <>
+                <Button size="lg" variant="outline" onClick={() => navigate(reviewPath)}>
+                  <Zap className="h-4 w-4 mr-2" />
+                  Begin with the read-through
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Writing opens up once you've started your read-through.
+                </span>
+              </>
+            ) : (
+              nextChapter && (
+                <Button size="lg" onClick={() => navigate(`/book/${bookId}/chapter/${nextChapter.id}`)}>
+                  <PenLine className="h-4 w-4 mr-2" />
+                  {completed === 0 ? 'Start Writing' : 'Continue Writing'}
+                </Button>
+              )
             )}
           </div>
         </div>
 
-        {/* Status Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {/* Chapters */}
-          <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <BookOpen className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Chapters</h3>
             </div>
             <div className="space-y-1.5 text-sm">
               <div className="flex items-center gap-2">
