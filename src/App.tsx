@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import AdminSetup from "./pages/AdminSetup";
 import PreviewBook from "./pages/PreviewBook";
+import BookOverview from "./pages/BookOverview";
 import MemoryManager from "./pages/MemoryManager";
 import MemoryInvite from "./pages/MemoryInvite";
 import HelpFaq from "./pages/HelpFaq";
