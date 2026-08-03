@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
-import { BookOpen, MailCheck } from 'lucide-react';
+import { BookOpen, Loader2, MailCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Register = () => {
@@ -13,9 +14,44 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const pollingRef = useRef(false);
+
+  // Cross-device confirmation: the user may click the email link on another
+  // device. Keep checking here so this device isn't stranded.
+  useEffect(() => {
+    if (!confirmationSent) return;
+    let cancelled = false;
+
+    const check = async () => {
+      if (pollingRef.current) return;
+      pollingRef.current = true;
+      try {
+        await signIn(email, password);
+        if (!cancelled) {
+          toast({ title: 'Email confirmed!', description: 'Taking you to your dashboard.' });
+          navigate('/dashboard', { replace: true });
+        }
+      } catch {
+        // still unconfirmed — keep waiting
+      } finally {
+        pollingRef.current = false;
+      }
+    };
+
+    const id = window.setInterval(check, 5000);
+    const onFocus = () => check();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [confirmationSent, email, password, signIn, navigate, toast]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,13 +90,17 @@ const Register = () => {
             <p className="text-base text-muted-foreground mb-2">
               Click the link in that email to confirm your account. You'll be signed in automatically — no need to log in again.
             </p>
-            <p className="text-base text-muted-foreground mb-8">
+            <p className="text-base text-muted-foreground mb-6">
               <strong>Don't see it?</strong> Please check your <strong>spam</strong> or <strong>junk</strong> folder. It can take a minute to arrive.
+            </p>
+            <p className="inline-flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Waiting for confirmation — you can click the link on any device and this page will continue automatically.
             </p>
             <div className="flex flex-col gap-2">
               <Link to="/login">
                 <Button variant="outline" className="w-full" size="lg">
-                  Back to log in
+                  ← Back to log in
                 </Button>
               </Link>
             </div>
@@ -95,7 +135,7 @@ const Register = () => {
           </div>
           <div>
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters" required minLength={6} className="mt-1" />
+            <PasswordInput id="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters" required minLength={6} className="mt-1" />
           </div>
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? 'Creating Account...' : 'Get Started'}

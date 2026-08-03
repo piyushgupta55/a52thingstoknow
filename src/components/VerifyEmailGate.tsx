@@ -1,14 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { MailCheck } from 'lucide-react';
+import { Loader2, MailCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const VerifyEmailGate = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [sending, setSending] = useState(false);
+
+  // The confirmation link may be opened on another device. Poll so this
+  // device notices the account is verified and moves forward on its own.
+  useEffect(() => {
+    let cancelled = false;
+
+    const check = async () => {
+      const { data } = await supabase.auth.refreshSession();
+      if (cancelled) return;
+      if (data?.session?.user?.email_confirmed_at) {
+        window.location.reload();
+      }
+    };
+
+    const id = window.setInterval(check, 5000);
+    const onFocus = () => check();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
 
   const resend = async () => {
     if (!user?.email) return;
@@ -31,9 +56,13 @@ const VerifyEmailGate = () => {
           <MailCheck className="h-6 w-6 text-primary" />
         </div>
         <h1 className="font-serif text-2xl font-bold mb-2">Verify your email</h1>
-        <p className="text-muted-foreground text-sm mb-6">
+        <p className="text-muted-foreground text-sm mb-4">
           We sent a confirmation link to <strong className="text-foreground">{user?.email}</strong>.
           Click it to unlock your dashboard and start writing.
+        </p>
+        <p className="inline-flex items-center justify-center gap-2 text-xs text-muted-foreground mb-6">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Checking automatically — confirm on any device and this page will continue.
         </p>
         <div className="flex flex-col gap-2">
           <Button onClick={resend} disabled={sending} className="w-full">
