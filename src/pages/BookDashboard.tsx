@@ -287,6 +287,9 @@ const BookDashboard = () => {
       setChapters(correctedChapters);
       setMemories(memData || []);
       setPhotoTemplates(tplData || []);
+      setMemoryInviteChapters(await fetchMemoryInviteChapters());
+
+
 
       // Load family stats
       const [{ count: sentCount }, { data: familyMems }] = await Promise.all([
