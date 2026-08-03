@@ -50,7 +50,11 @@ interface Chapter {
   content: string | null;
   reference_text: string | null;
   review_status: string | null;
+  seed_content?: string | null;
+  photo_declined?: boolean;
+  reading_reward_decision?: string | null;
 }
+
 
 interface ChapterTemplate {
   chapter_number: number;
@@ -343,6 +347,34 @@ const BookDashboard = () => {
     return wc < SHORT_WORD_THRESHOLD && !hasPhoto && !hasMemory;
   }).length;
 
+  // ── Readiness model: every chapter is complete by default. Only unresolved
+  // photo spots and the missing reward decision keep the book from being ready.
+  const openPhotoSpots = numberedChapters.filter(c =>
+    (c.is_photo_chapter || photoChapterNums.has(c.chapter_number)) &&
+    !(c.photo_urls && c.photo_urls.length > 0) &&
+    !c.photo_declined
+  ).length;
+  const openRewardDecisions = numberedChapters.filter(c =>
+    /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`) && !c.reading_reward_decision
+  ).length;
+  const flaggedChapters = numberedChapters.filter(
+    c => (c.review_status === 'add' || c.review_status === 'rewrite') && c.status !== 'complete'
+  ).length;
+  const blockingItems = openPhotoSpots + openRewardDecisions;
+  const isReadyToPrint = blockingItems === 0;
+  const readParts: string[] = [];
+  if (openPhotoSpots > 0) readParts.push(`${openPhotoSpots} photo spot${openPhotoSpots === 1 ? '' : 's'}`);
+  if (openRewardDecisions > 0) readParts.push(`${openRewardDecisions} reward decision${openRewardDecisions === 1 ? '' : 's'}`);
+  if (flaggedChapters > 0) readParts.push(`${flaggedChapters} flagged chapter${flaggedChapters === 1 ? '' : 's'}`);
+  const openSummary = readParts.length
+    ? `Your book is ready — ${readParts.join(' and ')} still to go.`
+    : 'Your book is ready to print.';
+  const totalOpen = blockingItems + flaggedChapters;
+  const readinessPct = numberedChapters.length > 0
+    ? Math.max(0, Math.round(100 - (totalOpen / numberedChapters.length) * 100))
+    : 100;
+
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -417,13 +449,23 @@ const BookDashboard = () => {
             )}
           </div>
 
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-foreground">
-              {completed} of {numberedChapters.length} chapters complete
-            </span>
-            <span className="text-sm font-semibold text-primary">{Math.round(progress)}%</span>
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle className={`h-4 w-4 ${isReadyToPrint ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className="text-sm font-medium text-foreground">{openSummary}</span>
+            </div>
+            {totalOpen > 0 && (
+              <span className="text-sm font-semibold text-primary whitespace-nowrap">
+                {totalOpen} open
+              </span>
+            )}
           </div>
-          <Progress value={progress} className="h-3 mb-4" />
+          <Progress value={readinessPct} className="h-3 mb-2" />
+          <p className="text-xs text-muted-foreground mb-4">
+            Every chapter is already written and counts as complete — flagged chapters are optional, and the original words print if you leave them.
+            {notReviewed > 0 && ` ${numberedChapters.length - notReviewed} of ${numberedChapters.length} read so far.`}
+          </p>
+
           <div className="flex flex-wrap gap-x-6 gap-y-1 mb-5 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Camera className="h-3.5 w-3.5 text-primary" />
@@ -512,16 +554,17 @@ const BookDashboard = () => {
             <div className="space-y-1.5 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-3.5 w-3.5 text-primary" />
-                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{completed}</span> complete</span>
+                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{numberedChapters.length}</span> chapters written &amp; ready</span>
               </div>
               <div className="flex items-center gap-2">
-                <PenLine className="h-3.5 w-3.5 text-accent" />
-                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{inProgress}</span> in progress</span>
+                <Camera className="h-3.5 w-3.5 text-accent" />
+                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{openPhotoSpots}</span> photo spots open</span>
               </div>
               <div className="flex items-center gap-2">
-                <Circle className="h-3.5 w-3.5 text-muted-foreground/40" />
-                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{notStarted}</span> not started</span>
+                <PenLine className="h-3.5 w-3.5 text-muted-foreground/60" />
+                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{flaggedChapters}</span> flagged (optional)</span>
               </div>
+
               <div className="flex items-center gap-2">
               <Camera className="h-3.5 w-3.5 text-primary" />
                 <span className="text-muted-foreground"><span className="font-semibold text-foreground">{photoChaptersDesignated}</span> photo chapters</span>
