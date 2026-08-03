@@ -50,7 +50,11 @@ interface Chapter {
   content: string | null;
   reference_text: string | null;
   review_status: string | null;
+  seed_content?: string | null;
+  photo_declined?: boolean;
+  reading_reward_decision?: string | null;
 }
+
 
 interface ChapterTemplate {
   chapter_number: number;
