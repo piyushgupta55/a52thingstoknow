@@ -554,16 +554,17 @@ const BookDashboard = () => {
             <div className="space-y-1.5 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-3.5 w-3.5 text-primary" />
-                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{completed}</span> complete</span>
+                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{numberedChapters.length}</span> chapters written &amp; ready</span>
               </div>
               <div className="flex items-center gap-2">
-                <PenLine className="h-3.5 w-3.5 text-accent" />
-                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{inProgress}</span> in progress</span>
+                <Camera className="h-3.5 w-3.5 text-accent" />
+                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{openPhotoSpots}</span> photo spots open</span>
               </div>
               <div className="flex items-center gap-2">
-                <Circle className="h-3.5 w-3.5 text-muted-foreground/40" />
-                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{notStarted}</span> not started</span>
+                <PenLine className="h-3.5 w-3.5 text-muted-foreground/60" />
+                <span className="text-muted-foreground"><span className="font-semibold text-foreground">{flaggedChapters}</span> flagged (optional)</span>
               </div>
+
               <div className="flex items-center gap-2">
               <Camera className="h-3.5 w-3.5 text-primary" />
                 <span className="text-muted-foreground"><span className="font-semibold text-foreground">{photoChaptersDesignated}</span> photo chapters</span>
