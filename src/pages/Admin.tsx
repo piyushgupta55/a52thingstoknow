@@ -175,6 +175,7 @@ const Admin = () => {
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
             <TabsTrigger value="content">Content Manager</TabsTrigger>
             <TabsTrigger value="photos">Photo Chapters</TabsTrigger>
+            <TabsTrigger value="memory-chapters">Memory Chapters</TabsTrigger>
             <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
             <TabsTrigger value="lifecycle" disabled>Book Lifecycle</TabsTrigger>
             <TabsTrigger value="qc" disabled>QC Review</TabsTrigger>
