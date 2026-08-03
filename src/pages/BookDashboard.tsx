@@ -397,83 +397,64 @@ const BookDashboard = () => {
           </Button>
         </div>
 
-        {/* Your book — finished-book overview with gentle, optional cues */}
-        <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Your Book</h2>
-              </div>
-              <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
-                Read your finished book page by page — verses, quotes, wisdom and photo spots. Along the way you'll see soft
-                invitations to make it even more yours. Nothing there is required.
-              </p>
-            </div>
-            <Button size="lg" variant="secondary" className="md:flex-shrink-0" onClick={() => navigate(`/book/${bookId}/overview`)}>
-              <BookOpen className="h-4 w-4 mr-2" />
-              Open your book
-            </Button>
-          </div>
-        </div>
-
-        {/* Chapters to Review — first read-through pass */}
-        {numberedChapters.length > 0 && notReviewed > 0 && (
-          <div
-            className={
-              reviewNotStarted
-                ? 'bg-card rounded-xl border-2 border-primary p-7 md:p-8 mb-8 shadow-lg ring-4 ring-primary/10'
-                : 'bg-card rounded-xl border border-border p-6 mb-8 shadow-sm'
-            }
-          >
-            {reviewNotStarted && (
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary mb-3">
-                Step 1 · Start here
-              </div>
-            )}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Zap className="h-5 w-5 text-primary" />
-                  <h2 className={`font-heading font-bold text-foreground ${reviewNotStarted ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'}`}>
-                    Chapters to Review
-                  </h2>
+        {/* ONE primary hero — opening the book IS the read-through */}
+        {(() => {
+          const firstName = (book.recipient_name || '').trim().split(/\s+/)[0] || '';
+          const bookTitle = firstName ? `${firstName}'s Book` : 'Your Book';
+          const possessive = firstName ? `${firstName}'s` : 'Your';
+          const started = reviewedCount > 0;
+          const longName = firstName.length > 8;
+          const buttonLabel = started
+            ? 'Continue'
+            : longName || !firstName
+              ? 'Open Book →'
+              : `Open ${firstName}'s Book`;
+          return (
+            <div className="bg-card rounded-xl border-2 border-primary p-7 md:p-8 mb-8 shadow-lg ring-4 ring-primary/10">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
+                      {bookTitle}
+                    </h2>
+                  </div>
+                  <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
+                    {possessive} book is already written — all {numberedChapters.length || 52} chapters. Open it and read
+                    through, one page at a time. As you go, keep what's perfect, add to some, rewrite a few, and drop in
+                    photos and memories where you're moved. This is where you start.
+                  </p>
                 </div>
-                <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
-                  {reviewNotStarted
-                    ? `Your book already has ${numberedChapters.length} chapters written for you. Read them one at a time and pick a pile — keep it, add to it, or rewrite it later. This is the first step.`
-                    : `${notReviewed} chapter${notReviewed === 1 ? '' : 's'} left in your first read-through. Read each chapter and pick a pile — keep it, add to it, or rewrite it later.`}
-                </p>
+                <Button
+                  size="lg"
+                  className="md:flex-shrink-0 text-base px-8 py-6 h-auto shadow-md max-w-full"
+                  onClick={() => navigate(`/book/${bookId}/overview`)}
+                >
+                  <BookOpen className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">{buttonLabel}</span>
+                </Button>
               </div>
-              <Button
-                size="lg"
-                className={reviewNotStarted ? 'md:flex-shrink-0 text-base px-8 py-6 h-auto shadow-md' : 'md:flex-shrink-0'}
-                onClick={() => navigate(reviewPath)}
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                {reviewedCount === 0 ? 'Start Review' : 'Continue Review'}
-              </Button>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
-        {/* Continue Writing — editing section */}
-        <div className={`bg-card rounded-xl border border-border p-6 mb-8 shadow-sm ${reviewNotStarted ? 'opacity-60' : ''}`}>
+        {/* What's still open — secondary status + baskets */}
+        <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <PenLine className={`h-5 w-5 ${reviewNotStarted ? 'text-muted-foreground' : 'text-primary'}`} />
-            <h2 className={`font-heading text-xl md:text-2xl font-bold ${reviewNotStarted ? 'text-muted-foreground' : 'text-foreground'}`}>Your Chapters</h2>
-            {reviewNotStarted && (
-              <span className="text-xs font-medium text-muted-foreground border border-border rounded-full px-2 py-0.5">
-                Step 2
-              </span>
-            )}
+            <CheckCircle className={`h-5 w-5 ${isReadyToPrint ? 'text-primary' : 'text-muted-foreground'}`} />
+            <h2 className="font-heading text-lg md:text-xl font-bold text-foreground">What's still open</h2>
           </div>
 
           <div className="flex items-start justify-between gap-4 mb-3">
-            <div className="flex items-center gap-2">
-              <CheckCircle className={`h-4 w-4 ${isReadyToPrint ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className="text-sm font-medium text-foreground">{openSummary}</span>
-            </div>
+            <span className="text-sm font-medium text-foreground">
+              {(() => {
+                const firstName = (book.recipient_name || '').trim().split(/\s+/)[0];
+                const who = firstName ? `${firstName}'s book` : 'Your book';
+                return readParts.length
+                  ? `${who} is ready — ${readParts.join(' and ')} still to go.`
+                  : `${who} is ready to print.`;
+              })()}
+            </span>
             {totalOpen > 0 && (
               <span className="text-sm font-semibold text-primary whitespace-nowrap">
                 {totalOpen} open
@@ -493,8 +474,8 @@ const BookDashboard = () => {
             </span>
           </div>
 
-          <p className="text-xs text-muted-foreground/60 mb-3">Work chapter by chapter, or pick a pile from your read-through:</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          <p className="text-xs text-muted-foreground/60 mb-3">Jump straight to a pile of open items:</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <button
               type="button"
               onClick={() => navigate(`/book/${bookId}/pile/kept`)}
@@ -535,33 +516,13 @@ const BookDashboard = () => {
             >
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Camera className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Short ones</span>
+                <span className="text-xs text-muted-foreground">Photos &amp; Decisions</span>
               </div>
               <div className="font-heading text-xl font-bold text-foreground">{shortKept}</div>
             </button>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {reviewNotStarted ? (
-              <>
-                <Button size="lg" variant="outline" onClick={() => navigate(reviewPath)}>
-                  <Zap className="h-4 w-4 mr-2" />
-                  Begin with the read-through
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  Writing opens up once you've started your read-through.
-                </span>
-              </>
-            ) : (
-              nextChapter && (
-                <Button size="lg" onClick={() => navigate(`/book/${bookId}/chapter/${nextChapter.id}`)}>
-                  <PenLine className="h-4 w-4 mr-2" />
-                  {completed === 0 ? 'Start Writing' : 'Continue Writing'}
-                </Button>
-              )
-            )}
-          </div>
         </div>
+
 
         {/* Status Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
