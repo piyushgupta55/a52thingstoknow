@@ -20,7 +20,9 @@ import { BookLockBanner } from '@/components/BookLockBanner';
 import Navbar from '@/components/Navbar';
 import { normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 import { replaceTokens } from '@/lib/tokenReplacer';
+import { fetchMemoryInviteChapters } from '@/lib/memoryChapters';
 import { useBookUnlocked } from '@/hooks/useBookUnlocked';
+
 
 interface Book {
   id: string;
@@ -91,7 +93,9 @@ const BookDashboard = () => {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const [familyStats, setFamilyStats] = useState<{ sent: number; responded: number; unseen: number }>({ sent: 0, responded: 0, unseen: 0 });
+  const [memoryInviteChapters, setMemoryInviteChapters] = useState<number[]>([]);
   const [savingOrder, setSavingOrder] = useState(false);
+
 
   const handleGenerateTestPDF = async () => {
     setIsGeneratingPDF(true);
@@ -283,6 +287,9 @@ const BookDashboard = () => {
       setChapters(correctedChapters);
       setMemories(memData || []);
       setPhotoTemplates(tplData || []);
+      setMemoryInviteChapters(await fetchMemoryInviteChapters());
+
+
 
       // Load family stats
       const [{ count: sentCount }, { data: familyMems }] = await Promise.all([
@@ -329,23 +336,26 @@ const BookDashboard = () => {
   const photoChaptersDesignated = chapters.filter(c => photoChapterNums.has(c.chapter_number)).length;
   const photosUploaded = chapters.filter(c => photoChapterNums.has(c.chapter_number) && c.photo_urls && c.photo_urls.length > 0).length;
 
-  // Quick Read review tallies
-  const SHORT_WORD_THRESHOLD = 180;
-  const reviewKept = numberedChapters.filter(c => c.review_status === 'keep' && c.status !== 'complete').length;
-  const reviewAdd = numberedChapters.filter(c => c.review_status === 'add' && c.status !== 'complete').length;
-  const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite' && c.status !== 'complete').length;
-  const reviewedCount = reviewKept + reviewAdd + reviewRewrite;
-  const notReviewed = numberedChapters.filter(c => !c.review_status && c.status !== 'complete').length;
-  const reviewNotStarted = reviewedCount === 0 && notReviewed > 0;
+  // Read-through tallies. Everything is kept by default; Add/Replace are optional marks.
+  const reviewAdd = numberedChapters.filter(c => c.review_status === 'add').length;
+  const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite').length;
+  const readCount = numberedChapters.filter(c => !!(c as any).read_at).length;
+  const notReviewed = numberedChapters.length - readCount;
+  const reviewedCount = readCount;
   const reviewPath = bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/quick-read/all`;
-  const shortKept = numberedChapters.filter(c => {
-    if (c.review_status !== 'keep' || c.status === 'complete') return false;
-    const text = `${c.reference_text || ''} ${c.content || ''}`.trim();
-    const wc = text ? text.split(/\s+/).length : 0;
-    const hasPhoto = c.photo_urls && c.photo_urls.length > 0;
-    const hasMemory = memories.some(m => m.chapter_id === c.id);
-    return wc < SHORT_WORD_THRESHOLD && !hasPhoto && !hasMemory;
+  const hasRewardMark = (c: Chapter) => /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`);
+  // Photos & Decisions is pre-populated: every photo chapter plus the reading-reward chapter.
+  const photosDecisionsOpen = numberedChapters.filter(c => {
+    const isPhoto = c.is_photo_chapter || photoChapterNums.has(c.chapter_number);
+    const needsPhoto = isPhoto && !(c.photo_urls && c.photo_urls.length > 0) && !c.photo_declined;
+    const needsReward = hasRewardMark(c) && !c.reading_reward_decision;
+    return needsPhoto || needsReward;
   }).length;
+  // Memories is its own basket, pre-populated with the curated memory-invitation chapters.
+  const memoriesOpen = numberedChapters.filter(
+    c => memoryInviteChapters.includes(c.chapter_number) && !memories.some(m => m.chapter_id === c.id)
+  ).length;
+
 
   // ── Readiness model: every chapter is complete by default. Only unresolved
   // photo spots and the missing reward decision keep the book from being ready.
@@ -463,8 +473,9 @@ const BookDashboard = () => {
           </div>
           <Progress value={readinessPct} className="h-3 mb-2" />
           <p className="text-xs text-muted-foreground mb-4">
-            Every chapter is already written and counts as complete — flagged chapters are optional, and the original words print if you leave them.
-            {notReviewed > 0 && ` ${numberedChapters.length - notReviewed} of ${numberedChapters.length} read so far.`}
+            Every chapter is already written and counts as complete — Add and Replace are optional, and the original words print if you leave them.
+            {` ${readCount} of ${numberedChapters.length} read so far`}
+            {notReviewed > 0 ? ' — reading never blocks printing.' : ' — you have read the whole book.'}
           </p>
 
           <div className="flex flex-wrap gap-x-6 gap-y-1 mb-5 text-sm text-muted-foreground">
@@ -474,19 +485,8 @@ const BookDashboard = () => {
             </span>
           </div>
 
-          <p className="text-xs text-muted-foreground/60 mb-3">Jump straight to a pile of open items:</p>
+          <p className="text-xs text-muted-foreground/60 mb-3">Baskets — jump straight to a set of things to look at:</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(`/book/${bookId}/pile/kept`)}
-              className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Heart className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Kept</span>
-              </div>
-              <div className="font-heading text-xl font-bold text-foreground">{reviewKept}</div>
-            </button>
             <button
               type="button"
               onClick={() => navigate(`/book/${bookId}/pile/add`)}
@@ -511,16 +511,28 @@ const BookDashboard = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate(`/book/${bookId}/pile/short`)}
+              onClick={() => navigate(`/book/${bookId}/pile/photos`)}
               className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Camera className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Photos &amp; Decisions</span>
               </div>
-              <div className="font-heading text-xl font-bold text-foreground">{shortKept}</div>
+              <div className="font-heading text-xl font-bold text-foreground">{photosDecisionsOpen}</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/book/${bookId}/pile/memories`)}
+              className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Memories</span>
+              </div>
+              <div className="font-heading text-xl font-bold text-foreground">{memoriesOpen}</div>
             </button>
           </div>
+
         </div>
 
 

@@ -1,0 +1,1 @@
+ALTER TABLE public.chapters ADD COLUMN IF NOT EXISTS read_at timestamptz;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
@@ -8,7 +8,9 @@ import { fetchMemoryInviteChapters } from '@/lib/memoryChapters';
 import { PREVIEW_PAGE_WIDTH } from '@/features/preview/geometry';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Camera, ChevronLeft, ChevronRight, LayoutList, MessageCircleHeart, PenLine, Plus } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, LayoutList, MessageCircleHeart, PenLine, Plus, X } from 'lucide-react';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const GOLD = '#BBA96A';
@@ -40,7 +42,9 @@ interface Chapter {
   is_photo_chapter: boolean;
   review_status: string | null;
   review_note: string | null;
+  read_at: string | null;
 }
+
 
 interface Template {
   chapter_number: number;
@@ -77,7 +81,12 @@ const BookOverview = () => {
   const [authorName, setAuthorName] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [noteFor, setNoteFor] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [savingId, setSavingId] = useState<string | null>(null);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const readingRef = useRef<Set<string>>(new Set());
+
 
   useEffect(() => {
     if (!bookId) return;
@@ -159,9 +168,37 @@ const BookOverview = () => {
     pageRefs.current[clamped]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // Track which page is in view for the "Chapter X of 52" indicator.
+  const letterChapter = useMemo(() => chapters.find(c => c.chapter_number === 0) || null, [chapters]);
+  const readCount = bodyChapters.filter(c => !!c.read_at).length;
+
+  // Reading is tracked separately from completion — it never blocks printing.
+  const markRead = useCallback(async (chapterId: string) => {
+    if (readingRef.current.has(chapterId)) return;
+    readingRef.current.add(chapterId);
+    const stamp = new Date().toISOString();
+    setChapters(prev => prev.map(c => (c.id === chapterId ? { ...c, read_at: c.read_at || stamp } : c)));
+    await supabase.from('chapters').update({ read_at: stamp }).eq('id', chapterId).is('read_at', null);
+  }, []);
+
+  const setReview = async (ch: Chapter, status: string | null, note: string | null = null) => {
+    setSavingId(ch.id);
+    const { error } = await supabase
+      .from('chapters')
+      .update({ review_status: status, review_note: note })
+      .eq('id', ch.id);
+    setSavingId(null);
+    if (error) {
+      toast.error('Could not save that just now');
+      return false;
+    }
+    setChapters(prev => prev.map(c => (c.id === ch.id ? { ...c, review_status: status, review_note: note } : c)));
+    return true;
+  };
+
+  // Track which page is in view for the "Chapter X of 52" indicator, and mark it read.
   useEffect(() => {
     if (loading) return;
+    const timers = new Map<string, number>();
     const observer = new IntersectionObserver(
       entries => {
         const visible = entries
@@ -171,12 +208,29 @@ const BookOverview = () => {
           const idx = Number((visible.target as HTMLElement).dataset.index);
           if (Number.isFinite(idx)) setActiveIndex(idx);
         }
+        entries.forEach(e => {
+          const el = e.target as HTMLElement;
+          const id = el.dataset.chapterId;
+          if (!id) return;
+          if (e.isIntersecting && e.intersectionRatio >= 0.5) {
+            if (!timers.has(id)) {
+              timers.set(id, window.setTimeout(() => markRead(id), 1500));
+            }
+          } else {
+            const t = timers.get(id);
+            if (t) { window.clearTimeout(t); timers.delete(id); }
+          }
+        });
       },
       { threshold: [0.25, 0.5] },
     );
     pageRefs.current.forEach(el => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, [loading, bodyChapters.length]);
+    return () => {
+      timers.forEach(t => window.clearTimeout(t));
+      observer.disconnect();
+    };
+  }, [loading, bodyChapters.length, markRead]);
+
 
   if (loading) {
     return (
@@ -247,7 +301,19 @@ const BookOverview = () => {
             <p className="text-[13px]" style={{ fontFamily: SERIF, color: '#4A5568' }}>
               {name}'s Gift · Chapter {bodyChapters[activeIndex]?.chapter_number ?? 1} of {bodyChapters.length}
             </p>
+            <div className="mt-1 flex items-center justify-center gap-2">
+              <div className="h-1.5 w-28 rounded-full overflow-hidden" style={{ background: 'rgba(187,169,106,0.25)' }}>
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{ width: `${bodyChapters.length ? (readCount / bodyChapters.length) * 100 : 0}%`, background: GOLD }}
+                />
+              </div>
+              <span className="text-[11px]" style={{ fontFamily: SERIF, color: '#8a8378' }}>
+                {readCount} of {bodyChapters.length} read
+              </span>
+            </div>
           </div>
+
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => goToPage(activeIndex - 1)}
@@ -298,6 +364,44 @@ const BookOverview = () => {
           </p>
         </div>
 
+        {/* Letter from the Author — complete by default, but a gentle open item */}
+        {letterChapter && (
+          <div
+            className="bg-white shadow-md rounded-sm w-full"
+            style={{ maxWidth: `${PREVIEW_PAGE_WIDTH}px`, padding: '2.75rem 2.25rem 2rem' }}
+          >
+            <h2 className="text-center font-bold mb-4" style={{ fontFamily: SERIF, fontSize: '19px', color: '#2D3748' }}>
+              {letterChapter.title || 'A Letter to You'}
+            </h2>
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <span style={{ height: '1px', width: '60px', background: GOLD }} />
+              <span style={{ color: GOLD, fontSize: '8px' }}>✦</span>
+              <span style={{ height: '1px', width: '60px', background: GOLD }} />
+            </div>
+            {toPlainText(replaceTokens(letterChapter.content || '', tokenCtx))
+              ? toPlainText(replaceTokens(letterChapter.content || '', tokenCtx))
+                  .split(/\n\n+/)
+                  .map((para, i) => (
+                    <p key={i} style={{ fontFamily: SERIF, fontSize: '11pt', color: '#263445', lineHeight: 1.7, marginBottom: '0.85em' }}>
+                      {para}
+                    </p>
+                  ))
+              : (
+                <p className="italic" style={{ fontFamily: SERIF, fontSize: '11pt', color: '#9CA3AF' }}>
+                  A warm opening letter to {name} — ready as written, and lovely in your own voice.
+                </p>
+              )}
+            <Cue
+              tone="gold"
+              icon={<PenLine className="h-4 w-4" />}
+              label="Make this letter yours."
+              detail="Personalize it and set your sign-off. Left untouched, it prints exactly as written."
+              onClick={() => navigate(editorUrl(letterChapter))}
+            />
+          </div>
+        )}
+
+
         {/* Chapter pages */}
         {bodyChapters.map((ch, idx) => {
           const body = bodyFor(ch);
@@ -313,6 +417,8 @@ const BookOverview = () => {
               key={ch.id}
               id={`ch-${ch.chapter_number}`}
               data-index={idx}
+              data-chapter-id={ch.id}
+
               ref={el => (pageRefs.current[idx] = el)}
               className="bg-white shadow-md rounded-sm w-full scroll-mt-20"
               style={{ maxWidth: `${PREVIEW_PAGE_WIDTH}px`, padding: '2.75rem 2.25rem 2rem' }}
@@ -446,7 +552,114 @@ const BookOverview = () => {
                   onClick={() => navigate(editorUrl(ch, '&memory=1'))}
                 />
               )}
+
+              {/* Read-through controls — kept by default; Add and Replace are optional */}
+              <div className="mt-6 pt-4 border-t flex flex-wrap items-center gap-2" style={{ borderColor: '#EAE5DC' }}>
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]"
+                  style={{
+                    fontFamily: SERIF,
+                    background: ch.read_at ? 'rgba(138,167,155,0.16)' : 'rgba(0,0,0,0.03)',
+                    color: ch.read_at ? '#4d6a5e' : '#8a8378',
+                  }}
+                >
+                  <Check className="h-3 w-3" /> {ch.read_at ? 'Read' : 'Kept — reading marks itself'}
+                </span>
+                {!ch.read_at && (
+                  <button
+                    onClick={() => markRead(ch.id)}
+                    className="text-[11px] underline"
+                    style={{ fontFamily: SERIF, color: '#8a8378' }}
+                  >
+                    Mark read
+                  </button>
+                )}
+
+                <span className="flex-1" />
+
+                <Button
+                  variant={isAdd ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-8 gap-1.5 text-[12px]"
+                  disabled={savingId === ch.id}
+                  onClick={() => {
+                    setNoteFor(noteFor === ch.id ? null : ch.id);
+                    setNoteText(ch.review_note || '');
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add to it
+                </Button>
+                <Button
+                  variant={isRewrite ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-8 gap-1.5 text-[12px]"
+                  disabled={savingId === ch.id}
+                  onClick={async () => {
+                    const ok = await setReview(ch, 'rewrite', null);
+                    if (ok) navigate(editorUrl(ch));
+                  }}
+                >
+                  <PenLine className="h-3.5 w-3.5" /> Replace
+                </Button>
+                {(isAdd || isRewrite) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1.5 text-[12px]"
+                    disabled={savingId === ch.id}
+                    onClick={() => setReview(ch, null, null)}
+                  >
+                    <X className="h-3.5 w-3.5" /> Clear
+                  </Button>
+                )}
+              </div>
+
+              {noteFor === ch.id && (
+                <div className="mt-3 rounded-md p-3" style={{ background: 'rgba(187,169,106,0.08)', border: `1px dashed ${GOLD}` }}>
+                  <p className="text-[12px] mb-2" style={{ fontFamily: SERIF, color: '#7a6a34' }}>
+                    What would you like to add here? Just the idea — you'll write it in the editor later.
+                  </p>
+                  <Textarea
+                    value={noteText}
+                    onChange={e => setNoteText(e.target.value)}
+                    rows={3}
+                    placeholder={`e.g. the story about ${name} and the bicycle`}
+                    className="bg-white text-[13px]"
+                  />
+                  <div className="mt-2 flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="h-8 text-[12px]"
+                      disabled={savingId === ch.id}
+                      onClick={async () => {
+                        const ok = await setReview(ch, 'add', noteText.trim() || null);
+                        if (ok) {
+                          setNoteFor(null);
+                          toast.success('Filed in “To add to”');
+                        }
+                      }}
+                    >
+                      Save note
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-[12px]"
+                      onClick={async () => {
+                        const ok = await setReview(ch, 'add', noteText.trim() || null);
+                        if (ok) navigate(editorUrl(ch));
+                      }}
+                    >
+                      Save &amp; open editor
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 text-[12px]" onClick={() => setNoteFor(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
+
           );
         })}
 
