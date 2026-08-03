@@ -417,6 +417,8 @@ const BookOverview = () => {
               key={ch.id}
               id={`ch-${ch.chapter_number}`}
               data-index={idx}
+              data-chapter-id={ch.id}
+
               ref={el => (pageRefs.current[idx] = el)}
               className="bg-white shadow-md rounded-sm w-full scroll-mt-20"
               style={{ maxWidth: `${PREVIEW_PAGE_WIDTH}px`, padding: '2.75rem 2.25rem 2rem' }}
