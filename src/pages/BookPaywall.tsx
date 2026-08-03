@@ -93,7 +93,7 @@ export default function BookPaywall() {
           Build {book.recipient_name}'s gift for {formatUSD(pricing.book_cents)}
         </h1>
         <p className="text-lg leading-relaxed mb-8" style={{ color: "#5a4632" }}>
-          You've read the first group and felt the shape of the book. Unlock the rest to personalize every chapter, add memories and photos, invite family, and ship a printed hardcover keepsake.
+          You've read the first group and felt the shape of the book. Unlock the rest to personalize every chapter, add memories and photos, invite family, and ship a beautifully printed keepsake book in a leatherette sleeve and gift box.
         </p>
 
         <div className="grid md:grid-cols-2 gap-4 mb-8">
@@ -104,7 +104,7 @@ export default function BookPaywall() {
               <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> All 52 chapters, editable</li>
               <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> Memories &amp; photos from family</li>
               <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> Preview &amp; PDF export</li>
-              <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> Printed hardcover in leatherette sleeve &amp; gift box</li>
+              <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> Beautifully printed keepsake book in a leatherette sleeve &amp; gift box</li>
               <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> Shipped USPS Ground Advantage, insured</li>
             </ul>
           </div>
