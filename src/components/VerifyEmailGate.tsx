@@ -56,9 +56,13 @@ const VerifyEmailGate = () => {
           <MailCheck className="h-6 w-6 text-primary" />
         </div>
         <h1 className="font-serif text-2xl font-bold mb-2">Verify your email</h1>
-        <p className="text-muted-foreground text-sm mb-6">
+        <p className="text-muted-foreground text-sm mb-4">
           We sent a confirmation link to <strong className="text-foreground">{user?.email}</strong>.
           Click it to unlock your dashboard and start writing.
+        </p>
+        <p className="inline-flex items-center justify-center gap-2 text-xs text-muted-foreground mb-6">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Checking automatically — confirm on any device and this page will continue.
         </p>
         <div className="flex flex-col gap-2">
           <Button onClick={resend} disabled={sending} className="w-full">
