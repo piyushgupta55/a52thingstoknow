@@ -162,14 +162,21 @@ const BookOverview = () => {
     return `/book/${bookId}/chapter/${ch.id}?returnTo=${back}&returnLabel=${encodeURIComponent('Back to the book')}${extra}`;
   };
 
-  const goToPage = (idx: number) => {
-    const clamped = Math.max(0, Math.min(bodyChapters.length - 1, idx));
-    setActiveIndex(clamped);
-    pageRefs.current[clamped]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   const letterChapter = useMemo(() => chapters.find(c => c.chapter_number === 0) || null, [chapters]);
   const readCount = bodyChapters.filter(c => !!c.read_at).length;
+
+  // One page at a time: title page, the letter, then one chapter per page.
+  const frontCount = 1 + (letterChapter ? 1 : 0);
+  const totalPages = frontCount + bodyChapters.length;
+  const chapterIdx = activeIndex - frontCount;
+  const activeChapter = chapterIdx >= 0 ? bodyChapters[chapterIdx] : null;
+
+  const goToPage = (idx: number) => {
+    const clamped = Math.max(0, Math.min(totalPages - 1, idx));
+    setActiveIndex(clamped);
+    setNoteFor(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Reading is tracked separately from completion — it never blocks printing.
   const markRead = useCallback(async (chapterId: string) => {
@@ -195,41 +202,14 @@ const BookOverview = () => {
     return true;
   };
 
-  // Track which page is in view for the "Chapter X of 52" indicator, and mark it read.
+  // Landing on a chapter page marks it read after a beat.
+  const activeChapterId = activeChapter?.id;
   useEffect(() => {
-    if (loading) return;
-    const timers = new Map<string, number>();
-    const observer = new IntersectionObserver(
-      entries => {
-        const visible = entries
-          .filter(e => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) {
-          const idx = Number((visible.target as HTMLElement).dataset.index);
-          if (Number.isFinite(idx)) setActiveIndex(idx);
-        }
-        entries.forEach(e => {
-          const el = e.target as HTMLElement;
-          const id = el.dataset.chapterId;
-          if (!id) return;
-          if (e.isIntersecting && e.intersectionRatio >= 0.5) {
-            if (!timers.has(id)) {
-              timers.set(id, window.setTimeout(() => markRead(id), 1500));
-            }
-          } else {
-            const t = timers.get(id);
-            if (t) { window.clearTimeout(t); timers.delete(id); }
-          }
-        });
-      },
-      { threshold: [0.25, 0.5] },
-    );
-    pageRefs.current.forEach(el => el && observer.observe(el));
-    return () => {
-      timers.forEach(t => window.clearTimeout(t));
-      observer.disconnect();
-    };
-  }, [loading, bodyChapters.length, markRead]);
+    if (loading || !activeChapterId) return;
+    const t = window.setTimeout(() => markRead(activeChapterId), 1500);
+    return () => window.clearTimeout(t);
+  }, [loading, activeChapterId, markRead]);
+
 
 
   if (loading) {
