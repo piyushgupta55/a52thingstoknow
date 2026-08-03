@@ -473,8 +473,9 @@ const BookDashboard = () => {
           </div>
           <Progress value={readinessPct} className="h-3 mb-2" />
           <p className="text-xs text-muted-foreground mb-4">
-            Every chapter is already written and counts as complete — flagged chapters are optional, and the original words print if you leave them.
-            {notReviewed > 0 && ` ${numberedChapters.length - notReviewed} of ${numberedChapters.length} read so far.`}
+            Every chapter is already written and counts as complete — Add and Replace are optional, and the original words print if you leave them.
+            {` ${readCount} of ${numberedChapters.length} read so far`}
+            {notReviewed > 0 ? ' — reading never blocks printing.' : ' — you have read the whole book.'}
           </p>
 
           <div className="flex flex-wrap gap-x-6 gap-y-1 mb-5 text-sm text-muted-foreground">
@@ -484,19 +485,8 @@ const BookDashboard = () => {
             </span>
           </div>
 
-          <p className="text-xs text-muted-foreground/60 mb-3">Jump straight to a pile of open items:</p>
+          <p className="text-xs text-muted-foreground/60 mb-3">Baskets — jump straight to a set of things to look at:</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(`/book/${bookId}/pile/kept`)}
-              className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Heart className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Kept</span>
-              </div>
-              <div className="font-heading text-xl font-bold text-foreground">{reviewKept}</div>
-            </button>
             <button
               type="button"
               onClick={() => navigate(`/book/${bookId}/pile/add`)}
@@ -521,16 +511,28 @@ const BookDashboard = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate(`/book/${bookId}/pile/short`)}
+              onClick={() => navigate(`/book/${bookId}/pile/photos`)}
               className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Camera className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Photos &amp; Decisions</span>
               </div>
-              <div className="font-heading text-xl font-bold text-foreground">{shortKept}</div>
+              <div className="font-heading text-xl font-bold text-foreground">{photosDecisionsOpen}</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/book/${bookId}/pile/memories`)}
+              className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Memories</span>
+              </div>
+              <div className="font-heading text-xl font-bold text-foreground">{memoriesOpen}</div>
             </button>
           </div>
+
         </div>
 
 
