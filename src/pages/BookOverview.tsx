@@ -168,9 +168,37 @@ const BookOverview = () => {
     pageRefs.current[clamped]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // Track which page is in view for the "Chapter X of 52" indicator.
+  const letterChapter = useMemo(() => chapters.find(c => c.chapter_number === 0) || null, [chapters]);
+  const readCount = bodyChapters.filter(c => !!c.read_at).length;
+
+  // Reading is tracked separately from completion — it never blocks printing.
+  const markRead = useCallback(async (chapterId: string) => {
+    if (readingRef.current.has(chapterId)) return;
+    readingRef.current.add(chapterId);
+    const stamp = new Date().toISOString();
+    setChapters(prev => prev.map(c => (c.id === chapterId ? { ...c, read_at: c.read_at || stamp } : c)));
+    await supabase.from('chapters').update({ read_at: stamp }).eq('id', chapterId).is('read_at', null);
+  }, []);
+
+  const setReview = async (ch: Chapter, status: string | null, note: string | null = null) => {
+    setSavingId(ch.id);
+    const { error } = await supabase
+      .from('chapters')
+      .update({ review_status: status, review_note: note })
+      .eq('id', ch.id);
+    setSavingId(null);
+    if (error) {
+      toast.error('Could not save that just now');
+      return false;
+    }
+    setChapters(prev => prev.map(c => (c.id === ch.id ? { ...c, review_status: status, review_note: note } : c)));
+    return true;
+  };
+
+  // Track which page is in view for the "Chapter X of 52" indicator, and mark it read.
   useEffect(() => {
     if (loading) return;
+    const timers = new Map<string, number>();
     const observer = new IntersectionObserver(
       entries => {
         const visible = entries
@@ -180,12 +208,29 @@ const BookOverview = () => {
           const idx = Number((visible.target as HTMLElement).dataset.index);
           if (Number.isFinite(idx)) setActiveIndex(idx);
         }
+        entries.forEach(e => {
+          const el = e.target as HTMLElement;
+          const id = el.dataset.chapterId;
+          if (!id) return;
+          if (e.isIntersecting && e.intersectionRatio >= 0.5) {
+            if (!timers.has(id)) {
+              timers.set(id, window.setTimeout(() => markRead(id), 1500));
+            }
+          } else {
+            const t = timers.get(id);
+            if (t) { window.clearTimeout(t); timers.delete(id); }
+          }
+        });
       },
       { threshold: [0.25, 0.5] },
     );
     pageRefs.current.forEach(el => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, [loading, bodyChapters.length]);
+    return () => {
+      timers.forEach(t => window.clearTimeout(t));
+      observer.disconnect();
+    };
+  }, [loading, bodyChapters.length, markRead]);
+
 
   if (loading) {
     return (
