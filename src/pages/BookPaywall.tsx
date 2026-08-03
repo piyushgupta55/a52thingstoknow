@@ -104,7 +104,7 @@ export default function BookPaywall() {
               <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> All 52 chapters, editable</li>
               <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> Memories &amp; photos from family</li>
               <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> Preview &amp; PDF export</li>
-              <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> Printed hardcover in leatherette sleeve &amp; gift box</li>
+              <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> Beautifully printed keepsake book in a leatherette sleeve &amp; gift box</li>
               <li className="flex gap-2"><Check className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GOLD }} /> Shipped USPS Ground Advantage, insured</li>
             </ul>
           </div>
