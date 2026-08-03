@@ -162,14 +162,21 @@ const BookOverview = () => {
     return `/book/${bookId}/chapter/${ch.id}?returnTo=${back}&returnLabel=${encodeURIComponent('Back to the book')}${extra}`;
   };
 
-  const goToPage = (idx: number) => {
-    const clamped = Math.max(0, Math.min(bodyChapters.length - 1, idx));
-    setActiveIndex(clamped);
-    pageRefs.current[clamped]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   const letterChapter = useMemo(() => chapters.find(c => c.chapter_number === 0) || null, [chapters]);
   const readCount = bodyChapters.filter(c => !!c.read_at).length;
+
+  // One page at a time: title page, the letter, then one chapter per page.
+  const frontCount = 1 + (letterChapter ? 1 : 0);
+  const totalPages = frontCount + bodyChapters.length;
+  const chapterIdx = activeIndex - frontCount;
+  const activeChapter = chapterIdx >= 0 ? bodyChapters[chapterIdx] : null;
+
+  const goToPage = (idx: number) => {
+    const clamped = Math.max(0, Math.min(totalPages - 1, idx));
+    setActiveIndex(clamped);
+    setNoteFor(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Reading is tracked separately from completion — it never blocks printing.
   const markRead = useCallback(async (chapterId: string) => {
@@ -195,41 +202,14 @@ const BookOverview = () => {
     return true;
   };
 
-  // Track which page is in view for the "Chapter X of 52" indicator, and mark it read.
+  // Landing on a chapter page marks it read after a beat.
+  const activeChapterId = activeChapter?.id;
   useEffect(() => {
-    if (loading) return;
-    const timers = new Map<string, number>();
-    const observer = new IntersectionObserver(
-      entries => {
-        const visible = entries
-          .filter(e => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) {
-          const idx = Number((visible.target as HTMLElement).dataset.index);
-          if (Number.isFinite(idx)) setActiveIndex(idx);
-        }
-        entries.forEach(e => {
-          const el = e.target as HTMLElement;
-          const id = el.dataset.chapterId;
-          if (!id) return;
-          if (e.isIntersecting && e.intersectionRatio >= 0.5) {
-            if (!timers.has(id)) {
-              timers.set(id, window.setTimeout(() => markRead(id), 1500));
-            }
-          } else {
-            const t = timers.get(id);
-            if (t) { window.clearTimeout(t); timers.delete(id); }
-          }
-        });
-      },
-      { threshold: [0.25, 0.5] },
-    );
-    pageRefs.current.forEach(el => el && observer.observe(el));
-    return () => {
-      timers.forEach(t => window.clearTimeout(t));
-      observer.disconnect();
-    };
-  }, [loading, bodyChapters.length, markRead]);
+    if (loading || !activeChapterId) return;
+    const t = window.setTimeout(() => markRead(activeChapterId), 1500);
+    return () => window.clearTimeout(t);
+  }, [loading, activeChapterId, markRead]);
+
 
 
   if (loading) {
@@ -299,8 +279,14 @@ const BookOverview = () => {
           </Button>
           <div className="flex-1 text-center">
             <p className="text-[13px]" style={{ fontFamily: SERIF, color: '#4A5568' }}>
-              {name}'s Gift · Chapter {bodyChapters[activeIndex]?.chapter_number ?? 1} of {bodyChapters.length}
+              {name}'s Gift ·{' '}
+              {activeChapter
+                ? `Chapter ${activeChapter.chapter_number} — ${chapterIdx + 1} of ${bodyChapters.length}`
+                : chapterIdx < 0 && activeIndex === 0
+                  ? 'Title page'
+                  : 'A letter to you'}
             </p>
+
             <div className="mt-1 flex items-center justify-center gap-2">
               <div className="h-1.5 w-28 rounded-full overflow-hidden" style={{ background: 'rgba(187,169,106,0.25)' }}>
                 <div
@@ -326,7 +312,7 @@ const BookOverview = () => {
             </button>
             <button
               onClick={() => goToPage(activeIndex + 1)}
-              disabled={activeIndex >= bodyChapters.length - 1}
+              disabled={activeIndex >= totalPages - 1}
               className="rounded-full border p-1.5 disabled:opacity-25"
               style={{ borderColor: '#D1CCC4', background: '#fff' }}
               aria-label="Next chapter"
@@ -342,10 +328,12 @@ const BookOverview = () => {
 
       <div className="py-8 px-4 flex flex-col items-center gap-8">
         {/* Title page */}
+        {activeIndex === 0 && (
         <div
           className="bg-white shadow-md rounded-sm w-full"
           style={{ maxWidth: `${PREVIEW_PAGE_WIDTH}px`, padding: '3.5rem 2.5rem' }}
         >
+
           <div className="text-center py-10" style={{ border: `2px solid ${GOLD}`, borderRadius: '2px' }}>
             <p className="uppercase tracking-[0.25em] mb-3" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
               A Book of Wisdom
@@ -363,9 +351,11 @@ const BookOverview = () => {
             Your book is written and ready. Read it through — the gentle notes are simply invitations to make it even more yours.
           </p>
         </div>
+        )}
 
         {/* Letter from the Author — complete by default, but a gentle open item */}
-        {letterChapter && (
+        {letterChapter && activeIndex === 1 && (
+
           <div
             className="bg-white shadow-md rounded-sm w-full"
             style={{ maxWidth: `${PREVIEW_PAGE_WIDTH}px`, padding: '2.75rem 2.25rem 2rem' }}
@@ -402,9 +392,11 @@ const BookOverview = () => {
         )}
 
 
-        {/* Chapter pages */}
+        {/* Chapter pages — one chapter per page, turned with Next / Back */}
         {bodyChapters.map((ch, idx) => {
+          if (idx !== chapterIdx) return null;
           const body = bodyFor(ch);
+
           const photo = (ch.photo_urls || []).filter(Boolean)[0];
           const photoSpot = isPhotoChapter(ch) && !photo;
           const isRewrite = ch.review_status === 'rewrite';
@@ -595,12 +587,31 @@ const BookOverview = () => {
                   className="h-8 gap-1.5 text-[12px]"
                   disabled={savingId === ch.id}
                   onClick={async () => {
+                    // Flag-and-keep-reading: never navigate away mid read-through.
                     const ok = await setReview(ch, 'rewrite', null);
-                    if (ok) navigate(editorUrl(ch));
+                    if (ok) toast.success('Filed in “To rewrite”');
                   }}
                 >
-                  <PenLine className="h-3.5 w-3.5" /> Replace
+                  {isRewrite ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" /> Marked to rewrite
+                    </>
+                  ) : (
+                    <>
+                      <PenLine className="h-3.5 w-3.5" /> Replace
+                    </>
+                  )}
                 </Button>
+                {isRewrite && (
+                  <button
+                    onClick={() => navigate(editorUrl(ch))}
+                    className="text-[11px] underline"
+                    style={{ fontFamily: SERIF, color: '#8f4d5c' }}
+                  >
+                    Write it now
+                  </button>
+                )}
+
                 {(isAdd || isRewrite) && (
                   <Button
                     variant="ghost"
@@ -663,9 +674,31 @@ const BookOverview = () => {
           );
         })}
 
-        <p className="text-center text-[12px] italic pb-10" style={{ fontFamily: SERIF, color: '#8a8378' }}>
-          The end — {name}'s book is ready whenever you are.
-        </p>
+        {/* Page turn */}
+        <div className="w-full flex items-center justify-between gap-3" style={{ maxWidth: `${PREVIEW_PAGE_WIDTH}px` }}>
+          <Button variant="outline" className="gap-1.5" onClick={() => goToPage(activeIndex - 1)} disabled={activeIndex === 0}>
+            <ChevronLeft className="h-4 w-4" /> Back
+          </Button>
+          <span className="text-[12px]" style={{ fontFamily: SERIF, color: '#8a8378' }}>
+            {activeChapter ? `${chapterIdx + 1} of ${bodyChapters.length}` : ''}
+          </span>
+          {activeIndex >= totalPages - 1 ? (
+            <Button className="gap-1.5" style={{ background: GOLD, color: '#fff' }} onClick={() => navigate(`/book/${bookId}`)}>
+              Finish <Check className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button className="gap-1.5" style={{ background: GOLD, color: '#fff' }} onClick={() => goToPage(activeIndex + 1)}>
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {activeIndex >= totalPages - 1 && (
+          <p className="text-center text-[12px] italic pb-10" style={{ fontFamily: SERIF, color: '#8a8378' }}>
+            The end — {name}'s book is ready whenever you are.
+          </p>
+        )}
+
       </div>
     </div>
   );
