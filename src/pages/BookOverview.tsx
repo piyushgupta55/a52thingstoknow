@@ -392,9 +392,11 @@ const BookOverview = () => {
         )}
 
 
-        {/* Chapter pages */}
+        {/* Chapter pages — one chapter per page, turned with Next / Back */}
         {bodyChapters.map((ch, idx) => {
+          if (idx !== chapterIdx) return null;
           const body = bodyFor(ch);
+
           const photo = (ch.photo_urls || []).filter(Boolean)[0];
           const photoSpot = isPhotoChapter(ch) && !photo;
           const isRewrite = ch.review_status === 'rewrite';
