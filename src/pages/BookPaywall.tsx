@@ -50,6 +50,7 @@ export default function BookPaywall() {
 
 
   if (!book) return <div className="p-8">Book not found</div>;
+  if (!pricing) return <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}><Navbar /><div className="p-8 text-center">Pricing is unavailable right now. Please try again shortly.</div></div>;
 
   if (!book.milestone_date) {
     return (
