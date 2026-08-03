@@ -312,7 +312,7 @@ const BookOverview = () => {
             </button>
             <button
               onClick={() => goToPage(activeIndex + 1)}
-              disabled={activeIndex >= bodyChapters.length - 1}
+              disabled={activeIndex >= totalPages - 1}
               className="rounded-full border p-1.5 disabled:opacity-25"
               style={{ borderColor: '#D1CCC4', background: '#fff' }}
               aria-label="Next chapter"
