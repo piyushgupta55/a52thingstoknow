@@ -279,8 +279,14 @@ const BookOverview = () => {
           </Button>
           <div className="flex-1 text-center">
             <p className="text-[13px]" style={{ fontFamily: SERIF, color: '#4A5568' }}>
-              {name}'s Gift · Chapter {bodyChapters[activeIndex]?.chapter_number ?? 1} of {bodyChapters.length}
+              {name}'s Gift ·{' '}
+              {activeChapter
+                ? `Chapter ${activeChapter.chapter_number} — ${chapterIdx + 1} of ${bodyChapters.length}`
+                : chapterIdx < 0 && activeIndex === 0
+                  ? 'Title page'
+                  : 'A letter to you'}
             </p>
+
             <div className="mt-1 flex items-center justify-center gap-2">
               <div className="h-1.5 w-28 rounded-full overflow-hidden" style={{ background: 'rgba(187,169,106,0.25)' }}>
                 <div
