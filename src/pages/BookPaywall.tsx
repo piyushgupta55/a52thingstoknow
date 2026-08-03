@@ -93,7 +93,7 @@ export default function BookPaywall() {
           Build {book.recipient_name}'s gift for {formatUSD(pricing.book_cents)}
         </h1>
         <p className="text-lg leading-relaxed mb-8" style={{ color: "#5a4632" }}>
-          You've read the first group and felt the shape of the book. Unlock the rest to personalize every chapter, add memories and photos, invite family, and ship a printed hardcover keepsake.
+          You've read the first group and felt the shape of the book. Unlock the rest to personalize every chapter, add memories and photos, invite family, and ship a beautifully printed keepsake book in a leatherette sleeve and gift box.
         </p>
 
         <div className="grid md:grid-cols-2 gap-4 mb-8">
