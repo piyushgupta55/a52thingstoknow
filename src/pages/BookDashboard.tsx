@@ -20,7 +20,9 @@ import { BookLockBanner } from '@/components/BookLockBanner';
 import Navbar from '@/components/Navbar';
 import { normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 import { replaceTokens } from '@/lib/tokenReplacer';
+import { fetchMemoryInviteChapters } from '@/lib/memoryChapters';
 import { useBookUnlocked } from '@/hooks/useBookUnlocked';
+
 
 interface Book {
   id: string;
@@ -91,7 +93,9 @@ const BookDashboard = () => {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const [familyStats, setFamilyStats] = useState<{ sent: number; responded: number; unseen: number }>({ sent: 0, responded: 0, unseen: 0 });
+  const [memoryInviteChapters, setMemoryInviteChapters] = useState<number[]>([]);
   const [savingOrder, setSavingOrder] = useState(false);
+
 
   const handleGenerateTestPDF = async () => {
     setIsGeneratingPDF(true);
