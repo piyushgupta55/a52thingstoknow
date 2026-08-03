@@ -449,13 +449,23 @@ const BookDashboard = () => {
             )}
           </div>
 
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-foreground">
-              {completed} of {numberedChapters.length} chapters complete
-            </span>
-            <span className="text-sm font-semibold text-primary">{Math.round(progress)}%</span>
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle className={`h-4 w-4 ${isReadyToPrint ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className="text-sm font-medium text-foreground">{openSummary}</span>
+            </div>
+            {totalOpen > 0 && (
+              <span className="text-sm font-semibold text-primary whitespace-nowrap">
+                {totalOpen} open
+              </span>
+            )}
           </div>
-          <Progress value={progress} className="h-3 mb-4" />
+          <Progress value={readinessPct} className="h-3 mb-2" />
+          <p className="text-xs text-muted-foreground mb-4">
+            Every chapter is already written and counts as complete — flagged chapters are optional, and the original words print if you leave them.
+            {notReviewed > 0 && ` ${numberedChapters.length - notReviewed} of ${numberedChapters.length} read so far.`}
+          </p>
+
           <div className="flex flex-wrap gap-x-6 gap-y-1 mb-5 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Camera className="h-3.5 w-3.5 text-primary" />
