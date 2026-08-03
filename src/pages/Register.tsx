@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
-import { BookOpen, MailCheck } from 'lucide-react';
+import { BookOpen, Loader2, MailCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Register = () => {
@@ -13,9 +14,44 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const pollingRef = useRef(false);
+
+  // Cross-device confirmation: the user may click the email link on another
+  // device. Keep checking here so this device isn't stranded.
+  useEffect(() => {
+    if (!confirmationSent) return;
+    let cancelled = false;
+
+    const check = async () => {
+      if (pollingRef.current) return;
+      pollingRef.current = true;
+      try {
+        await signIn(email, password);
+        if (!cancelled) {
+          toast({ title: 'Email confirmed!', description: 'Taking you to your dashboard.' });
+          navigate('/dashboard', { replace: true });
+        }
+      } catch {
+        // still unconfirmed — keep waiting
+      } finally {
+        pollingRef.current = false;
+      }
+    };
+
+    const id = window.setInterval(check, 5000);
+    const onFocus = () => check();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [confirmationSent, email, password, signIn, navigate, toast]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
