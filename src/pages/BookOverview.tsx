@@ -587,12 +587,31 @@ const BookOverview = () => {
                   className="h-8 gap-1.5 text-[12px]"
                   disabled={savingId === ch.id}
                   onClick={async () => {
+                    // Flag-and-keep-reading: never navigate away mid read-through.
                     const ok = await setReview(ch, 'rewrite', null);
-                    if (ok) navigate(editorUrl(ch));
+                    if (ok) toast.success('Filed in “To rewrite”');
                   }}
                 >
-                  <PenLine className="h-3.5 w-3.5" /> Replace
+                  {isRewrite ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" /> Marked to rewrite
+                    </>
+                  ) : (
+                    <>
+                      <PenLine className="h-3.5 w-3.5" /> Replace
+                    </>
+                  )}
                 </Button>
+                {isRewrite && (
+                  <button
+                    onClick={() => navigate(editorUrl(ch))}
+                    className="text-[11px] underline"
+                    style={{ fontFamily: SERIF, color: '#8f4d5c' }}
+                  >
+                    Write it now
+                  </button>
+                )}
+
                 {(isAdd || isRewrite) && (
                   <Button
                     variant="ghost"
