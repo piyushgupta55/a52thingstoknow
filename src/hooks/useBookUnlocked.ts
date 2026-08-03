@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 export function useBookUnlocked(bookId: string | undefined) {
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
 
   useEffect(() => {
     const handleUnlocked = (event: Event) => {
@@ -17,6 +19,9 @@ export function useBookUnlocked(bookId: string | undefined) {
 
   useEffect(() => {
     if (!bookId) { setUnlocked(false); return; }
+    if (adminLoading) return;
+    // Admins always have full access — no purchase required.
+    if (isAdmin) { setUnlocked(true); return; }
     let cancelled = false;
     (async () => {
       const { data } = await supabase
@@ -29,7 +34,8 @@ export function useBookUnlocked(bookId: string | undefined) {
       if (!cancelled) setUnlocked(!!data);
     })();
     return () => { cancelled = true; };
-  }, [bookId]);
+  }, [bookId, isAdmin, adminLoading]);
 
   return unlocked;
 }
+
