@@ -184,6 +184,14 @@ const ChapterEditor = () => {
   const [memoryOverlayOpen, setMemoryOverlayOpen] = useState(false);
   const [memoryOverlayMode, setMemoryOverlayMode] = useState<'manual' | 'guided'>('manual');
 
+  // Deep link from the book overview: ?memory=1 opens the Add Memory flow directly.
+  useEffect(() => {
+    if (searchParams.get('memory') === '1') {
+      setMemoryOverlayMode('manual');
+      setMemoryOverlayOpen(true);
+    }
+  }, [searchParams]);
+
   // Per-chapter flag: has the author edited the wisdom text?
   const [hasEditedWisdom, setHasEditedWisdom] = useState(false);
 

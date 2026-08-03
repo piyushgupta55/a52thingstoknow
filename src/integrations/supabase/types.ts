@@ -458,6 +458,7 @@ export type Database = {
           quote_text: string | null
           reading_reward_decision: string | null
           reference_text: string | null
+          review_note: string | null
           review_status: string | null
           seed_content: string | null
           status: string
@@ -484,6 +485,7 @@ export type Database = {
           quote_text?: string | null
           reading_reward_decision?: string | null
           reference_text?: string | null
+          review_note?: string | null
           review_status?: string | null
           seed_content?: string | null
           status?: string
@@ -510,6 +512,7 @@ export type Database = {
           quote_text?: string | null
           reading_reward_decision?: string | null
           reference_text?: string | null
+          review_note?: string | null
           review_status?: string | null
           seed_content?: string | null
           status?: string

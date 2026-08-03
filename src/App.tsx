@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import AdminSetup from "./pages/AdminSetup";
 import PreviewBook from "./pages/PreviewBook";
+import BookOverview from "./pages/BookOverview";
 import MemoryManager from "./pages/MemoryManager";
 import MemoryInvite from "./pages/MemoryInvite";
 import HelpFaq from "./pages/HelpFaq";
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/book/:bookId/chapters" element={<ProtectedRoute><ChapterGrid /></ProtectedRoute>} />
             <Route path="/book/:bookId/chapter/:chapterId" element={<ProtectedRoute><ChapterEditor /></ProtectedRoute>} />
             <Route path="/book/:bookId/preview" element={<ProtectedRoute><PreviewBook /></ProtectedRoute>} />
+            <Route path="/book/:bookId/overview" element={<ProtectedRoute><BookOverview /></ProtectedRoute>} />
             <Route path="/book/:bookId/memories" element={<ProtectedRoute><MemoryManager /></ProtectedRoute>} />
             <Route path="/invite/:token" element={<MemoryInvite />} />
             <Route path="/help" element={<ProtectedRoute><HelpFaq /></ProtectedRoute>} />

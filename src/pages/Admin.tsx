@@ -15,6 +15,7 @@ import { CheckCircle, Trash2, Filter, ChevronDown, ChevronUp, Pencil } from 'luc
 import { useToast } from '@/hooks/use-toast';
 import EditContentDialog from '@/components/admin/EditContentDialog';
 import PhotoChapterManager from '@/components/admin/PhotoChapterManager';
+import MemoryChapterManager from '@/components/admin/MemoryChapterManager';
 import TestersManager from '@/components/admin/TestersManager';
 import TutorialsManager from '@/components/admin/TutorialsManager';
 import FeedbackManager from '@/components/admin/FeedbackManager';
@@ -175,6 +176,7 @@ const Admin = () => {
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
             <TabsTrigger value="content">Content Manager</TabsTrigger>
             <TabsTrigger value="photos">Photo Chapters</TabsTrigger>
+            <TabsTrigger value="memory-chapters">Memory Chapters</TabsTrigger>
             <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
             <TabsTrigger value="lifecycle" disabled>Book Lifecycle</TabsTrigger>
             <TabsTrigger value="qc" disabled>QC Review</TabsTrigger>
@@ -197,6 +199,11 @@ const Admin = () => {
           <TabsContent value="photos" className="mt-6">
             <PhotoChapterManager />
           </TabsContent>
+
+          <TabsContent value="memory-chapters" className="mt-6">
+            <MemoryChapterManager />
+          </TabsContent>
+
 
           <TabsContent value="tutorials" className="mt-6">
             <TutorialsManager />
