@@ -301,7 +301,19 @@ const BookOverview = () => {
             <p className="text-[13px]" style={{ fontFamily: SERIF, color: '#4A5568' }}>
               {name}'s Gift · Chapter {bodyChapters[activeIndex]?.chapter_number ?? 1} of {bodyChapters.length}
             </p>
+            <div className="mt-1 flex items-center justify-center gap-2">
+              <div className="h-1.5 w-28 rounded-full overflow-hidden" style={{ background: 'rgba(187,169,106,0.25)' }}>
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{ width: `${bodyChapters.length ? (readCount / bodyChapters.length) * 100 : 0}%`, background: GOLD }}
+                />
+              </div>
+              <span className="text-[11px]" style={{ fontFamily: SERIF, color: '#8a8378' }}>
+                {readCount} of {bodyChapters.length} read
+              </span>
+            </div>
           </div>
+
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => goToPage(activeIndex - 1)}
