@@ -347,6 +347,34 @@ const BookDashboard = () => {
     return wc < SHORT_WORD_THRESHOLD && !hasPhoto && !hasMemory;
   }).length;
 
+  // ── Readiness model: every chapter is complete by default. Only unresolved
+  // photo spots and the missing reward decision keep the book from being ready.
+  const openPhotoSpots = numberedChapters.filter(c =>
+    (c.is_photo_chapter || photoChapterNums.has(c.chapter_number)) &&
+    !(c.photo_urls && c.photo_urls.length > 0) &&
+    !c.photo_declined
+  ).length;
+  const openRewardDecisions = numberedChapters.filter(c =>
+    /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`) && !c.reading_reward_decision
+  ).length;
+  const flaggedChapters = numberedChapters.filter(
+    c => (c.review_status === 'add' || c.review_status === 'rewrite') && c.status !== 'complete'
+  ).length;
+  const blockingItems = openPhotoSpots + openRewardDecisions;
+  const isReadyToPrint = blockingItems === 0;
+  const readParts: string[] = [];
+  if (openPhotoSpots > 0) readParts.push(`${openPhotoSpots} photo spot${openPhotoSpots === 1 ? '' : 's'}`);
+  if (openRewardDecisions > 0) readParts.push(`${openRewardDecisions} reward decision${openRewardDecisions === 1 ? '' : 's'}`);
+  if (flaggedChapters > 0) readParts.push(`${flaggedChapters} flagged chapter${flaggedChapters === 1 ? '' : 's'}`);
+  const openSummary = readParts.length
+    ? `Your book is ready — ${readParts.join(' and ')} still to go.`
+    : 'Your book is ready to print.';
+  const totalOpen = blockingItems + flaggedChapters;
+  const readinessPct = numberedChapters.length > 0
+    ? Math.max(0, Math.round(100 - (totalOpen / numberedChapters.length) * 100))
+    : 100;
+
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
