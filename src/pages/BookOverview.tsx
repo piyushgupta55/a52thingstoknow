@@ -552,7 +552,114 @@ const BookOverview = () => {
                   onClick={() => navigate(editorUrl(ch, '&memory=1'))}
                 />
               )}
+
+              {/* Read-through controls — kept by default; Add and Replace are optional */}
+              <div className="mt-6 pt-4 border-t flex flex-wrap items-center gap-2" style={{ borderColor: '#EAE5DC' }}>
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]"
+                  style={{
+                    fontFamily: SERIF,
+                    background: ch.read_at ? 'rgba(138,167,155,0.16)' : 'rgba(0,0,0,0.03)',
+                    color: ch.read_at ? '#4d6a5e' : '#8a8378',
+                  }}
+                >
+                  <Check className="h-3 w-3" /> {ch.read_at ? 'Read' : 'Kept — reading marks itself'}
+                </span>
+                {!ch.read_at && (
+                  <button
+                    onClick={() => markRead(ch.id)}
+                    className="text-[11px] underline"
+                    style={{ fontFamily: SERIF, color: '#8a8378' }}
+                  >
+                    Mark read
+                  </button>
+                )}
+
+                <span className="flex-1" />
+
+                <Button
+                  variant={isAdd ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-8 gap-1.5 text-[12px]"
+                  disabled={savingId === ch.id}
+                  onClick={() => {
+                    setNoteFor(noteFor === ch.id ? null : ch.id);
+                    setNoteText(ch.review_note || '');
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add to it
+                </Button>
+                <Button
+                  variant={isRewrite ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-8 gap-1.5 text-[12px]"
+                  disabled={savingId === ch.id}
+                  onClick={async () => {
+                    const ok = await setReview(ch, 'rewrite', null);
+                    if (ok) navigate(editorUrl(ch));
+                  }}
+                >
+                  <PenLine className="h-3.5 w-3.5" /> Replace
+                </Button>
+                {(isAdd || isRewrite) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1.5 text-[12px]"
+                    disabled={savingId === ch.id}
+                    onClick={() => setReview(ch, null, null)}
+                  >
+                    <X className="h-3.5 w-3.5" /> Clear
+                  </Button>
+                )}
+              </div>
+
+              {noteFor === ch.id && (
+                <div className="mt-3 rounded-md p-3" style={{ background: 'rgba(187,169,106,0.08)', border: `1px dashed ${GOLD}` }}>
+                  <p className="text-[12px] mb-2" style={{ fontFamily: SERIF, color: '#7a6a34' }}>
+                    What would you like to add here? Just the idea — you'll write it in the editor later.
+                  </p>
+                  <Textarea
+                    value={noteText}
+                    onChange={e => setNoteText(e.target.value)}
+                    rows={3}
+                    placeholder={`e.g. the story about ${name} and the bicycle`}
+                    className="bg-white text-[13px]"
+                  />
+                  <div className="mt-2 flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="h-8 text-[12px]"
+                      disabled={savingId === ch.id}
+                      onClick={async () => {
+                        const ok = await setReview(ch, 'add', noteText.trim() || null);
+                        if (ok) {
+                          setNoteFor(null);
+                          toast.success('Filed in “To add to”');
+                        }
+                      }}
+                    >
+                      Save note
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-[12px]"
+                      onClick={async () => {
+                        const ok = await setReview(ch, 'add', noteText.trim() || null);
+                        if (ok) navigate(editorUrl(ch));
+                      }}
+                    >
+                      Save &amp; open editor
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 text-[12px]" onClick={() => setNoteFor(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
+
           );
         })}
 
