@@ -674,9 +674,31 @@ const BookOverview = () => {
           );
         })}
 
-        <p className="text-center text-[12px] italic pb-10" style={{ fontFamily: SERIF, color: '#8a8378' }}>
-          The end — {name}'s book is ready whenever you are.
-        </p>
+        {/* Page turn */}
+        <div className="w-full flex items-center justify-between gap-3" style={{ maxWidth: `${PREVIEW_PAGE_WIDTH}px` }}>
+          <Button variant="outline" className="gap-1.5" onClick={() => goToPage(activeIndex - 1)} disabled={activeIndex === 0}>
+            <ChevronLeft className="h-4 w-4" /> Back
+          </Button>
+          <span className="text-[12px]" style={{ fontFamily: SERIF, color: '#8a8378' }}>
+            {activeChapter ? `${chapterIdx + 1} of ${bodyChapters.length}` : ''}
+          </span>
+          {activeIndex >= totalPages - 1 ? (
+            <Button className="gap-1.5" style={{ background: GOLD, color: '#fff' }} onClick={() => navigate(`/book/${bookId}`)}>
+              Finish <Check className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button className="gap-1.5" style={{ background: GOLD, color: '#fff' }} onClick={() => goToPage(activeIndex + 1)}>
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {activeIndex >= totalPages - 1 && (
+          <p className="text-center text-[12px] italic pb-10" style={{ fontFamily: SERIF, color: '#8a8378' }}>
+            The end — {name}'s book is ready whenever you are.
+          </p>
+        )}
+
       </div>
     </div>
   );
