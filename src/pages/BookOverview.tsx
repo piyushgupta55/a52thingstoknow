@@ -328,10 +328,12 @@ const BookOverview = () => {
 
       <div className="py-8 px-4 flex flex-col items-center gap-8">
         {/* Title page */}
+        {activeIndex === 0 && (
         <div
           className="bg-white shadow-md rounded-sm w-full"
           style={{ maxWidth: `${PREVIEW_PAGE_WIDTH}px`, padding: '3.5rem 2.5rem' }}
         >
+
           <div className="text-center py-10" style={{ border: `2px solid ${GOLD}`, borderRadius: '2px' }}>
             <p className="uppercase tracking-[0.25em] mb-3" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
               A Book of Wisdom
