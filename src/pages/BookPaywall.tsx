@@ -4,20 +4,11 @@ import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Shield, Truck, BookOpen } from "lucide-react";
-import { PRICING, formatUSD } from "@/lib/stripe";
+import { usePricing, formatUSD } from "@/hooks/usePricing";
 
 const CREAM = "#F5F0E8";
 const GOLD = "#BBA96A";
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
-
-interface Pricing {
-  book_cents: number;
-  extra_copy_cents: number;
-}
-const DEFAULT_PRICING: Pricing = {
-  book_cents: PRICING.bookCents,
-  extra_copy_cents: PRICING.extraCopyCents,
-};
 
 export default function BookPaywall() {
   const { bookId } = useParams<{ bookId: string }>();
@@ -25,7 +16,7 @@ export default function BookPaywall() {
   const [book, setBook] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [extraCopies, setExtraCopies] = useState(0);
-  const [pricing, setPricing] = useState<Pricing>(DEFAULT_PRICING);
+  const { pricing, loading: pricingLoading } = usePricing();
 
   const [claiming, setClaiming] = useState(true);
 
@@ -44,21 +35,18 @@ export default function BookPaywall() {
       }
       setClaiming(false);
 
-      const [{ data: bookData }, { data: priceData }] = await Promise.all([
-        supabase
-          .from("books")
-          .select("id, recipient_name, milestone_date")
-          .eq("id", bookId)
-          .maybeSingle(),
-        supabase.from("app_settings").select("value").eq("key", "pricing").maybeSingle(),
-      ]);
+      const { data: bookData } = await supabase
+        .from("books")
+        .select("id, recipient_name, milestone_date")
+        .eq("id", bookId)
+        .maybeSingle();
       setBook(bookData);
-      if (priceData?.value) setPricing({ ...DEFAULT_PRICING, ...(priceData.value as any) });
       setLoading(false);
     })();
   }, [bookId, navigate]);
 
-  if (loading || claiming) return <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}><Navbar /><div className="p-8 text-center">Loading…</div></div>;
+  if (loading || claiming || pricingLoading) return <div className="min-h-screen" style={{ background: CREAM, fontFamily: SERIF }}><Navbar /><div className="p-8 text-center">Loading…</div></div>;
+
 
 
   if (!book) return <div className="p-8">Book not found</div>;
