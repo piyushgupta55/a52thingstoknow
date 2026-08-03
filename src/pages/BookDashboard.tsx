@@ -397,6 +397,26 @@ const BookDashboard = () => {
           </Button>
         </div>
 
+        {/* Your book — finished-book overview with gentle, optional cues */}
+        <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Your Book</h2>
+              </div>
+              <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
+                Read your finished book page by page — verses, quotes, wisdom and photo spots. Along the way you'll see soft
+                invitations to make it even more yours. Nothing there is required.
+              </p>
+            </div>
+            <Button size="lg" variant="secondary" className="md:flex-shrink-0" onClick={() => navigate(`/book/${bookId}/overview`)}>
+              <BookOpen className="h-4 w-4 mr-2" />
+              Open your book
+            </Button>
+          </div>
+        </div>
+
         {/* Chapters to Review — first read-through pass */}
         {numberedChapters.length > 0 && notReviewed > 0 && (
           <div
