@@ -351,9 +351,11 @@ const BookOverview = () => {
             Your book is written and ready. Read it through — the gentle notes are simply invitations to make it even more yours.
           </p>
         </div>
+        )}
 
         {/* Letter from the Author — complete by default, but a gentle open item */}
-        {letterChapter && (
+        {letterChapter && activeIndex === 1 && (
+
           <div
             className="bg-white shadow-md rounded-sm w-full"
             style={{ maxWidth: `${PREVIEW_PAGE_WIDTH}px`, padding: '2.75rem 2.25rem 2rem' }}
