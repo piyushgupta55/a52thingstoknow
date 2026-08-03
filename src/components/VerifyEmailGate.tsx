@@ -1,14 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { MailCheck } from 'lucide-react';
+import { Loader2, MailCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const VerifyEmailGate = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [sending, setSending] = useState(false);
+
+  // The confirmation link may be opened on another device. Poll so this
+  // device notices the account is verified and moves forward on its own.
+  useEffect(() => {
+    let cancelled = false;
+
+    const check = async () => {
+      const { data } = await supabase.auth.refreshSession();
+      if (cancelled) return;
+      if (data?.session?.user?.email_confirmed_at) {
+        window.location.reload();
+      }
+    };
+
+    const id = window.setInterval(check, 5000);
+    const onFocus = () => check();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
 
   const resend = async () => {
     if (!user?.email) return;
