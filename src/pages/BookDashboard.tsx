@@ -300,6 +300,12 @@ const BookDashboard = () => {
     fetchData();
   }, [bookId]);
 
+  // Always open the book dashboard at the top so the read-through section is seen first.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [bookId]);
+
+
   if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Loading...</div></div>;
   if (!book) return <div className="min-h-screen bg-background"><Navbar /><div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Book not found.</div></div>;
 
