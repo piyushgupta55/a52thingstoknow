@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -68,7 +69,7 @@ const Login = () => {
           </div>
           <div>
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Your password" required className="mt-1" />
+            <PasswordInput id="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Your password" required className="mt-1" />
           </div>
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? 'Logging in...' : 'Log In'}

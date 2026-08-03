@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -66,11 +67,11 @@ const ResetPassword = () => {
         <form onSubmit={handleSubmit} className="bg-card rounded-xl border border-border p-8 shadow-sm space-y-5">
           <div>
             <Label htmlFor="password">New password</Label>
-            <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters" required minLength={6} className="mt-1" />
+            <PasswordInput id="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters" required minLength={6} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="confirm">Confirm new password</Label>
-            <Input id="confirm" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Retype your password" required minLength={6} className="mt-1" />
+            <PasswordInput id="confirm" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Retype your password" required minLength={6} className="mt-1" />
           </div>
           <Button type="submit" className="w-full" size="lg" disabled={loading || !ready}>
             {loading ? 'Updating…' : ready ? 'Update password' : 'Verifying link…'}
@@ -81,6 +82,10 @@ const ResetPassword = () => {
             </p>
           )}
         </form>
+
+        <p className="text-center text-sm mt-6">
+          <Link to="/login" className="text-primary font-medium hover:underline">← Back to log in</Link>
+        </p>
       </div>
     </div>
   );
