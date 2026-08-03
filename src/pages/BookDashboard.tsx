@@ -365,11 +365,6 @@ const BookDashboard = () => {
 
         {/* Chapters to Review — first read-through pass */}
         {numberedChapters.length > 0 && notReviewed > 0 && (
-          <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
-              <div className="flex-1">
-        {/* Chapters to Review — first read-through pass */}
-        {numberedChapters.length > 0 && notReviewed > 0 && (
           <div
             className={
               reviewNotStarted
@@ -504,6 +499,13 @@ const BookDashboard = () => {
           </div>
         </div>
 
+        {/* Status Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Chapters */}
+          <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Chapters</h3>
             </div>
             <div className="space-y-1.5 text-sm">
               <div className="flex items-center gap-2">
