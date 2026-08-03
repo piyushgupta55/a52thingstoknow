@@ -332,6 +332,8 @@ const BookDashboard = () => {
   const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite' && c.status !== 'complete').length;
   const reviewedCount = reviewKept + reviewAdd + reviewRewrite;
   const notReviewed = numberedChapters.filter(c => !c.review_status && c.status !== 'complete').length;
+  const reviewNotStarted = reviewedCount === 0 && notReviewed > 0;
+  const reviewPath = bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/quick-read/all`;
   const shortKept = numberedChapters.filter(c => {
     if (c.review_status !== 'keep' || c.status === 'complete') return false;
     const text = `${c.reference_text || ''} ${c.content || ''}`.trim();
