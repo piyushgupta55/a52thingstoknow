@@ -81,7 +81,12 @@ const BookOverview = () => {
   const [authorName, setAuthorName] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [noteFor, setNoteFor] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [savingId, setSavingId] = useState<string | null>(null);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const readingRef = useRef<Set<string>>(new Set());
+
 
   useEffect(() => {
     if (!bookId) return;
