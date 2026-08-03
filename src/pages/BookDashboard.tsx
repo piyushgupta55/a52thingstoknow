@@ -329,23 +329,26 @@ const BookDashboard = () => {
   const photoChaptersDesignated = chapters.filter(c => photoChapterNums.has(c.chapter_number)).length;
   const photosUploaded = chapters.filter(c => photoChapterNums.has(c.chapter_number) && c.photo_urls && c.photo_urls.length > 0).length;
 
-  // Quick Read review tallies
-  const SHORT_WORD_THRESHOLD = 180;
-  const reviewKept = numberedChapters.filter(c => c.review_status === 'keep' && c.status !== 'complete').length;
-  const reviewAdd = numberedChapters.filter(c => c.review_status === 'add' && c.status !== 'complete').length;
-  const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite' && c.status !== 'complete').length;
-  const reviewedCount = reviewKept + reviewAdd + reviewRewrite;
-  const notReviewed = numberedChapters.filter(c => !c.review_status && c.status !== 'complete').length;
-  const reviewNotStarted = reviewedCount === 0 && notReviewed > 0;
+  // Read-through tallies. Everything is kept by default; Add/Replace are optional marks.
+  const reviewAdd = numberedChapters.filter(c => c.review_status === 'add').length;
+  const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite').length;
+  const readCount = numberedChapters.filter(c => !!(c as any).read_at).length;
+  const notReviewed = numberedChapters.length - readCount;
+  const reviewedCount = readCount;
   const reviewPath = bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/quick-read/all`;
-  const shortKept = numberedChapters.filter(c => {
-    if (c.review_status !== 'keep' || c.status === 'complete') return false;
-    const text = `${c.reference_text || ''} ${c.content || ''}`.trim();
-    const wc = text ? text.split(/\s+/).length : 0;
-    const hasPhoto = c.photo_urls && c.photo_urls.length > 0;
-    const hasMemory = memories.some(m => m.chapter_id === c.id);
-    return wc < SHORT_WORD_THRESHOLD && !hasPhoto && !hasMemory;
+  const hasRewardMark = (c: Chapter) => /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`);
+  // Photos & Decisions is pre-populated: every photo chapter plus the reading-reward chapter.
+  const photosDecisionsOpen = numberedChapters.filter(c => {
+    const isPhoto = c.is_photo_chapter || photoChapterNums.has(c.chapter_number);
+    const needsPhoto = isPhoto && !(c.photo_urls && c.photo_urls.length > 0) && !c.photo_declined;
+    const needsReward = hasRewardMark(c) && !c.reading_reward_decision;
+    return needsPhoto || needsReward;
   }).length;
+  // Memories is its own basket, pre-populated with the curated memory-invitation chapters.
+  const memoriesOpen = numberedChapters.filter(
+    c => memoryInviteChapters.includes(c.chapter_number) && !memories.some(m => m.chapter_id === c.id)
+  ).length;
+
 
   // ── Readiness model: every chapter is complete by default. Only unresolved
   // photo spots and the missing reward decision keep the book from being ready.
