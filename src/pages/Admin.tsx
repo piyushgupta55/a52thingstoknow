@@ -199,6 +199,11 @@ const Admin = () => {
             <PhotoChapterManager />
           </TabsContent>
 
+          <TabsContent value="memory-chapters" className="mt-6">
+            <MemoryChapterManager />
+          </TabsContent>
+
+
           <TabsContent value="tutorials" className="mt-6">
             <TutorialsManager />
           </TabsContent>
