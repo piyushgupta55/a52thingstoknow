@@ -420,9 +420,17 @@ const ChapterEditor = () => {
             }
           }
 
-          const normalizedRefVal = normalizeWhitespace(finalRefVal);
-          const normalizedContentVal = normalizeWhitespace(finalContentVal);
-          
+          // Re-wrap the Reading-Reward line if an earlier save stripped its
+          // <mark> tags, so the edit view matches the preview exactly.
+          const normalizedRefVal = restoreMarkTags(
+            normalizeWhitespace(finalRefVal),
+            chapterData.seed_content,
+          );
+          const normalizedContentVal = restoreMarkTags(
+            normalizeWhitespace(finalContentVal),
+            chapterData.seed_content,
+          );
+
           setReferenceText(normalizedRefVal);
           setContent(normalizedContentVal);
           // Seed the unified editor buffer from the saved split.
