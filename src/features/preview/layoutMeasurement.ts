@@ -135,6 +135,12 @@ const extractWisdomText = (wisdom: HTMLElement | null) => {
     br.replaceWith('\n');
   });
 
+  // Preserve the Reading-Reward highlight: text extraction would otherwise drop
+  // the <mark> wrapper and the edit view would lose the special line's styling.
+  clone.querySelectorAll('mark').forEach((el) => {
+    el.replaceWith(`<mark>${el.textContent || ''}</mark>`);
+  });
+
   // Extract text from <p> tags if present to preserve paragraphs
   const pTags = Array.from(clone.querySelectorAll('p'));
   if (pTags.length > 0) {
