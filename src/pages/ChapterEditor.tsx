@@ -1574,8 +1574,21 @@ const ChapterEditor = () => {
           </div>
         )}
 
-
-
+        {/* Reading Reward heads-up — detected by the <mark> reward line, never by chapter number */}
+        {/<mark\b/i.test(`${chapter.seed_content || ''}\n${mergedText || chapter.content || ''}`) && (
+          <ReadingRewardCallout
+            chapterId={chapter.id}
+            recipientName={recipientName}
+            acknowledgedAt={chapter.reading_reward_ack_at}
+            onAcknowledged={() =>
+              setChapter(prev =>
+                prev
+                  ? { ...prev, reading_reward_decision: 'acknowledged', reading_reward_ack_at: new Date().toISOString() }
+                  : prev,
+              )
+            }
+          />
+        )}
 
 
         {/* Duplicate warning */}
