@@ -22,6 +22,7 @@ import ContentSearchPanel from '@/components/chapter/ContentSearchPanel';
 import PageCanvas from '@/components/chapter/PageCanvas';
 import CompanionBubble from '@/components/chapter/CompanionBubble';
 import MemoryCaptureOverlay from '@/components/chapter/MemoryCaptureOverlay';
+import ReadingRewardCallout from '@/components/chapter/ReadingRewardCallout';
 import { type CompanionEdit } from '@/hooks/useCompanionChat';
 import {
   ISSUE_LABEL,
