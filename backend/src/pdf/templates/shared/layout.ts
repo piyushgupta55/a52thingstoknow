@@ -98,7 +98,12 @@ function formatContent(content: string | null | undefined, disableDropcap = fals
   // Safety net: strip any stray <review>...</review> wrappers.
   // Frontend applies keep/soften/remove semantics before sending; this only guards
   // against the tag ever leaking into the printed book.
-  const trimmed = content.replace(/<\/?review>/gi, '').trim();
+  const trimmed = content
+    .replace(/<\/?review>/gi, '')
+    // Defense in depth: balanced or orphaned reward markers never print.
+    .replace(/<\/?mark\b[^>]*>/gi, '')
+    .replace(/&lt;\/?mark\b.*?&gt;/gi, '')
+    .trim();
 
   let html = '';
   if (/^<p|^<div|^<ol|^<ul|^<blockquote|^<table/i.test(trimmed)) {

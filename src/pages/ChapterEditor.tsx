@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
-import { restoreMarkTags } from '@/lib/readingReward';
+import { hasMarkTag, stripMarkTags } from '@/lib/readingReward';
 import { toBookGender } from '@/lib/genderMap';
 
 import { Button } from '@/components/ui/button';
@@ -421,16 +421,10 @@ const ChapterEditor = () => {
             }
           }
 
-          // Re-wrap the Reading-Reward line if an earlier save stripped its
-          // <mark> tags, so the edit view matches the preview exactly.
-          const normalizedRefVal = restoreMarkTags(
-            normalizeWhitespace(finalRefVal),
-            chapterData.seed_content,
-          );
-          const normalizedContentVal = restoreMarkTags(
-            normalizeWhitespace(finalContentVal),
-            chapterData.seed_content,
-          );
+          // Reward markers are formatting metadata. The author edits only the
+          // clean prose, so deleting or changing the line cannot orphan a tag.
+          const normalizedRefVal = stripMarkTags(normalizeWhitespace(finalRefVal));
+          const normalizedContentVal = stripMarkTags(normalizeWhitespace(finalContentVal));
 
           setReferenceText(normalizedRefVal);
           setContent(normalizedContentVal);
@@ -643,8 +637,8 @@ const ChapterEditor = () => {
       const doc = iframe?.contentDocument;
       if (doc && chapter) {
         const exactSplit = extractExactChapterSplit(doc, String(chapter.chapter_number));
-        refToSave = normalizeWhitespace(exactSplit.page1);
-        contentToSave = normalizeWhitespace(exactSplit.page2);
+        refToSave = stripMarkTags(normalizeWhitespace(exactSplit.page1));
+        contentToSave = stripMarkTags(normalizeWhitespace(exactSplit.page2));
 
         // Sync screen values silently
         setReferenceText(refToSave);
@@ -656,11 +650,11 @@ const ChapterEditor = () => {
           if (wisdomTextareaRef.current) autoResize(wisdomTextareaRef.current);
         }, 50);
       } else {
-        refToSave = normalizeWhitespace(referenceText);
-        contentToSave = normalizeWhitespace(mergedText);
+        refToSave = stripMarkTags(normalizeWhitespace(referenceText));
+        contentToSave = stripMarkTags(normalizeWhitespace(mergedText));
       }
     } else {
-      contentToSave = normalizeWhitespace(content);
+      contentToSave = stripMarkTags(normalizeWhitespace(content));
       setContent(contentToSave);
       setMergedText(contentToSave);
 
@@ -1584,7 +1578,7 @@ const ChapterEditor = () => {
         )}
 
         {/* Reading Reward heads-up — detected by the <mark> reward line, never by chapter number */}
-        {/<mark\b/i.test(`${chapter.seed_content || ''}\n${mergedText || chapter.content || ''}`) && (
+        {hasMarkTag(chapter.seed_content) && (
           <ReadingRewardCallout
             chapterId={chapter.id}
             recipientName={recipientName}
@@ -1847,7 +1841,7 @@ const ChapterEditor = () => {
                   rows={6}
                   placeholder="Begin your chapter here..."
                   onChange={e => {
-                    const next = e.target.value;
+                    const next = stripMarkTags(e.target.value);
                     if (next.length <= MAX_CONTENT_LENGTH) {
                       setReferenceText(next);
                       setMergedText(mergeRefAndContent(next, content));
@@ -1858,7 +1852,7 @@ const ChapterEditor = () => {
                   }}
                   onPaste={e => {
                     e.preventDefault();
-                    const text = e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n');
+                    const text = stripMarkTags(e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n'));
                     const ta = e.target as HTMLTextAreaElement;
                     const start = ta.selectionStart;
                     const end = ta.selectionEnd;
@@ -1875,7 +1869,7 @@ const ChapterEditor = () => {
                     });
                   }}
                   onBlur={e => {
-                    const normalized = normalizeWhitespace(e.target.value);
+                    const normalized = stripMarkTags(normalizeWhitespace(e.target.value));
                     setReferenceText(normalized);
                     setMergedText(mergeRefAndContent(normalized, content));
                     autoResize(e.target);
@@ -1905,7 +1899,7 @@ const ChapterEditor = () => {
                   rows={6}
                   placeholder="Page 2 continues here..."
                   onChange={e => {
-                    const next = e.target.value;
+                    const next = stripMarkTags(e.target.value);
                     if (next.length <= MAX_CONTENT_LENGTH) {
                       setContent(next);
                       setMergedText(mergeRefAndContent(referenceText, next));
@@ -1916,7 +1910,7 @@ const ChapterEditor = () => {
                   }}
                   onPaste={e => {
                     e.preventDefault();
-                    const text = e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n');
+                    const text = stripMarkTags(e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n'));
                     const ta = e.target as HTMLTextAreaElement;
                     const start = ta.selectionStart;
                     const end = ta.selectionEnd;
@@ -1933,7 +1927,7 @@ const ChapterEditor = () => {
                     });
                   }}
                   onBlur={e => {
-                    const normalized = normalizeWhitespace(e.target.value);
+                    const normalized = stripMarkTags(normalizeWhitespace(e.target.value));
                     setContent(normalized);
                     setMergedText(mergeRefAndContent(referenceText, normalized));
                     autoResize(e.target);
