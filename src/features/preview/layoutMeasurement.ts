@@ -135,10 +135,9 @@ const extractWisdomText = (wisdom: HTMLElement | null) => {
     br.replaceWith('\n');
   });
 
-  // Preserve the Reading-Reward highlight: text extraction would otherwise drop
-  // the <mark> wrapper and the edit view would lose the special line's styling.
+  // Marker formatting is author-view metadata, never persisted as editable text.
   clone.querySelectorAll('mark').forEach((el) => {
-    el.replaceWith(`<mark>${el.textContent || ''}</mark>`);
+    el.replaceWith(el.textContent || '');
   });
 
   // Extract text from <p> tags if present to preserve paragraphs

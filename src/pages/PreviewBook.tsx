@@ -28,6 +28,7 @@ import {
 import type { Book, Chapter, ChapterTemplate, Memory, SpreadDef, SpreadRender } from '@/features/preview/types';
 import { getPhotoImageStyle, parsePhotoRenderLayout } from '@/features/photoRendering';
 import { normalizeWhitespace } from '@/features/chapter-editor/textSplit';
+import { stripMarkTags } from '@/lib/readingReward';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const GOLD = '#BBA96A';
@@ -191,8 +192,8 @@ const PreviewBook = () => {
 
     const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://pdf-render-service-33np.onrender.com';
     const normalizeContent = (referenceText: string | null, content: string | null, chapterNumber: number) => {
-      let ref = (referenceText || '').trim();
-      const body = (content || '').trim();
+      let ref = stripMarkTags(referenceText).trim();
+      const body = stripMarkTags(content).trim();
       if (!ref && !body) {
         const tpl = templates.find(t => t.chapter_number === chapterNumber);
         if (tpl) {
