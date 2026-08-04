@@ -71,7 +71,8 @@ function renderInlineHtml(line: string): string {
     /<mark[^>]*>([\s\S]*?)<\/mark>|\*\*([^*\n]+?)\*\*|~~([^~\n]+?)~~|`([^`\n]+?)`|\*([^*\n]+?)\*|_([^_\n]+?)_/g;
   return line.replace(re, (match, p1, p2, p3, p4, p5, p6) => {
     if (p1 !== undefined) {
-      return `<mark style="background-color: #FEF3C7; color: inherit; padding: 0 2px; border-radius: 2px;">${p1}</mark>`;
+      // Reading Reward line prints as normal text — no highlight in the final book.
+      return p1;
     }
     if (p2 !== undefined) {
       return `<strong>${p2}</strong>`;

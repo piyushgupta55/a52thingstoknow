@@ -638,19 +638,9 @@ const PreviewBook = () => {
     while ((m = re.exec(line)) !== null) {
       if (m.index > last) parts.push(line.slice(last, m.index));
       if (m[1] !== undefined) {
-        parts.push(
-          <mark
-            key={`mk${k++}`}
-            style={{
-              backgroundColor: '#FEF3C7',
-              color: 'inherit',
-              padding: '0 2px',
-              borderRadius: '2px',
-            }}
-          >
-            {m[1]}
-          </mark>,
-        );
+        // Reading Reward line prints as normal text — no highlight in the book.
+        parts.push(<span key={`mk${k++}`}>{m[1]}</span>);
+
       } else if (m[2] !== undefined) {
         parts.push(<strong key={`b${k++}`} style={{ fontWeight: 'bold' }}>{m[2]}</strong>);
       } else if (m[3] !== undefined) {

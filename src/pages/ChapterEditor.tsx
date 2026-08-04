@@ -22,6 +22,7 @@ import ContentSearchPanel from '@/components/chapter/ContentSearchPanel';
 import PageCanvas from '@/components/chapter/PageCanvas';
 import CompanionBubble from '@/components/chapter/CompanionBubble';
 import MemoryCaptureOverlay from '@/components/chapter/MemoryCaptureOverlay';
+import ReadingRewardCallout from '@/components/chapter/ReadingRewardCallout';
 import { type CompanionEdit } from '@/hooks/useCompanionChat';
 import {
   ISSUE_LABEL,
@@ -69,6 +70,9 @@ interface ChapterData {
   quote_id: string | null;
   chapter_template: string;
   reference_text?: string | null;
+  seed_content?: string | null;
+  reading_reward_decision?: string | null;
+  reading_reward_ack_at?: string | null;
 }
 
 interface LibraryItem {
@@ -1570,8 +1574,21 @@ const ChapterEditor = () => {
           </div>
         )}
 
-
-
+        {/* Reading Reward heads-up — detected by the <mark> reward line, never by chapter number */}
+        {/<mark\b/i.test(`${chapter.seed_content || ''}\n${mergedText || chapter.content || ''}`) && (
+          <ReadingRewardCallout
+            chapterId={chapter.id}
+            recipientName={recipientName}
+            acknowledgedAt={chapter.reading_reward_ack_at}
+            onAcknowledged={() =>
+              setChapter(prev =>
+                prev
+                  ? { ...prev, reading_reward_decision: 'acknowledged', reading_reward_ack_at: new Date().toISOString() }
+                  : prev,
+              )
+            }
+          />
+        )}
 
 
         {/* Duplicate warning */}
