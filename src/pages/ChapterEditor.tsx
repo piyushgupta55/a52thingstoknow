@@ -69,6 +69,9 @@ interface ChapterData {
   quote_id: string | null;
   chapter_template: string;
   reference_text?: string | null;
+  seed_content?: string | null;
+  reading_reward_decision?: string | null;
+  reading_reward_ack_at?: string | null;
 }
 
 interface LibraryItem {
