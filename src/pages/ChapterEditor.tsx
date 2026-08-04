@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
+import { restoreMarkTags } from '@/lib/readingReward';
 import { toBookGender } from '@/lib/genderMap';
 
 import { Button } from '@/components/ui/button';
