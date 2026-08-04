@@ -457,6 +457,8 @@ export type Database = {
           quote_id: string | null
           quote_text: string | null
           read_at: string | null
+          reading_reward_ack_at: string | null
+          reading_reward_ack_by: string | null
           reading_reward_decision: string | null
           reference_text: string | null
           review_note: string | null
@@ -485,6 +487,8 @@ export type Database = {
           quote_id?: string | null
           quote_text?: string | null
           read_at?: string | null
+          reading_reward_ack_at?: string | null
+          reading_reward_ack_by?: string | null
           reading_reward_decision?: string | null
           reference_text?: string | null
           review_note?: string | null
@@ -513,6 +517,8 @@ export type Database = {
           quote_id?: string | null
           quote_text?: string | null
           read_at?: string | null
+          reading_reward_ack_at?: string | null
+          reading_reward_ack_by?: string | null
           reading_reward_decision?: string | null
           reference_text?: string | null
           review_note?: string | null
