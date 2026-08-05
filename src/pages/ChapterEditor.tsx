@@ -1118,8 +1118,8 @@ const ChapterEditor = () => {
       return (
         <div className={`mb-6 ${isVert ? 'flex justify-center' : 'w-full'}`}>
           <div
-            className="relative overflow-hidden rounded-sm"
-            style={{ width: isVert ? 'fit-content' : '100%', height: 'auto' }}
+            className="relative overflow-hidden rounded-sm w-full"
+            style={{ height: `${PREVIEW_PHOTO_BLOCK_HEIGHT}px` }}
           >
             <img
               src={primaryPhotoUrl}
