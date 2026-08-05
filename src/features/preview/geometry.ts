@@ -15,9 +15,14 @@ export const PREVIEW_PAGE_PADDING_OUTER = toPx(0.5);
 export const PREVIEW_PAGE_PADDING_INNER = toPx(0.65);
 export const PREVIEW_PAGE_FOOTER_HEIGHT = PREVIEW_PAGE_HEIGHT - PREVIEW_PAGE_CONTENT_HEIGHT;
 
-export const PREVIEW_PHOTO_HORIZONTAL_HEIGHT = toPx(1.875);
+// Single shared cap for every chapter photo (all book versions).
+// Must stay in sync with --chapter-photo-block-height in src/index.css.
+export const PHOTO_BLOCK_HEIGHT_IN = 2.5;
+export const PREVIEW_PHOTO_BLOCK_HEIGHT = toPx(PHOTO_BLOCK_HEIGHT_IN);
+
+export const PREVIEW_PHOTO_HORIZONTAL_HEIGHT = PREVIEW_PHOTO_BLOCK_HEIGHT;
 export const PREVIEW_PHOTO_VERTICAL_WIDTH = toPx(2.7);
-export const PREVIEW_PHOTO_VERTICAL_HEIGHT = toPx(2.8);
+export const PREVIEW_PHOTO_VERTICAL_HEIGHT = PREVIEW_PHOTO_BLOCK_HEIGHT;
 
 export const PREVIEW_SPINE_WIDTH = toPx(0.125);
 export const PREVIEW_SPINE_HALF_WIDTH = PREVIEW_SPINE_WIDTH / 2;
