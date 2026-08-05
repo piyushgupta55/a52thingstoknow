@@ -166,9 +166,12 @@ const BookOverview = () => {
     ch.is_photo_chapter || !!templates.find(t => t.chapter_number === ch.chapter_number)?.is_photo_chapter;
 
   const editorUrl = (ch: Chapter, extra = '') => {
-    const back = encodeURIComponent(`/book/${bookId}/overview`);
+    const back = encodeURIComponent(`${location.pathname}`);
     return `/book/${bookId}/chapter/${ch.id}?returnTo=${back}&returnLabel=${encodeURIComponent('Back to the book')}${extra}`;
   };
+
+  const hasRewardMark = (ch: Chapter) =>
+    /<mark\b/i.test(`${ch.seed_content || ''}\n${ch.content || ''}`);
 
   const letterChapter = useMemo(() => chapters.find(c => c.chapter_number === 0) || null, [chapters]);
   const readCount = bodyChapters.filter(c => !!c.read_at).length;
