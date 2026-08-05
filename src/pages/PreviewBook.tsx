@@ -147,10 +147,16 @@ const PreviewBook = () => {
     load();
   }, [bookId]);
 
+  // The chapter shown in the exact (print-accurate) preview, if that's the surface in use.
+  const exactActiveChapter = exactChapterNum
+    ? visibleChapters.find(c => String(c.chapter_number) === exactChapterNum) || null
+    : null;
+
   // Reading marks itself as the author turns pages (review mode only).
-  const activeChapterForRead = spreads[clampedSpread]?.type === 'chapter'
+  const fallbackChapterForRead = spreads[clampedSpread]?.type === 'chapter'
     ? (spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter
     : null;
+  const activeChapterForRead = exactPreviewHtml ? exactActiveChapter : fallbackChapterForRead;
   const activeReadChapterId = activeChapterForRead && !activeChapterForRead.read_at ? activeChapterForRead.id : null;
   useEffect(() => {
     if (!reviewMode || !activeReadChapterId) return;
