@@ -42,6 +42,13 @@ import FeedbackFab from "./components/feedback/FeedbackFab";
 
 const queryClient = new QueryClient();
 
+// The old one-chapter-per-page read-through is retired — the book viewer is the
+// single Read & Build surface.
+const RetiredReadThrough = () => {
+  const { bookId } = useParams<{ bookId: string }>();
+  return <Navigate to={`/book/${bookId}/overview`} replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
