@@ -1436,7 +1436,8 @@ const PreviewBook = () => {
     const spread = spreads[clampedSpread];
     if (!spread) return [null, null, undefined, false, null];
     if (spread.type === 'title') return [...renderTitleSpread(), false, null];
-    if (spread.type === 'toc_letter') return [...renderTocLetterSpread(), false, null];
+    if (spread.type === 'toc') return [...renderTocSpread(), false, null];
+    if (spread.type === 'letter') return [...renderLetterSpread(), false, null];
     if (spread.type === 'epigraph') return [...renderEpigraphSpread(), false, null];
     if (spread.type === 'ancestry') return [...renderAncestrySpread(), false, null];
     if (spread.type === 'family_history') return [...renderFamilyHistorySpread(), false, null];
