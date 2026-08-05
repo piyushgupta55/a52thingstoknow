@@ -688,6 +688,14 @@ const PreviewBook = () => {
           </div>
         </div>
 
+        {reviewMode && exactActiveChapter && (
+          <div className="px-3 pb-16 sm:pb-20 flex justify-center" style={{ pointerEvents: 'auto' }}>
+            {renderReviewBar(exactActiveChapter, true)}
+          </div>
+        )}
+
+
+
         <div
           className="absolute left-0 right-0 bottom-3 sm:bottom-4 z-20 flex items-center justify-center gap-3 sm:gap-8"
           style={{ pointerEvents: 'none' }}
