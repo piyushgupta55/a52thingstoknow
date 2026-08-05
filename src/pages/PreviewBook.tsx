@@ -924,87 +924,94 @@ const PreviewBook = () => {
     return [left, right, undefined];
   };
 
-  const renderTocLetterSpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
+  const renderTocSpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
+    // Page numbers come from the real paginated spread list, never a fixed offset.
     const chapterPageMap = new Map<string, number>();
-    visibleChapters.forEach((ch, i) => {
+    visibleChapters.forEach(ch => {
       const exactPageNum = exactChapterPageMap.get(ch.chapter_number.toString());
-      chapterPageMap.set(ch.id, exactPageNum ?? (3 + i) * 2);
+      const idx = spreadIndexOf(s => s.type === 'chapter' && s.chapter.id === ch.id);
+      chapterPageMap.set(ch.id, exactPageNum ?? leftPageOfSpread(idx));
     });
+
+    const letterSpreadIndex = spreadIndexOf(s => s.type === 'letter');
+    const letterPageNum = exactChapterPageMap.get('0') ?? rightPageOfSpread(letterSpreadIndex);
+    const ancestryPageNum =
+      exactChapterPageMap.get('ancestry') ?? leftPageOfSpread(spreadIndexOf(s => s.type === 'ancestry'));
+    const familyHistoryPageNum =
+      exactChapterPageMap.get('family_history') ?? leftPageOfSpread(spreadIndexOf(s => s.type === 'family_history'));
+
+    const leaderStyle: React.CSSProperties = {
+      flexGrow: 1,
+      backgroundImage: `radial-gradient(circle, #b3b3b3 0.8px, transparent 1px)`,
+      backgroundPosition: 'bottom 0.22em left',
+      backgroundSize: '7px 1px',
+      backgroundRepeat: 'repeat-x',
+      height: '1.2em',
+      margin: '0 0.5em',
+      alignSelf: 'stretch',
+    };
+
+    const renderEntry = (
+      key: string,
+      label: React.ReactNode,
+      pageNum: number | undefined,
+      number?: number,
+      isPhoto = false,
+    ) => (
+      <div key={key} className="flex justify-between" style={{ marginBottom: '0.55em', alignItems: 'last baseline', breakInside: 'avoid' }}>
+        <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748', maxWidth: '78%', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+          {number !== undefined && (
+            <span className="inline-block w-5 text-right mr-1.5 tabular-nums" style={{ fontSize: '10px', color: '#9CA3AF' }}>{number}.</span>
+          )}
+          {label}
+          {isPhoto && <span style={{ color: GOLD, fontSize: '9px', marginLeft: '0.4em' }}>◉</span>}
+        </span>
+        <span style={leaderStyle} />
+        <span style={{ fontFamily: SERIF, fontSize: '10px', fontWeight: 700, color: '#2D3748', minWidth: '1.5em', textAlign: 'right', flexShrink: 0 }}>
+          {pageNum}
+        </span>
+      </div>
+    );
+
+    // Same header block on both pages; hidden on the right so both columns start level.
+    const header = (hidden: boolean) => (
+      <div style={hidden ? { visibility: 'hidden' } : undefined} aria-hidden={hidden || undefined}>
+        <p className="text-center uppercase tracking-[0.25em] mb-1" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF', marginTop: '10px' }}>
+          A Book of Wisdom
+        </p>
+        <h2 className="text-center font-bold mb-1 uppercase" style={{ fontFamily: SERIF, fontSize: '18px', color: '#2D3748', letterSpacing: '0.08em' }}>
+          Table of Contents
+        </h2>
+        <p className="text-center italic mb-1" style={{ fontFamily: SERIF, fontSize: '9px', color: '#6B7280' }}>
+          ◉ marks a chapter with a photo.
+        </p>
+        <p className="text-center mb-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280' }}>
+          For {book.recipient_name}
+        </p>
+        <div className="toc-separator" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1em', marginTop: '8px', marginBottom: '20px' }}>
+          <span className="line" style={{ height: '1px', backgroundColor: GOLD, width: '80px' }}></span>
+          <span className="diamond" style={{ color: GOLD, fontSize: '8px', lineHeight: 1 }}>✦</span>
+          <span className="line" style={{ height: '1px', backgroundColor: GOLD, width: '80px' }}></span>
+        </div>
+      </div>
+    );
+
+    const firstHalf = visibleChapters.filter(ch => ch.chapter_number <= 26);
+    const secondHalf = visibleChapters.filter(ch => ch.chapter_number > 26);
 
     const left = (
       <div className="flex flex-col h-full" style={{ paddingLeft: '15px', paddingRight: '15px' }}>
-        <div className="flex-1 overflow-y-auto">
-          <p className="text-center uppercase tracking-[0.25em] mb-1" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF', marginTop: '10px' }}>
-            A Book of Wisdom
-          </p>
-          <h2 className="text-center font-bold mb-1 uppercase" style={{ fontFamily: SERIF, fontSize: '18px', color: '#2D3748', letterSpacing: '0.08em' }}>
-            Table of Contents
-          </h2>
-          <p className="text-center mb-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280' }}>
-            For {book.recipient_name}
-          </p>
-          
-          <div className="toc-separator" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1em', marginTop: '8px', marginBottom: '24px' }}>
-            <span className="line" style={{ height: '1px', backgroundColor: GOLD, width: '80px' }}></span>
-            <span className="diamond" style={{ color: GOLD, fontSize: '8px', lineHeight: 1 }}>✦</span>
-            <span className="line" style={{ height: '1px', backgroundColor: GOLD, width: '80px' }}></span>
-          </div>
-
-          {visibleChapters.length === 0 && !hasLetterWritten ? (
+        <div className="flex-1">
+          {header(false)}
+          {visibleChapters.length === 0 ? (
             <p className="text-center mt-8 italic" style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF' }}>
               Your book will take shape as you write.
             </p>
           ) : (
-            <div style={{ columnCount: 2, columnGap: '0.6in', height: 'auto' }}>
-              {hasLetterWritten && (
-                <div className="flex justify-between" style={{ marginBottom: '0.6em', alignItems: 'last baseline', breakInside: 'avoid' }}>
-                  <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748', maxWidth: '72%', whiteSpace: 'normal' }}>Letter from the Author</span>
-                  <span style={{ flexGrow: 1, backgroundImage: `radial-gradient(circle, #b3b3b3 0.8px, transparent 1px)`, backgroundPosition: 'bottom 0.22em left', backgroundSize: '7px 1px', backgroundRepeat: 'repeat-x', height: '1.2em', margin: '0 0.5em', alignSelf: 'stretch' }} />
-                  <span style={{ fontFamily: SERIF, fontSize: '10px', fontWeight: 700, color: '#2D3748', minWidth: '1.5em', textAlign: 'right', flexShrink: 0 }}>3</span>
-                </div>
-              )}
-
-              {visibleChapters.map(ch => {
-                const isComplete = ch.status === 'complete';
-                const isPhoto = photoNums.has(ch.chapter_number);
-                const pageNum = chapterPageMap.get(ch.id);
-                return (
-                  <div key={ch.id} className="flex justify-between" style={{ marginBottom: '0.6em', alignItems: 'last baseline', breakInside: 'avoid' }}>
-                    <span style={{ fontFamily: SERIF, fontSize: '11px', color: isComplete ? '#2D3748' : '#6B7280', maxWidth: '72%', whiteSpace: 'normal', wordBreak: 'break-word' }}>
-                      <span className="inline-block w-4 text-right mr-1.5 tabular-nums" style={{ fontSize: '10px', color: '#9CA3AF' }}>{ch.chapter_number}.</span>
-                      {getChapterTitle(ch)}
-                    </span>
-                    <span style={{ flexGrow: 1, backgroundImage: `radial-gradient(circle, #b3b3b3 0.8px, transparent 1px)`, backgroundPosition: 'bottom 0.22em left', backgroundSize: '7px 1px', backgroundRepeat: 'repeat-x', height: '1.2em', margin: '0 0.5em', alignSelf: 'stretch' }} />
-                    <span className="flex items-center gap-1 flex-shrink-0" style={{ fontFamily: SERIF, fontSize: '10px', fontWeight: 700, minWidth: '1.5em', justifyContent: 'flex-end' }}>
-                      {isComplete ? (
-                        <span style={{ color: '#2D3748' }}>{pageNum}</span>
-                      ) : (
-                        <span className="italic font-normal" style={{ color: '#9CA3AF', fontSize: '9px' }}>(in progress)</span>
-                      )}
-                      {isPhoto && <Camera className="h-2.5 w-2.5" style={{ color: GOLD }} />}
-                    </span>
-                  </div>
-                );
-              })}
-
-              {hasAncestry && (
-                <div className="flex justify-between" style={{ marginBottom: '0.6em', alignItems: 'last baseline', breakInside: 'avoid' }}>
-                  <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748', maxWidth: '72%', whiteSpace: 'normal' }}>Where You Come From</span>
-                  <span style={{ flexGrow: 1, backgroundImage: `radial-gradient(circle, #b3b3b3 0.8px, transparent 1px)`, backgroundPosition: 'bottom 0.22em left', backgroundSize: '7px 1px', backgroundRepeat: 'repeat-x', height: '1.2em', margin: '0 0.5em', alignSelf: 'stretch' }} />
-                  <span style={{ fontFamily: SERIF, fontSize: '10px', fontWeight: 700, color: '#2D3748', minWidth: '1.5em', textAlign: 'right', flexShrink: 0 }}>
-                    {exactChapterPageMap.get('ancestry') ?? (3 + visibleChapters.length) * 2}
-                  </span>
-                </div>
-              )}
-
-              {hasFamilyHistory && (
-                <div className="flex justify-between" style={{ marginBottom: '0.6em', alignItems: 'last baseline', breakInside: 'avoid' }}>
-                  <span style={{ fontFamily: SERIF, fontSize: '11px', color: '#2D3748', maxWidth: '72%', whiteSpace: 'normal' }}>Family History</span>
-                  <span style={{ flexGrow: 1, backgroundImage: `radial-gradient(circle, #b3b3b3 0.8px, transparent 1px)`, backgroundPosition: 'bottom 0.22em left', backgroundSize: '7px 1px', backgroundRepeat: 'repeat-x', height: '1.2em', margin: '0 0.5em', alignSelf: 'stretch' }} />
-                  <span style={{ fontFamily: SERIF, fontSize: '10px', fontWeight: 700, color: '#2D3748', minWidth: '1.5em', textAlign: 'right', flexShrink: 0 }}>
-                    {exactChapterPageMap.get('family_history') ?? (3 + visibleChapters.length + (hasAncestry ? 1 : 0)) * 2}
-                  </span>
-                </div>
+            <div>
+              {hasLetterWritten && renderEntry('letter', 'Letter from the Author', letterPageNum)}
+              {firstHalf.map(ch =>
+                renderEntry(ch.id, getChapterTitle(ch), chapterPageMap.get(ch.id), ch.chapter_number, photoNums.has(ch.chapter_number)),
               )}
             </div>
           )}
@@ -1012,6 +1019,34 @@ const PreviewBook = () => {
         <PageNum num={leftPageNum} />
       </div>
     );
+
+    const right = (
+      <div className="flex flex-col h-full" style={{ paddingLeft: '15px', paddingRight: '15px' }}>
+        <div className="flex-1">
+          {header(true)}
+          <div>
+            {secondHalf.map(ch =>
+              renderEntry(ch.id, getChapterTitle(ch), chapterPageMap.get(ch.id), ch.chapter_number, photoNums.has(ch.chapter_number)),
+            )}
+            {hasAncestry && renderEntry('ancestry', 'Where You Come From', ancestryPageNum)}
+            {hasFamilyHistory && renderEntry('family_history', 'Family History', familyHistoryPageNum)}
+          </div>
+        </div>
+        <PageNum num={rightPageNum} />
+      </div>
+    );
+
+    return [left, right, undefined];
+  };
+
+  const renderLetterSpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
+    const left = (
+      <div className="flex flex-col h-full">
+        <div className="flex-1" />
+        <PageNum num={leftPageNum} />
+      </div>
+    );
+
 
     let right: React.ReactNode;
     if (!hasLetterWritten) {
