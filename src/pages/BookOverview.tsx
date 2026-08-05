@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { toBookGender } from '@/lib/genderMap';
 import { stripReviewWrappers } from '@/lib/reviewTags';
+
 import { fetchMemoryInviteChapters } from '@/lib/memoryChapters';
 import { PREVIEW_PAGE_WIDTH } from '@/features/preview/geometry';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, LayoutList, MessageCircleHeart, PenLine, Plus, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Camera, Check, ChevronLeft, ChevronRight, Gift, LayoutList, MessageCircleHeart, PenLine, Plus, X } from 'lucide-react';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const GOLD = '#BBA96A';
@@ -43,6 +44,8 @@ interface Chapter {
   review_status: string | null;
   review_note: string | null;
   read_at: string | null;
+  seed_content?: string | null;
+  reading_reward_decision?: string | null;
 }
 
 
@@ -73,6 +76,11 @@ const toPlainText = (raw: string) =>
 const BookOverview = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Same viewer, two clearly-labeled placements:
+  //   /overview    → Read & Build (interactive: controls, cues, markers)
+  //   /final-look  → Final Look (clean: cues resolved/hidden, nothing to do)
+  const finalLook = location.pathname.endsWith('/final-look');
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -158,9 +166,12 @@ const BookOverview = () => {
     ch.is_photo_chapter || !!templates.find(t => t.chapter_number === ch.chapter_number)?.is_photo_chapter;
 
   const editorUrl = (ch: Chapter, extra = '') => {
-    const back = encodeURIComponent(`/book/${bookId}/overview`);
+    const back = encodeURIComponent(`${location.pathname}`);
     return `/book/${bookId}/chapter/${ch.id}?returnTo=${back}&returnLabel=${encodeURIComponent('Back to the book')}${extra}`;
   };
+
+  const hasRewardMark = (ch: Chapter) =>
+    /<mark\b/i.test(`${ch.seed_content || ''}\n${ch.content || ''}`);
 
   const letterChapter = useMemo(() => chapters.find(c => c.chapter_number === 0) || null, [chapters]);
   const readCount = bodyChapters.filter(c => !!c.read_at).length;
@@ -202,13 +213,13 @@ const BookOverview = () => {
     return true;
   };
 
-  // Landing on a chapter page marks it read after a beat.
+  // Landing on a chapter page marks it read after a beat (Read & Build only).
   const activeChapterId = activeChapter?.id;
   useEffect(() => {
-    if (loading || !activeChapterId) return;
+    if (loading || finalLook || !activeChapterId) return;
     const t = window.setTimeout(() => markRead(activeChapterId), 1500);
     return () => window.clearTimeout(t);
-  }, [loading, activeChapterId, markRead]);
+  }, [loading, finalLook, activeChapterId, markRead]);
 
 
 
@@ -278,6 +289,9 @@ const BookOverview = () => {
             <ArrowLeft className="h-4 w-4" /> Dashboard
           </Button>
           <div className="flex-1 text-center">
+            <p className="text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: SERIF, color: finalLook ? '#8a8378' : '#7a6a34' }}>
+              {finalLook ? 'Final Look' : 'Read & Build'}
+            </p>
             <p className="text-[13px]" style={{ fontFamily: SERIF, color: '#4A5568' }}>
               {name}'s Gift ·{' '}
               {activeChapter
@@ -287,17 +301,19 @@ const BookOverview = () => {
                   : 'A letter to you'}
             </p>
 
-            <div className="mt-1 flex items-center justify-center gap-2">
-              <div className="h-1.5 w-28 rounded-full overflow-hidden" style={{ background: 'rgba(187,169,106,0.25)' }}>
-                <div
-                  className="h-full transition-all duration-500"
-                  style={{ width: `${bodyChapters.length ? (readCount / bodyChapters.length) * 100 : 0}%`, background: GOLD }}
-                />
+            {!finalLook && (
+              <div className="mt-1 flex items-center justify-center gap-2">
+                <div className="h-1.5 w-28 rounded-full overflow-hidden" style={{ background: 'rgba(187,169,106,0.25)' }}>
+                  <div
+                    className="h-full transition-all duration-500"
+                    style={{ width: `${bodyChapters.length ? (readCount / bodyChapters.length) * 100 : 0}%`, background: GOLD }}
+                  />
+                </div>
+                <span className="text-[11px]" style={{ fontFamily: SERIF, color: '#8a8378' }}>
+                  {readCount} of {bodyChapters.length} read
+                </span>
               </div>
-              <span className="text-[11px]" style={{ fontFamily: SERIF, color: '#8a8378' }}>
-                {readCount} of {bodyChapters.length} read
-              </span>
-            </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -319,9 +335,30 @@ const BookOverview = () => {
             >
               <ChevronRight className="h-4 w-4" />
             </button>
-            <Button variant="outline" size="sm" className="ml-2 gap-1.5" onClick={() => navigate(`/book/${bookId}?view=lists`)}>
-              <LayoutList className="h-4 w-4" /> List view
-            </Button>
+            {finalLook ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-2 gap-1.5"
+                onClick={() => navigate(`/book/${bookId}/overview`)}
+              >
+                <PenLine className="h-4 w-4" /> Read &amp; work on it
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-2 gap-1.5"
+                  onClick={() => navigate(`/book/${bookId}/final-look`)}
+                >
+                  <BookOpen className="h-4 w-4" /> Final Look
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(`/book/${bookId}?view=lists`)}>
+                  <LayoutList className="h-4 w-4" /> List view
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -348,7 +385,9 @@ const BookOverview = () => {
             </p>
           </div>
           <p className="text-center mt-6 text-[12px] italic" style={{ fontFamily: SERIF, color: '#8a8378' }}>
-            Your book is written and ready. Read it through — the gentle notes are simply invitations to make it even more yours.
+            {finalLook
+              ? `${name}'s finished book, front to back — a review view, not the exact print proof.`
+              : 'Your book is written and ready. Read it through — the gentle notes are simply invitations to make it even more yours.'}
           </p>
         </div>
         )}
@@ -381,13 +420,15 @@ const BookOverview = () => {
                   A warm opening letter to {name} — ready as written, and lovely in your own voice.
                 </p>
               )}
-            <Cue
-              tone="gold"
-              icon={<PenLine className="h-4 w-4" />}
-              label="Make this letter yours."
-              detail="Personalize it and set your sign-off. Left untouched, it prints exactly as written."
-              onClick={() => navigate(editorUrl(letterChapter))}
-            />
+            {!finalLook && (
+              <Cue
+                tone="gold"
+                icon={<PenLine className="h-4 w-4" />}
+                label="Make this letter yours."
+                detail="Personalize it and set your sign-off. Left untouched, it prints exactly as written."
+                onClick={() => navigate(editorUrl(letterChapter))}
+              />
+            )}
           </div>
         )}
 
@@ -398,11 +439,12 @@ const BookOverview = () => {
           const body = bodyFor(ch);
 
           const photo = (ch.photo_urls || []).filter(Boolean)[0];
-          const photoSpot = isPhotoChapter(ch) && !photo;
-          const isRewrite = ch.review_status === 'rewrite';
-          const isAdd = ch.review_status === 'add';
+          const photoSpot = !finalLook && isPhotoChapter(ch) && !photo;
+          const isRewrite = !finalLook && ch.review_status === 'rewrite';
+          const isAdd = !finalLook && ch.review_status === 'add';
           const chapterMemories = memories.filter(m => m.chapter_id === ch.id);
-          const memoryInvite = memoryChapters.includes(ch.chapter_number) && chapterMemories.length === 0;
+          const memoryInvite = !finalLook && memoryChapters.includes(ch.chapter_number) && chapterMemories.length === 0;
+          const rewardNeedsOk = !finalLook && hasRewardMark(ch) && !ch.reading_reward_decision;
 
           return (
             <div
@@ -545,7 +587,18 @@ const BookOverview = () => {
                 />
               )}
 
+              {rewardNeedsOk && (
+                <Cue
+                  tone="gold"
+                  icon={<Gift className="h-4 w-4" />}
+                  label="There's a secret reward hidden in this chapter — it needs your OK."
+                  detail={`${name} gets a reward for reading closely enough to catch it. Keep it, change it, or take it out.`}
+                  onClick={() => navigate(editorUrl(ch, '&focus=reward'))}
+                />
+              )}
+
               {/* Read-through controls — kept by default; Add and Replace are optional */}
+              {!finalLook && (
               <div className="mt-6 pt-4 border-t flex flex-wrap items-center gap-2" style={{ borderColor: '#EAE5DC' }}>
                 <span
                   className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]"
@@ -624,8 +677,9 @@ const BookOverview = () => {
                   </Button>
                 )}
               </div>
+              )}
 
-              {noteFor === ch.id && (
+              {!finalLook && noteFor === ch.id && (
                 <div className="mt-3 rounded-md p-3" style={{ background: 'rgba(187,169,106,0.08)', border: `1px dashed ${GOLD}` }}>
                   <p className="text-[12px] mb-2" style={{ fontFamily: SERIF, color: '#7a6a34' }}>
                     What would you like to add here? Just the idea — you'll write it in the editor later.

@@ -342,7 +342,7 @@ const BookDashboard = () => {
   const readCount = numberedChapters.filter(c => !!(c as any).read_at).length;
   const notReviewed = numberedChapters.length - readCount;
   const reviewedCount = readCount;
-  const reviewPath = bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/quick-read/all`;
+  const reviewPath = bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/overview`;
   const hasRewardMark = (c: Chapter) => /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`);
   // Photos & Decisions is pre-populated: every photo chapter plus the reading-reward chapter.
   const photosDecisionsOpen = numberedChapters.filter(c => {
@@ -415,10 +415,10 @@ const BookDashboard = () => {
           const started = reviewedCount > 0;
           const longName = firstName.length > 8;
           const buttonLabel = started
-            ? 'Continue'
-            : longName || !firstName
-              ? 'Open Book →'
-              : `Open ${firstName}'s Book`;
+            ? `Continue reading${firstName && !longName ? ` ${firstName}'s book` : ''}`
+            : firstName
+              ? `Read & work on ${firstName}'s book`
+              : 'Read & work on your book';
           return (
             <div className="bg-card rounded-xl border-2 border-primary p-7 md:p-8 mb-8 shadow-lg ring-4 ring-primary/10">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
@@ -435,14 +435,24 @@ const BookDashboard = () => {
                     photos and memories where you're moved. This is where you start.
                   </p>
                 </div>
-                <Button
-                  size="lg"
-                  className="md:flex-shrink-0 text-base px-8 py-6 h-auto shadow-md max-w-full"
-                  onClick={() => navigate(`/book/${bookId}/overview`)}
-                >
-                  <BookOpen className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{buttonLabel}</span>
-                </Button>
+                <div className="md:flex-shrink-0 flex flex-col gap-2 max-w-full">
+                  <Button
+                    size="lg"
+                    className="text-base px-8 py-6 h-auto shadow-md max-w-full"
+                    onClick={() => navigate(`/book/${bookId}/overview`)}
+                  >
+                    <BookOpen className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="truncate">{buttonLabel}</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="max-w-full"
+                    onClick={() => navigate(`/book/${bookId}/final-look`)}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="truncate">See your finished book</span>
+                  </Button>
+                </div>
               </div>
             </div>
           );
@@ -677,9 +687,9 @@ const BookDashboard = () => {
           <div className="lg:col-span-3">
             <h2 className="font-heading text-lg font-bold text-foreground mb-4">Your Book</h2>
             <button
-              onClick={() => navigate(`/book/${bookId}/preview`)}
+              onClick={() => navigate(`/book/${bookId}/final-look`)}
               className="block w-full max-w-[280px] mx-auto cursor-pointer group transition-transform hover:scale-[1.02]"
-              aria-label="Preview your book"
+              aria-label="See your finished book"
             >
               {/* Book cover card — portrait orientation */}
               <div

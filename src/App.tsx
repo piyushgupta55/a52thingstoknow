@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,6 +42,13 @@ import FeedbackFab from "./components/feedback/FeedbackFab";
 
 const queryClient = new QueryClient();
 
+// The old one-chapter-per-page read-through is retired — the book viewer is the
+// single Read & Build surface.
+const RetiredReadThrough = () => {
+  const { bookId } = useParams<{ bookId: string }>();
+  return <Navigate to={`/book/${bookId}/overview`} replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -65,6 +72,7 @@ const App = () => (
             <Route path="/book/:bookId/chapter/:chapterId" element={<ProtectedRoute><ChapterEditor /></ProtectedRoute>} />
             <Route path="/book/:bookId/preview" element={<ProtectedRoute><PreviewBook /></ProtectedRoute>} />
             <Route path="/book/:bookId/overview" element={<ProtectedRoute><BookOverview /></ProtectedRoute>} />
+            <Route path="/book/:bookId/final-look" element={<ProtectedRoute><BookOverview /></ProtectedRoute>} />
             <Route path="/book/:bookId/memories" element={<ProtectedRoute><MemoryManager /></ProtectedRoute>} />
             <Route path="/invite/:token" element={<MemoryInvite />} />
             <Route path="/help" element={<ProtectedRoute><HelpFaq /></ProtectedRoute>} />
@@ -73,6 +81,7 @@ const App = () => (
             <Route path="/book/:bookId/library" element={<ProtectedRoute><ChapterLibrary /></ProtectedRoute>} />
             <Route path="/book/:bookId/review" element={<ProtectedRoute><BookReview /></ProtectedRoute>} />
             <Route path="/book/:bookId/quick-read" element={<ProtectedRoute><QuickReadHub /></ProtectedRoute>} />
+            <Route path="/book/:bookId/quick-read/all" element={<ProtectedRoute><RetiredReadThrough /></ProtectedRoute>} />
             <Route path="/book/:bookId/quick-read/:groupSlug" element={<ProtectedRoute><QuickRead /></ProtectedRoute>} />
 
             <Route path="/book/:bookId/pile/:pile" element={<ProtectedRoute><ReviewPile /></ProtectedRoute>} />
