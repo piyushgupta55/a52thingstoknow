@@ -76,6 +76,11 @@ const toPlainText = (raw: string) =>
 const BookOverview = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Same viewer, two clearly-labeled placements:
+  //   /overview    → Read & Build (interactive: controls, cues, markers)
+  //   /final-look  → Final Look (clean: cues resolved/hidden, nothing to do)
+  const finalLook = location.pathname.endsWith('/final-look');
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
