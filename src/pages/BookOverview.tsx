@@ -213,13 +213,13 @@ const BookOverview = () => {
     return true;
   };
 
-  // Landing on a chapter page marks it read after a beat.
+  // Landing on a chapter page marks it read after a beat (Read & Build only).
   const activeChapterId = activeChapter?.id;
   useEffect(() => {
-    if (loading || !activeChapterId) return;
+    if (loading || finalLook || !activeChapterId) return;
     const t = window.setTimeout(() => markRead(activeChapterId), 1500);
     return () => window.clearTimeout(t);
-  }, [loading, activeChapterId, markRead]);
+  }, [loading, finalLook, activeChapterId, markRead]);
 
 
 
