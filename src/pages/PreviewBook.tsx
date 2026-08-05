@@ -60,11 +60,11 @@ const PreviewBook = () => {
   const flowContainerRef = useRef<HTMLDivElement | null>(null);
   const exactPreviewIframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  // Complete-by-default: the whole book shows, reflecting whatever the author has
-  // actually written, added, or replaced so far.
+  // Only chapters the author has marked complete appear in the bound book.
   const visibleChapters = chapters
-    .filter(c => c.chapter_number > 0)
+    .filter(c => c.chapter_number > 0 && c.status === 'complete')
     .sort((a, b) => a.chapter_number - b.chapter_number);
+
 
 
   const rawAncestryText = ancestry?.content?.trim() || '';
