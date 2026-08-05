@@ -1,10 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { toBookGender } from '@/lib/genderMap';
 
-import { X, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Camera, Check, Plus, PenLine } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import CompanionBubble from '@/components/chapter/CompanionBubble';
 import {
   PREVIEW_PAGE_CONTENT_HEIGHT,
@@ -38,6 +41,11 @@ const PINK = '#C4788A';
 const PreviewBook = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const reviewMode = searchParams.get('review') === '1';
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [noteFor, setNoteFor] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState('');
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [templates, setTemplates] = useState<ChapterTemplate[]>([]);
@@ -94,6 +102,18 @@ const PreviewBook = () => {
   const totalPages = totalSpreads * 2;
   const leftPageNum = clampedSpread === 0 ? 0 : clampedSpread * 2;
   const rightPageNum = clampedSpread * 2 + 1;
+
+  const setReview = async (ch: Chapter, status: string | null, note: string | null = null) => {
+    setSavingId(ch.id);
+    const { error } = await supabase.from('chapters').update({ review_status: status, review_note: note }).eq('id', ch.id);
+    setSavingId(null);
+    if (error) {
+      toast.error('Could not save that just now');
+      return false;
+    }
+    setChapters(prev => prev.map(c => (c.id === ch.id ? { ...c, review_status: status, review_note: note } : c)));
+    return true;
+  };
 
   useEffect(() => {
     if (!bookId) return;
