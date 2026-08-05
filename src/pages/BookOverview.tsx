@@ -289,6 +289,9 @@ const BookOverview = () => {
             <ArrowLeft className="h-4 w-4" /> Dashboard
           </Button>
           <div className="flex-1 text-center">
+            <p className="text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: SERIF, color: finalLook ? '#8a8378' : '#7a6a34' }}>
+              {finalLook ? 'Final Look' : 'Read & Build'}
+            </p>
             <p className="text-[13px]" style={{ fontFamily: SERIF, color: '#4A5568' }}>
               {name}'s Gift ·{' '}
               {activeChapter
@@ -298,17 +301,19 @@ const BookOverview = () => {
                   : 'A letter to you'}
             </p>
 
-            <div className="mt-1 flex items-center justify-center gap-2">
-              <div className="h-1.5 w-28 rounded-full overflow-hidden" style={{ background: 'rgba(187,169,106,0.25)' }}>
-                <div
-                  className="h-full transition-all duration-500"
-                  style={{ width: `${bodyChapters.length ? (readCount / bodyChapters.length) * 100 : 0}%`, background: GOLD }}
-                />
+            {!finalLook && (
+              <div className="mt-1 flex items-center justify-center gap-2">
+                <div className="h-1.5 w-28 rounded-full overflow-hidden" style={{ background: 'rgba(187,169,106,0.25)' }}>
+                  <div
+                    className="h-full transition-all duration-500"
+                    style={{ width: `${bodyChapters.length ? (readCount / bodyChapters.length) * 100 : 0}%`, background: GOLD }}
+                  />
+                </div>
+                <span className="text-[11px]" style={{ fontFamily: SERIF, color: '#8a8378' }}>
+                  {readCount} of {bodyChapters.length} read
+                </span>
               </div>
-              <span className="text-[11px]" style={{ fontFamily: SERIF, color: '#8a8378' }}>
-                {readCount} of {bodyChapters.length} read
-              </span>
-            </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -330,9 +335,30 @@ const BookOverview = () => {
             >
               <ChevronRight className="h-4 w-4" />
             </button>
-            <Button variant="outline" size="sm" className="ml-2 gap-1.5" onClick={() => navigate(`/book/${bookId}?view=lists`)}>
-              <LayoutList className="h-4 w-4" /> List view
-            </Button>
+            {finalLook ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-2 gap-1.5"
+                onClick={() => navigate(`/book/${bookId}/overview`)}
+              >
+                <PenLine className="h-4 w-4" /> Read &amp; work on it
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-2 gap-1.5"
+                  onClick={() => navigate(`/book/${bookId}/final-look`)}
+                >
+                  <BookOpen className="h-4 w-4" /> Final Look
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(`/book/${bookId}?view=lists`)}>
+                  <LayoutList className="h-4 w-4" /> List view
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
