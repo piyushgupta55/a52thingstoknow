@@ -342,7 +342,7 @@ const BookDashboard = () => {
   const readCount = numberedChapters.filter(c => !!(c as any).read_at).length;
   const notReviewed = numberedChapters.length - readCount;
   const reviewedCount = readCount;
-  const reviewPath = bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/overview`;
+  const reviewPath = bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/preview?review=1`;
   const hasRewardMark = (c: Chapter) => /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`);
   // Photos & Decisions is pre-populated: every photo chapter plus the reading-reward chapter.
   const photosDecisionsOpen = numberedChapters.filter(c => {
@@ -439,7 +439,7 @@ const BookDashboard = () => {
                   <Button
                     size="lg"
                     className="text-base px-8 py-6 h-auto shadow-md max-w-full"
-                    onClick={() => navigate(`/book/${bookId}/overview`)}
+                    onClick={() => navigate(`/book/${bookId}/preview?review=1`)}
                   >
                     <BookOpen className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span className="truncate">{buttonLabel}</span>
@@ -447,7 +447,7 @@ const BookDashboard = () => {
                   <Button
                     variant="outline"
                     className="max-w-full"
-                    onClick={() => navigate(`/book/${bookId}/final-look`)}
+                    onClick={() => navigate(`/book/${bookId}/preview`)}
                   >
                     <Sparkles className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span className="truncate">See your finished book</span>
@@ -687,7 +687,7 @@ const BookDashboard = () => {
           <div className="lg:col-span-3">
             <h2 className="font-heading text-lg font-bold text-foreground mb-4">Your Book</h2>
             <button
-              onClick={() => navigate(`/book/${bookId}/final-look`)}
+              onClick={() => navigate(`/book/${bookId}/preview`)}
               className="block w-full max-w-[280px] mx-auto cursor-pointer group transition-transform hover:scale-[1.02]"
               aria-label="See your finished book"
             >

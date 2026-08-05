@@ -34,6 +34,9 @@ export interface Chapter {
   photo_layout?: string | null;
   chapter_template: string;
   is_photo_chapter: boolean;
+  review_status?: string | null;
+  review_note?: string | null;
+  read_at?: string | null;
 }
 
 export interface ChapterTemplate {
