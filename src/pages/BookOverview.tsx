@@ -420,13 +420,15 @@ const BookOverview = () => {
                   A warm opening letter to {name} — ready as written, and lovely in your own voice.
                 </p>
               )}
-            <Cue
-              tone="gold"
-              icon={<PenLine className="h-4 w-4" />}
-              label="Make this letter yours."
-              detail="Personalize it and set your sign-off. Left untouched, it prints exactly as written."
-              onClick={() => navigate(editorUrl(letterChapter))}
-            />
+            {!finalLook && (
+              <Cue
+                tone="gold"
+                icon={<PenLine className="h-4 w-4" />}
+                label="Make this letter yours."
+                detail="Personalize it and set your sign-off. Left untouched, it prints exactly as written."
+                onClick={() => navigate(editorUrl(letterChapter))}
+              />
+            )}
           </div>
         )}
 
