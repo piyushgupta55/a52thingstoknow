@@ -51,6 +51,7 @@ export type SpreadDef =
   | { type: 'title' }
   | { type: 'toc' }
   | { type: 'letter' }
+  | { type: 'epigraph' }
   | { type: 'chapter'; chapter: Chapter }
   | { type: 'ancestry' }
   | { type: 'family_history' };
