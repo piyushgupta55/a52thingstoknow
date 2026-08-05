@@ -49,6 +49,9 @@
     --font-body: 'Source Sans 3', system-ui, sans-serif;
     --font-devotional: 'Lora', 'Georgia', 'Times New Roman', serif;
 
+    /* Shared cap for every chapter photo, all book versions */
+    --chapter-photo-block-height: 2.5in;
+
     --devotional-bg: 40 33% 97%;
     --devotional-accent: 40 45% 65%;
     --devotional-border: 40 25% 85%;
