@@ -587,7 +587,18 @@ const BookOverview = () => {
                 />
               )}
 
+              {rewardNeedsOk && (
+                <Cue
+                  tone="gold"
+                  icon={<Gift className="h-4 w-4" />}
+                  label="There's a secret reward hidden in this chapter — it needs your OK."
+                  detail={`${name} gets a reward for reading closely enough to catch it. Keep it, change it, or take it out.`}
+                  onClick={() => navigate(editorUrl(ch, '&focus=reward'))}
+                />
+              )}
+
               {/* Read-through controls — kept by default; Add and Replace are optional */}
+              {!finalLook && (
               <div className="mt-6 pt-4 border-t flex flex-wrap items-center gap-2" style={{ borderColor: '#EAE5DC' }}>
                 <span
                   className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]"
