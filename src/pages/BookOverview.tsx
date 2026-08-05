@@ -189,6 +189,16 @@ const BookOverview = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Resume at the first unread chapter (chapter 1 when nothing has been read yet).
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (finalLook || resumedRef.current || loading || bodyChapters.length === 0) return;
+    resumedRef.current = true;
+    const firstUnread = bodyChapters.findIndex(c => !c.read_at);
+    setActiveIndex(frontCount + (firstUnread === -1 ? 0 : firstUnread));
+  }, [finalLook, loading, bodyChapters, frontCount]);
+
+
   // Reading is tracked separately from completion — it never blocks printing.
   const markRead = useCallback(async (chapterId: string) => {
     if (readingRef.current.has(chapterId)) return;
