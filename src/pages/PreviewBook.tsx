@@ -373,6 +373,20 @@ const PreviewBook = () => {
       }
     });
 
+    // Which chapter is on screen right now (drives the review controls).
+    const visibleIdx = isCompactPreview
+      ? (selectedCompactDocIndex ?? -1)
+      : (isInsideFrontCoverSpread ? -1 : start);
+    const candidates = visibleIdx < 0
+      ? []
+      : [pages[visibleIdx], pages[visibleIdx + 1]].filter(Boolean) as HTMLElement[];
+    const chapterAttr = candidates
+      .map(p => p.getAttribute('data-chapter'))
+      .find(v => v && /^\d+$/.test(v) && Number(v) > 0) || null;
+    setExactChapterNum(prev => (prev === chapterAttr ? prev : chapterAttr));
+
+
+
     doc.body.style.margin = '0';
     doc.body.style.padding = '0';
     doc.body.style.height = '100%';
