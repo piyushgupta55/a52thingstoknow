@@ -44,6 +44,8 @@ interface Chapter {
   review_status: string | null;
   review_note: string | null;
   read_at: string | null;
+  seed_content?: string | null;
+  reading_reward_decision?: string | null;
 }
 
 
