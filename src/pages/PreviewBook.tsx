@@ -146,6 +146,21 @@ const PreviewBook = () => {
     load();
   }, [bookId]);
 
+  // Reading marks itself as the author turns pages (review mode only).
+  const activeChapterForRead = spreads[clampedSpread]?.type === 'chapter'
+    ? (spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter
+    : null;
+  const activeReadChapterId = activeChapterForRead && !activeChapterForRead.read_at ? activeChapterForRead.id : null;
+  useEffect(() => {
+    if (!reviewMode || !activeReadChapterId) return;
+    const t = window.setTimeout(async () => {
+      const stamp = new Date().toISOString();
+      setChapters(prev => prev.map(c => (c.id === activeReadChapterId ? { ...c, read_at: c.read_at || stamp } : c)));
+      await supabase.from('chapters').update({ read_at: stamp }).eq('id', activeReadChapterId).is('read_at', null);
+    }, 1500);
+    return () => window.clearTimeout(t);
+  }, [reviewMode, activeReadChapterId]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') setCurrentSpread(p => Math.max(0, p - 1));
