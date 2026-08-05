@@ -452,7 +452,7 @@ const QuickRead = () => {
             <img
               src={chapter.photo_urls[0]}
               alt={chapter.title}
-              className="max-h-[420px] rounded shadow-md"
+              className="chapter-photo rounded shadow-md"
             />
           </div>
         )}
