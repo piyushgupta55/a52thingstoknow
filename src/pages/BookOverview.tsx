@@ -439,11 +439,12 @@ const BookOverview = () => {
           const body = bodyFor(ch);
 
           const photo = (ch.photo_urls || []).filter(Boolean)[0];
-          const photoSpot = isPhotoChapter(ch) && !photo;
-          const isRewrite = ch.review_status === 'rewrite';
-          const isAdd = ch.review_status === 'add';
+          const photoSpot = !finalLook && isPhotoChapter(ch) && !photo;
+          const isRewrite = !finalLook && ch.review_status === 'rewrite';
+          const isAdd = !finalLook && ch.review_status === 'add';
           const chapterMemories = memories.filter(m => m.chapter_id === ch.id);
-          const memoryInvite = memoryChapters.includes(ch.chapter_number) && chapterMemories.length === 0;
+          const memoryInvite = !finalLook && memoryChapters.includes(ch.chapter_number) && chapterMemories.length === 0;
+          const rewardNeedsOk = !finalLook && hasRewardMark(ch) && !ch.reading_reward_decision;
 
           return (
             <div
