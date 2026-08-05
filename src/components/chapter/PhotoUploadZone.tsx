@@ -17,7 +17,7 @@ const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = '
   const layout = parsePhotoRenderLayout(photoLayout);
 
 
-  const emptyHeight = isVertical ? `${PREVIEW_PHOTO_VERTICAL_HEIGHT}px` : `${PREVIEW_PHOTO_HORIZONTAL_HEIGHT}px`;
+  const emptyHeight = `${PREVIEW_PHOTO_BLOCK_HEIGHT}px`;
   const emptyWidth = isVertical ? `${PREVIEW_PHOTO_VERTICAL_WIDTH}px` : '100%';
 
   const emptyLabel = isVertical
@@ -31,8 +31,8 @@ const PhotoUploadZone = ({ photoUrls, uploading, onUpload, onRemove, variant = '
       {photo ? (
         <div className={`space-y-3 w-full ${isVertical ? 'flex justify-center' : ''}`}>
           <div
-            className="relative overflow-hidden rounded-sm"
-            style={{ width: isVertical ? 'fit-content' : '100%', height: 'auto' }}
+            className="relative overflow-hidden rounded-sm w-full"
+            style={{ height: `${PREVIEW_PHOTO_BLOCK_HEIGHT}px` }}
           >
             <img src={photo} alt="Chapter photo" className={photoClass} style={getPhotoImageStyle(layout)} />
             <button
