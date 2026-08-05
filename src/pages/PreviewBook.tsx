@@ -92,11 +92,18 @@ const PreviewBook = () => {
 
   const spreads: SpreadDef[] = [];
   spreads.push({ type: 'title' });
-  spreads.push({ type: 'toc_letter' });
+  spreads.push({ type: 'toc' });
+  spreads.push({ type: 'letter' });
   spreads.push({ type: 'epigraph' });
   visibleChapters.forEach(ch => spreads.push({ type: 'chapter', chapter: ch }));
   if (hasAncestry) spreads.push({ type: 'ancestry' });
   if (hasFamilyHistory) spreads.push({ type: 'family_history' });
+
+  // Page numbers are derived from the actual paginated spread list:
+  // each spread occupies two pages (left = index * 2, right = left + 1).
+  const spreadIndexOf = (predicate: (s: SpreadDef) => boolean) => spreads.findIndex(predicate);
+  const leftPageOfSpread = (index: number) => index * 2;
+  const rightPageOfSpread = (index: number) => index * 2 + 1;
 
   const totalSpreads = spreads.length;
   const clampedSpread = Math.min(currentSpread, totalSpreads - 1);
