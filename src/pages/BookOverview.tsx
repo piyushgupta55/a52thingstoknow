@@ -677,8 +677,9 @@ const BookOverview = () => {
                   </Button>
                 )}
               </div>
+              )}
 
-              {noteFor === ch.id && (
+              {!finalLook && noteFor === ch.id && (
                 <div className="mt-3 rounded-md p-3" style={{ background: 'rgba(187,169,106,0.08)', border: `1px dashed ${GOLD}` }}>
                   <p className="text-[12px] mb-2" style={{ fontFamily: SERIF, color: '#7a6a34' }}>
                     What would you like to add here? Just the idea — you'll write it in the editor later.
