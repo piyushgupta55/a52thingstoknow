@@ -69,9 +69,9 @@ const PreviewBook = () => {
   const flowContainerRef = useRef<HTMLDivElement | null>(null);
   const exactPreviewIframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  // Only chapters the author has marked complete appear in the bound book.
+  // All written chapters appear in the bound book preview.
   const visibleChapters = chapters
-    .filter(c => c.chapter_number > 0 && c.status === 'complete')
+    .filter(c => c.chapter_number > 0)
     .sort((a, b) => a.chapter_number - b.chapter_number);
 
 
