@@ -81,6 +81,7 @@ const App = () => (
             <Route path="/book/:bookId/library" element={<ProtectedRoute><ChapterLibrary /></ProtectedRoute>} />
             <Route path="/book/:bookId/review" element={<ProtectedRoute><BookReview /></ProtectedRoute>} />
             <Route path="/book/:bookId/quick-read" element={<ProtectedRoute><QuickReadHub /></ProtectedRoute>} />
+            <Route path="/book/:bookId/quick-read/all" element={<ProtectedRoute><RetiredReadThrough /></ProtectedRoute>} />
             <Route path="/book/:bookId/quick-read/:groupSlug" element={<ProtectedRoute><QuickRead /></ProtectedRoute>} />
 
             <Route path="/book/:bookId/pile/:pile" element={<ProtectedRoute><ReviewPile /></ProtectedRoute>} />
