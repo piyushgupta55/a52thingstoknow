@@ -40,7 +40,7 @@ import {
   PREVIEW_PAGE_HEIGHT,
   PREVIEW_PAGE_WIDTH,
 } from '@/features/preview/geometry';
-import { extractExactChapterSplit, measureLayout, isRenderablePage, type ExactChapterSplitResult, type LayoutMeasurementResult } from '@/features/preview/layoutMeasurement';
+import { extractExactChapterSplit, measureLayout, isRenderablePage, isRealOverflow, displayFillPercent, type ExactChapterSplitResult, type LayoutMeasurementResult } from '@/features/preview/layoutMeasurement';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -506,7 +506,7 @@ const ChapterEditor = () => {
     setDuplicateWarning(match ? { type, chapterTitle: match.title, chapterNumber: match.chapter_number } : null);
   }, [siblingChapters]);
 
-  const hasOverflow = layoutMeasurement?.pages?.some(p => p.overflows) || (layoutMeasurement?.totalPages || 0) > 2;
+  const hasOverflow = isRealOverflow(layoutMeasurement?.pages || []);
 
   const canMarkComplete = () => {
     if (isLetterChapter) return true;
@@ -518,7 +518,7 @@ const ChapterEditor = () => {
     if (hasOverflow && !isLetterChapter) {
       toast({
         title: 'Layout Overflow',
-        description: 'This chapter exceeds the two-page limit. Please shorten the text or memory before marking complete.',
+        description: 'This chapter runs onto a third page — shorten the text, memory, or photo.',
         variant: 'destructive',
       });
       return;
@@ -574,7 +574,7 @@ const ChapterEditor = () => {
 
     const measurement = measureLayout(doc);
     const chapterPages = measurement.pages.filter(p => p.chapter === String(chapter?.chapter_number));
-    const memoryOverflow = chapterPages.some(p => p.overflows) || chapterPages.length > 2;
+    const memoryOverflow = isRealOverflow(chapterPages);
 
     dummyMemory.remove();
     if (createdSection) {
@@ -679,11 +679,11 @@ const ChapterEditor = () => {
       if (doc && chapter) {
         const measurement = measureLayout(doc);
         const chapterPages = measurement.pages.filter(p => p.chapter === String(chapter.chapter_number));
-        const overflow = chapterPages.some(p => p.overflows) || chapterPages.length > 2;
+        const overflow = isRealOverflow(chapterPages);
         if (overflow) {
           toast({
             title: 'Layout Overflow',
-            description: `This chapter exceeds the 2-page limit. Please shorten the text or choose a different photo layout.`,
+            description: `This chapter runs onto a third page — shorten the text, memory, or photo.`,
             variant: 'destructive',
           });
           if (markComplete) {
@@ -1742,17 +1742,23 @@ const ChapterEditor = () => {
                         <span className="text-[#6B7280]">
                           Total Pages: <strong className="text-foreground">{layoutMeasurement.totalPages}</strong>
                         </span>
-                        {layoutMeasurement.pages.map((page) => (
+                        {layoutMeasurement.pages.map((page, index) => {
+                          const isLast = index === layoutMeasurement.pages.length - 1;
+                          const realOverflow = page.overflows && (isLast || layoutMeasurement.pages.length > 2);
+                          return (
                           <span key={page.pageIndex}>
                             <span className="text-[#E5E7EB]">|</span>{' '}
                             Page {page.pageIndex + 1}:{' '}
-                            {page.overflows ? (
+                            {realOverflow ? (
                               <strong className="text-red-500 font-bold">Overflow</strong>
+                            ) : displayFillPercent(page, isLast) >= 100 ? (
+                              <strong className="text-foreground">full</strong>
                             ) : (
-                              <><strong className="text-foreground">{Math.round(page.fillPercent)}%</strong> full</>
+                              <><strong className="text-foreground">{displayFillPercent(page, isLast)}%</strong> full</>
                             )}
                           </span>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : null}
                   </div>
@@ -1968,17 +1974,23 @@ const ChapterEditor = () => {
                   <span className="text-[#6B7280]">
                     Total Pages: <strong className="text-foreground">{layoutMeasurement.totalPages}</strong>
                   </span>
-                  {layoutMeasurement.pages.map((page, index) => (
+                  {layoutMeasurement.pages.map((page, index) => {
+                    const isLast = index === layoutMeasurement.pages.length - 1;
+                    const realOverflow = page.overflows && (isLast || layoutMeasurement.pages.length > 2);
+                    return (
                     <span key={page.pageIndex}>
                       <span className="text-[#E5E7EB]">|</span>{' '}
                       Page {page.pageIndex + 1}:{' '}
-                      {page.overflows ? (
+                      {realOverflow ? (
                         <strong className="text-red-500 font-bold">Overflow</strong>
+                      ) : displayFillPercent(page, isLast) >= 100 ? (
+                        <strong className="text-foreground">full</strong>
                       ) : (
-                        <><strong className="text-foreground">{Math.round(page.fillPercent)}%</strong> full</>
+                        <><strong className="text-foreground">{displayFillPercent(page, isLast)}%</strong> full</>
                       )}
                     </span>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <>

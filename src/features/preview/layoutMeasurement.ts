@@ -166,3 +166,18 @@ export const extractExactChapterSplit = (doc: Document, chapterKey: string): Exa
     page2: normalizeExtractedText(pageTexts.slice(1).join('')),
   };
 };
+
+// A full page that spills its remainder onto a following page is NORMAL pagination,
+// not an error. Real overflow only happens when content needs a 3rd page, or when
+// the LAST available page is itself over capacity.
+export const isRealOverflow = (pages: Pick<PageLayoutMeasurement, 'overflows'>[], maxPages = 2): boolean => {
+  if (pages.length === 0) return false;
+  if (pages.length > maxPages) return true;
+  return !!pages[pages.length - 1]?.overflows;
+};
+
+// Display-friendly fill: an overflowing non-last page simply reads as "full".
+export const displayFillPercent = (
+  page: Pick<PageLayoutMeasurement, 'fillPercent' | 'overflows'>,
+  isLast: boolean,
+): number => (page.overflows && !isLast ? 100 : Math.round(page.fillPercent));
