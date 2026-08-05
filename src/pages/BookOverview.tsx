@@ -385,7 +385,9 @@ const BookOverview = () => {
             </p>
           </div>
           <p className="text-center mt-6 text-[12px] italic" style={{ fontFamily: SERIF, color: '#8a8378' }}>
-            Your book is written and ready. Read it through — the gentle notes are simply invitations to make it even more yours.
+            {finalLook
+              ? `${name}'s finished book, front to back — a review view, not the exact print proof.`
+              : 'Your book is written and ready. Read it through — the gentle notes are simply invitations to make it even more yours.'}
           </p>
         </div>
         )}
