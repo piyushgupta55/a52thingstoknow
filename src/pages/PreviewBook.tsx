@@ -980,7 +980,7 @@ const PreviewBook = () => {
           A Book of Wisdom
         </p>
         <h2 className="text-center font-bold mb-1 uppercase" style={{ fontFamily: SERIF, fontSize: '18px', color: '#2D3748', letterSpacing: '0.08em' }}>
-          Table of Contents
+          TABLE OF CONTENTS — CANARY 1
         </h2>
         <p className="text-center italic mb-1" style={{ fontFamily: SERIF, fontSize: '9px', color: '#6B7280' }}>
           ◉ marks a chapter with a photo.
