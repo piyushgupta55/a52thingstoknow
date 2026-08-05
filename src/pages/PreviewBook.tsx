@@ -62,6 +62,7 @@ const PreviewBook = () => {
   const [exactPreviewError, setExactPreviewError] = useState<string | null>(null);
   const [exactPageCount, setExactPageCount] = useState(0);
   const [exactChapterPageMap, setExactChapterPageMap] = useState<Map<string, number>>(new Map());
+  const [exactChapterNum, setExactChapterNum] = useState<string | null>(null);
   const [isCompactPreview, setIsCompactPreview] = useState(false);
   const [compactPageIndex, setCompactPageIndex] = useState(0);
   const exactHasInsideFrontCover = true;
@@ -146,10 +147,16 @@ const PreviewBook = () => {
     load();
   }, [bookId]);
 
+  // The chapter shown in the exact (print-accurate) preview, if that's the surface in use.
+  const exactActiveChapter = exactChapterNum
+    ? visibleChapters.find(c => String(c.chapter_number) === exactChapterNum) || null
+    : null;
+
   // Reading marks itself as the author turns pages (review mode only).
-  const activeChapterForRead = spreads[clampedSpread]?.type === 'chapter'
+  const fallbackChapterForRead = spreads[clampedSpread]?.type === 'chapter'
     ? (spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter
     : null;
+  const activeChapterForRead = exactPreviewHtml ? exactActiveChapter : fallbackChapterForRead;
   const activeReadChapterId = activeChapterForRead && !activeChapterForRead.read_at ? activeChapterForRead.id : null;
   useEffect(() => {
     if (!reviewMode || !activeReadChapterId) return;
@@ -372,6 +379,20 @@ const PreviewBook = () => {
       }
     });
 
+    // Which chapter is on screen right now (drives the review controls).
+    const visibleIdx = isCompactPreview
+      ? (selectedCompactDocIndex ?? -1)
+      : (isInsideFrontCoverSpread ? -1 : start);
+    const candidates = visibleIdx < 0
+      ? []
+      : [pages[visibleIdx], pages[visibleIdx + 1]].filter(Boolean) as HTMLElement[];
+    const chapterAttr = candidates
+      .map(p => p.getAttribute('data-chapter'))
+      .find(v => v && /^\d+$/.test(v) && Number(v) > 0) || null;
+    setExactChapterNum(prev => (prev === chapterAttr ? prev : chapterAttr));
+
+
+
     doc.body.style.margin = '0';
     doc.body.style.padding = '0';
     doc.body.style.height = '100%';
@@ -431,6 +452,98 @@ const PreviewBook = () => {
       }
     });
     setExactChapterPageMap(nextMapping);
+  };
+
+  // Read / Add / Replace controls — identical on both preview surfaces.
+  const renderReviewBar = (ch: Chapter, floating = false) => {
+    const isAdd = ch.review_status === 'add';
+    const isRewrite = ch.review_status === 'rewrite';
+    return (
+      <div
+        className="px-4 pb-1"
+        style={floating
+          ? { background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(4px)', borderRadius: '999px', paddingTop: '6px', paddingBottom: '6px', boxShadow: '0 6px 18px rgba(58,55,46,0.18)', pointerEvents: 'auto' }
+          : { background: '#EDEBE5' }}
+      >
+        <div className="mx-auto max-w-2xl flex flex-wrap items-center justify-center gap-2">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]"
+            style={{
+              fontFamily: SERIF,
+              background: ch.read_at ? 'rgba(138,167,155,0.16)' : 'rgba(0,0,0,0.04)',
+              color: ch.read_at ? '#4d6a5e' : '#8a8378',
+            }}
+          >
+            <Check className="h-3 w-3" /> {ch.read_at ? 'Read' : 'Kept'}
+          </span>
+          <Button
+            variant={isAdd ? 'secondary' : 'outline'}
+            size="sm"
+            className="h-8 gap-1.5 text-[12px]"
+            disabled={savingId === ch.id}
+            onClick={() => {
+              setNoteFor(noteFor === ch.id ? null : ch.id);
+              setNoteText(ch.review_note || '');
+            }}
+          >
+            <Plus className="h-3.5 w-3.5" /> {isAdd ? 'Marked to add' : 'Add to it'}
+          </Button>
+          <Button
+            variant={isRewrite ? 'secondary' : 'outline'}
+            size="sm"
+            className="h-8 gap-1.5 text-[12px]"
+            disabled={savingId === ch.id}
+            onClick={async () => {
+              const ok = await setReview(ch, 'rewrite', null);
+              if (ok) toast.success('Filed in “To rewrite”');
+            }}
+          >
+            <PenLine className="h-3.5 w-3.5" /> {isRewrite ? 'Marked to rewrite' : 'Replace'}
+          </Button>
+          {(isAdd || isRewrite) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-[12px]"
+              disabled={savingId === ch.id}
+              onClick={() => setReview(ch, null, null)}
+            >
+              <X className="h-3.5 w-3.5" /> Clear
+            </Button>
+          )}
+        </div>
+        {noteFor === ch.id && (
+          <div className="mx-auto max-w-2xl mt-2 rounded-md p-3" style={{ background: 'rgba(187,169,106,0.10)', border: `1px dashed ${GOLD}` }}>
+            <Textarea
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+              rows={2}
+              placeholder="What would you like to add here?"
+              className="bg-white text-[13px]"
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <Button
+                size="sm"
+                className="h-8 text-[12px]"
+                disabled={savingId === ch.id}
+                onClick={async () => {
+                  const ok = await setReview(ch, 'add', noteText.trim() || null);
+                  if (ok) {
+                    setNoteFor(null);
+                    toast.success('Filed in “To add to”');
+                  }
+                }}
+              >
+                Save note
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 text-[12px]" onClick={() => setNoteFor(null)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -574,6 +687,14 @@ const PreviewBook = () => {
             />
           </div>
         </div>
+
+        {reviewMode && exactActiveChapter && (
+          <div className="px-3 pb-16 sm:pb-20 flex justify-center" style={{ pointerEvents: 'auto' }}>
+            {renderReviewBar(exactActiveChapter, true)}
+          </div>
+        )}
+
+
 
         <div
           className="absolute left-0 right-0 bottom-3 sm:bottom-4 z-20 flex items-center justify-center gap-3 sm:gap-8"
@@ -1379,92 +1500,7 @@ const PreviewBook = () => {
       </div>
 
       {/* Read / Add / Replace — the read-through happens right here in the book */}
-      {reviewMode && spreads[clampedSpread]?.type === 'chapter' && (() => {
-        const ch = (spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter;
-        const isAdd = ch.review_status === 'add';
-        const isRewrite = ch.review_status === 'rewrite';
-        return (
-          <div className="px-4 pb-1" style={{ background: '#EDEBE5' }}>
-            <div className="mx-auto max-w-2xl flex flex-wrap items-center justify-center gap-2">
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]"
-                style={{
-                  fontFamily: SERIF,
-                  background: ch.read_at ? 'rgba(138,167,155,0.16)' : 'rgba(0,0,0,0.04)',
-                  color: ch.read_at ? '#4d6a5e' : '#8a8378',
-                }}
-              >
-                <Check className="h-3 w-3" /> {ch.read_at ? 'Read' : 'Kept'}
-              </span>
-              <Button
-                variant={isAdd ? 'secondary' : 'outline'}
-                size="sm"
-                className="h-8 gap-1.5 text-[12px]"
-                disabled={savingId === ch.id}
-                onClick={() => {
-                  setNoteFor(noteFor === ch.id ? null : ch.id);
-                  setNoteText(ch.review_note || '');
-                }}
-              >
-                <Plus className="h-3.5 w-3.5" /> {isAdd ? 'Marked to add' : 'Add to it'}
-              </Button>
-              <Button
-                variant={isRewrite ? 'secondary' : 'outline'}
-                size="sm"
-                className="h-8 gap-1.5 text-[12px]"
-                disabled={savingId === ch.id}
-                onClick={async () => {
-                  const ok = await setReview(ch, 'rewrite', null);
-                  if (ok) toast.success('Filed in “To rewrite”');
-                }}
-              >
-                <PenLine className="h-3.5 w-3.5" /> {isRewrite ? 'Marked to rewrite' : 'Replace'}
-              </Button>
-              {(isAdd || isRewrite) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5 text-[12px]"
-                  disabled={savingId === ch.id}
-                  onClick={() => setReview(ch, null, null)}
-                >
-                  <X className="h-3.5 w-3.5" /> Clear
-                </Button>
-              )}
-            </div>
-            {noteFor === ch.id && (
-              <div className="mx-auto max-w-2xl mt-2 rounded-md p-3" style={{ background: 'rgba(187,169,106,0.10)', border: `1px dashed ${GOLD}` }}>
-                <Textarea
-                  value={noteText}
-                  onChange={e => setNoteText(e.target.value)}
-                  rows={2}
-                  placeholder="What would you like to add here?"
-                  className="bg-white text-[13px]"
-                />
-                <div className="mt-2 flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    className="h-8 text-[12px]"
-                    disabled={savingId === ch.id}
-                    onClick={async () => {
-                      const ok = await setReview(ch, 'add', noteText.trim() || null);
-                      if (ok) {
-                        setNoteFor(null);
-                        toast.success('Filed in “To add to”');
-                      }
-                    }}
-                  >
-                    Save note
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-8 text-[12px]" onClick={() => setNoteFor(null)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
+      {reviewMode && fallbackChapterForRead && renderReviewBar(fallbackChapterForRead)}
 
       {/* Navigation */}
       <div className="flex items-center justify-center gap-8 py-4" style={{ background: '#EDEBE5' }}>
