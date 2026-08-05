@@ -62,6 +62,7 @@ const PreviewBook = () => {
   const [exactPreviewError, setExactPreviewError] = useState<string | null>(null);
   const [exactPageCount, setExactPageCount] = useState(0);
   const [exactChapterPageMap, setExactChapterPageMap] = useState<Map<string, number>>(new Map());
+  const [exactChapterNum, setExactChapterNum] = useState<string | null>(null);
   const [isCompactPreview, setIsCompactPreview] = useState(false);
   const [compactPageIndex, setCompactPageIndex] = useState(0);
   const exactHasInsideFrontCover = true;
