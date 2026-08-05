@@ -1,6 +1,6 @@
 import { ImagePlus, X } from 'lucide-react';
 import { getPhotoImageStyle, parsePhotoRenderLayout } from '@/features/photoRendering';
-import { PREVIEW_PHOTO_HORIZONTAL_HEIGHT, PREVIEW_PHOTO_VERTICAL_HEIGHT, PREVIEW_PHOTO_VERTICAL_WIDTH } from '@/features/preview/geometry';
+import { PREVIEW_PHOTO_BLOCK_HEIGHT, PREVIEW_PHOTO_VERTICAL_WIDTH } from '@/features/preview/geometry';
 
 interface Props {
   photoUrls: string[];
