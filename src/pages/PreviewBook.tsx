@@ -1400,8 +1400,8 @@ const PreviewBook = () => {
       </div>
 
       {/* Read / Add / Replace — the read-through happens right here in the book */}
-      {reviewMode && spreads[clampedSpread]?.type === 'chapter' && (() => {
-        const ch = (spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter;
+      {reviewMode && fallbackChapterForRead && (() => {
+        const ch = fallbackChapterForRead;
         const isAdd = ch.review_status === 'add';
         const isRewrite = ch.review_status === 'rewrite';
         return (
