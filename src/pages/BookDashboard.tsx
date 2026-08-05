@@ -342,7 +342,7 @@ const BookDashboard = () => {
   const readCount = numberedChapters.filter(c => !!(c as any).read_at).length;
   const notReviewed = numberedChapters.length - readCount;
   const reviewedCount = readCount;
-  const reviewPath = bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/quick-read/all`;
+  const reviewPath = bookUnlocked === false ? `/book/${bookId}/quick-read` : `/book/${bookId}/overview`;
   const hasRewardMark = (c: Chapter) => /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`);
   // Photos & Decisions is pre-populated: every photo chapter plus the reading-reward chapter.
   const photosDecisionsOpen = numberedChapters.filter(c => {
