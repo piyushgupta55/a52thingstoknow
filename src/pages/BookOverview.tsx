@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { toBookGender } from '@/lib/genderMap';
 import { stripReviewWrappers } from '@/lib/reviewTags';
-import { stripMarkTags } from '@/lib/readingReward';
+
 import { fetchMemoryInviteChapters } from '@/lib/memoryChapters';
 import { PREVIEW_PAGE_WIDTH } from '@/features/preview/geometry';
 import Navbar from '@/components/Navbar';
