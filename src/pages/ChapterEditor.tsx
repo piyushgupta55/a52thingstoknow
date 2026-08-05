@@ -33,6 +33,7 @@ import { validatePhoto } from '@/features/chapter-editor/photoValidation';
 import { mergeRefAndContent, normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 import { getPhotoImageStyle, parsePhotoRenderLayout, serializePhotoRenderLayout } from '@/features/photoRendering';
 import {
+  PREVIEW_PHOTO_BLOCK_HEIGHT,
   PREVIEW_PHOTO_HORIZONTAL_HEIGHT,
   PREVIEW_PHOTO_VERTICAL_HEIGHT,
   PREVIEW_PHOTO_VERTICAL_WIDTH,
