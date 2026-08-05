@@ -687,9 +687,9 @@ const BookDashboard = () => {
           <div className="lg:col-span-3">
             <h2 className="font-heading text-lg font-bold text-foreground mb-4">Your Book</h2>
             <button
-              onClick={() => navigate(`/book/${bookId}/preview`)}
+              onClick={() => navigate(`/book/${bookId}/final-look`)}
               className="block w-full max-w-[280px] mx-auto cursor-pointer group transition-transform hover:scale-[1.02]"
-              aria-label="Preview your book"
+              aria-label="See your finished book"
             >
               {/* Book cover card — portrait orientation */}
               <div
