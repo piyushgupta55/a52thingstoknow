@@ -15,6 +15,7 @@ import {
   PREVIEW_PAGE_PADDING_OUTER,
   PREVIEW_PAGE_PADDING_TOP,
   PREVIEW_PHOTO_HORIZONTAL_HEIGHT,
+  PREVIEW_PHOTO_BLOCK_HEIGHT,
   PREVIEW_PHOTO_VERTICAL_HEIGHT,
   PREVIEW_PHOTO_VERTICAL_WIDTH,
   PREVIEW_MAX_VIEWPORT_HEIGHT_RATIO,
@@ -958,8 +959,8 @@ const PreviewBook = () => {
       );
       const right = (
         <div className="flex flex-col h-full">
-          <div className="flex justify-center items-center mb-4 flex-shrink-0" style={{ height: 'auto', width: '100%' }}>
-            <div className="rounded overflow-hidden shadow-md" style={{ width: 'fit-content', height: 'auto' }}>
+          <div className="flex justify-center items-center mb-4 flex-shrink-0" style={{ height: `${PREVIEW_PHOTO_BLOCK_HEIGHT}px`, width: '100%' }}>
+            <div className="rounded overflow-hidden shadow-md" style={{ width: '100%', height: '100%' }}>
               <img src={ch.photo_urls[0]} alt="" className="chapter-photo vertical-photo" style={getPhotoImageStyle(photoLayout)} />
             </div>
           </div>
@@ -1015,8 +1016,8 @@ const PreviewBook = () => {
           </div>
 
           {hasPhoto && (ch.chapter_template === 'photo_top' || ch.chapter_template === 'horizontal_photo') ? (
-            <div className="rounded overflow-hidden" style={{ breakInside: 'avoid', margin: '1.2em 0 0.8em', height: 'auto' }}>
-              <img src={ch.photo_urls[0]} alt="" className="chapter-photo w-full h-auto block" style={getPhotoImageStyle(photoLayout)} />
+            <div className="rounded overflow-hidden" style={{ breakInside: 'avoid', margin: '1.2em 0 0.8em', height: `${PREVIEW_PHOTO_BLOCK_HEIGHT}px` }}>
+              <img src={ch.photo_urls[0]} alt="" className="chapter-photo block" style={getPhotoImageStyle(photoLayout)} />
             </div>
           ) : null}
 
