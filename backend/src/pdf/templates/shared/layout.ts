@@ -221,7 +221,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
 
   const tocHtml = `
     <div class="page toc-page">
-      <h2 class="toc-title">Table of Contents</h2>
+      <h2 class="toc-title">TABLE OF CONTENTS — CANARY 2</h2>
       <div class="toc-separator" style="display: flex; align-items: center; justify-content: center; gap: 1em; margin-top: 0.5em; margin-bottom: 1.8em;">
         <span class="line" style="height: 1px; background-color: var(--gold, #c9a14a); width: 80px;"></span>
         <span class="diamond" style="color: var(--gold, #c9a14a); font-size: 8pt; line-height: 1;">✦</span>
