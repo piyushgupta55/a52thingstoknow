@@ -666,15 +666,17 @@ const BookDashboard = () => {
                 <ShoppingCart className="h-4 w-4" />
                 Order Book
               </Button>
-              <Button 
-                variant="secondary" 
-                className="w-full justify-start gap-3 h-12 mt-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20" 
-                onClick={handleGenerateTestPDF}
-                disabled={isGeneratingPDF}
-              >
-                <Download className="h-4 w-4" />
-                {isGeneratingPDF ? 'Generating...' : 'Generate Test PDF'}
-              </Button>
+              {isAdmin && (
+                <Button 
+                  variant="secondary" 
+                  className="w-full justify-start gap-3 h-12 mt-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20" 
+                  onClick={handleGenerateTestPDF}
+                  disabled={isGeneratingPDF}
+                >
+                  <Download className="h-4 w-4" />
+                  {isGeneratingPDF ? 'Generating...' : 'Generate Test PDF'}
+                </Button>
+              )}
             </div>
           </div>
 
