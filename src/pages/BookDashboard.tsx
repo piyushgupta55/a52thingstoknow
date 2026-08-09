@@ -22,6 +22,7 @@ import { normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { fetchMemoryInviteChapters } from '@/lib/memoryChapters';
 import { useBookUnlocked } from '@/hooks/useBookUnlocked';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 
 interface Book {
@@ -78,6 +79,7 @@ const BookDashboard = () => {
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const bookUnlocked = useBookUnlocked(bookId);
+  const { isAdmin } = useIsAdmin();
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -664,15 +666,17 @@ const BookDashboard = () => {
                 <ShoppingCart className="h-4 w-4" />
                 Order Book
               </Button>
-              <Button 
-                variant="secondary" 
-                className="w-full justify-start gap-3 h-12 mt-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20" 
-                onClick={handleGenerateTestPDF}
-                disabled={isGeneratingPDF}
-              >
-                <Download className="h-4 w-4" />
-                {isGeneratingPDF ? 'Generating...' : 'Generate Test PDF'}
-              </Button>
+              {isAdmin && (
+                <Button 
+                  variant="secondary" 
+                  className="w-full justify-start gap-3 h-12 mt-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20" 
+                  onClick={handleGenerateTestPDF}
+                  disabled={isGeneratingPDF}
+                >
+                  <Download className="h-4 w-4" />
+                  {isGeneratingPDF ? 'Generating...' : 'Generate Test PDF'}
+                </Button>
+              )}
             </div>
           </div>
 
