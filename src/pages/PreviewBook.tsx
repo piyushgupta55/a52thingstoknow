@@ -240,7 +240,7 @@ const PreviewBook = () => {
   useEffect(() => {
     if (loading || !book) return;
 
-    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://pdf-render-service-33np.onrender.com';
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://a52thingstoknow-staging-pdf.onrender.com';
     const normalizeContent = (referenceText: string | null, content: string | null, chapterNumber: number) => {
       let ref = stripMarkTags(referenceText).trim();
       const body = stripMarkTags(content).trim();

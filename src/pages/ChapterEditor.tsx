@@ -1147,7 +1147,7 @@ const ChapterEditor = () => {
   useEffect(() => {
     if (!chapter) return;
 
-    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://pdf-render-service-33np.onrender.com';
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || 'https://a52thingstoknow-staging-pdf.onrender.com';
     const chapterPayload = {
       chapter_number: chapter.chapter_number,
       title: chapter.title,

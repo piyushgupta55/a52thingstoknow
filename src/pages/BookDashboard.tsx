@@ -168,7 +168,7 @@ const BookDashboard = () => {
 
       console.log('BookData Payload:', JSON.stringify(bookData, null, 2));
 
-      const API_URL = import.meta.env.VITE_API_URL || 'https://pdf-render-service-33np.onrender.com';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://a52thingstoknow-staging-pdf.onrender.com';
       const pdfEndpoint = `${API_URL}/generate-pdf`;
 
       const response = await fetch(pdfEndpoint, {
