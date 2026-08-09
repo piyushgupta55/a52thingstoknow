@@ -22,6 +22,7 @@ import { normalizeWhitespace } from '@/features/chapter-editor/textSplit';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { fetchMemoryInviteChapters } from '@/lib/memoryChapters';
 import { useBookUnlocked } from '@/hooks/useBookUnlocked';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 
 interface Book {
