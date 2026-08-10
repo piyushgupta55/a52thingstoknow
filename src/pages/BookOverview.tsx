@@ -182,7 +182,7 @@ const BookOverview = () => {
   const goToPage = (idx: number) => {
     const clamped = Math.max(0, Math.min(totalPages - 1, idx));
     setActiveIndex(clamped);
-    setNoteFor(null);
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
