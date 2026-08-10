@@ -9,7 +9,6 @@ import { fetchMemoryInviteChapters } from '@/lib/memoryChapters';
 import { PREVIEW_PAGE_WIDTH } from '@/features/preview/geometry';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { ArrowLeft, BookOpen, Camera, Check, ChevronLeft, ChevronRight, Gift, LayoutList, MessageCircleHeart, PenLine, Plus, X } from 'lucide-react';
 
