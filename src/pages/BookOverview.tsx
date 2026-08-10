@@ -9,9 +9,8 @@ import { fetchMemoryInviteChapters } from '@/lib/memoryChapters';
 import { PREVIEW_PAGE_WIDTH } from '@/features/preview/geometry';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { ArrowLeft, BookOpen, Camera, Check, ChevronLeft, ChevronRight, Gift, LayoutList, MessageCircleHeart, PenLine, Plus, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Camera, Check, ChevronLeft, ChevronRight, Gift, LayoutList, MessageCircleHeart, PenLine, Plus } from 'lucide-react';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const GOLD = '#BBA96A';
@@ -89,9 +88,6 @@ const BookOverview = () => {
   const [authorName, setAuthorName] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [noteFor, setNoteFor] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState('');
-  const [savingId, setSavingId] = useState<string | null>(null);
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const readingRef = useRef<Set<string>>(new Set());
 
@@ -185,7 +181,7 @@ const BookOverview = () => {
   const goToPage = (idx: number) => {
     const clamped = Math.max(0, Math.min(totalPages - 1, idx));
     setActiveIndex(clamped);
-    setNoteFor(null);
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -208,20 +204,6 @@ const BookOverview = () => {
     await supabase.from('chapters').update({ read_at: stamp }).eq('id', chapterId).is('read_at', null);
   }, []);
 
-  const setReview = async (ch: Chapter, status: string | null, note: string | null = null) => {
-    setSavingId(ch.id);
-    const { error } = await supabase
-      .from('chapters')
-      .update({ review_status: status, review_note: note })
-      .eq('id', ch.id);
-    setSavingId(null);
-    if (error) {
-      toast.error('Could not save that just now');
-      return false;
-    }
-    setChapters(prev => prev.map(c => (c.id === ch.id ? { ...c, review_status: status, review_note: note } : c)));
-    return true;
-  };
 
   // Landing on a chapter page marks it read after a beat (Read & Build only).
   const activeChapterId = activeChapter?.id;
@@ -607,132 +589,8 @@ const BookOverview = () => {
                 />
               )}
 
-              {/* Read-through controls — kept by default; Add and Replace are optional */}
-              {!finalLook && (
-              <div className="mt-6 pt-4 border-t flex flex-wrap items-center gap-2" style={{ borderColor: '#EAE5DC' }}>
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]"
-                  style={{
-                    fontFamily: SERIF,
-                    background: ch.read_at ? 'rgba(138,167,155,0.16)' : 'rgba(0,0,0,0.03)',
-                    color: ch.read_at ? '#4d6a5e' : '#8a8378',
-                  }}
-                >
-                  <Check className="h-3 w-3" /> {ch.read_at ? 'Read' : 'Kept — reading marks itself'}
-                </span>
-                {!ch.read_at && (
-                  <button
-                    onClick={() => markRead(ch.id)}
-                    className="text-[11px] underline"
-                    style={{ fontFamily: SERIF, color: '#8a8378' }}
-                  >
-                    Mark read
-                  </button>
-                )}
+              {/* Review controls (Read / Add to it / Replace) live on the book-page surface only. */}
 
-                <span className="flex-1" />
-
-                <Button
-                  variant={isAdd ? 'secondary' : 'outline'}
-                  size="sm"
-                  className="h-8 gap-1.5 text-[12px]"
-                  disabled={savingId === ch.id}
-                  onClick={() => {
-                    setNoteFor(noteFor === ch.id ? null : ch.id);
-                    setNoteText(ch.review_note || '');
-                  }}
-                >
-                  <Plus className="h-3.5 w-3.5" /> Add to it
-                </Button>
-                <Button
-                  variant={isRewrite ? 'secondary' : 'outline'}
-                  size="sm"
-                  className="h-8 gap-1.5 text-[12px]"
-                  disabled={savingId === ch.id}
-                  onClick={async () => {
-                    // Flag-and-keep-reading: never navigate away mid read-through.
-                    const ok = await setReview(ch, 'rewrite', null);
-                    if (ok) toast.success('Filed in “To rewrite”');
-                  }}
-                >
-                  {isRewrite ? (
-                    <>
-                      <Check className="h-3.5 w-3.5" /> Marked to rewrite
-                    </>
-                  ) : (
-                    <>
-                      <PenLine className="h-3.5 w-3.5" /> Replace
-                    </>
-                  )}
-                </Button>
-                {isRewrite && (
-                  <button
-                    onClick={() => navigate(editorUrl(ch))}
-                    className="text-[11px] underline"
-                    style={{ fontFamily: SERIF, color: '#8f4d5c' }}
-                  >
-                    Write it now
-                  </button>
-                )}
-
-                {(isAdd || isRewrite) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 gap-1.5 text-[12px]"
-                    disabled={savingId === ch.id}
-                    onClick={() => setReview(ch, null, null)}
-                  >
-                    <X className="h-3.5 w-3.5" /> Clear
-                  </Button>
-                )}
-              </div>
-              )}
-
-              {!finalLook && noteFor === ch.id && (
-                <div className="mt-3 rounded-md p-3" style={{ background: 'rgba(187,169,106,0.08)', border: `1px dashed ${GOLD}` }}>
-                  <p className="text-[12px] mb-2" style={{ fontFamily: SERIF, color: '#7a6a34' }}>
-                    What would you like to add here? Just the idea — you'll write it in the editor later.
-                  </p>
-                  <Textarea
-                    value={noteText}
-                    onChange={e => setNoteText(e.target.value)}
-                    rows={3}
-                    placeholder={`e.g. the story about ${name} and the bicycle`}
-                    className="bg-white text-[13px]"
-                  />
-                  <div className="mt-2 flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      className="h-8 text-[12px]"
-                      disabled={savingId === ch.id}
-                      onClick={async () => {
-                        const ok = await setReview(ch, 'add', noteText.trim() || null);
-                        if (ok) {
-                          setNoteFor(null);
-                          toast.success('Filed in “To add to”');
-                        }
-                      }}
-                    >
-                      Save note
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 text-[12px]"
-                      onClick={async () => {
-                        const ok = await setReview(ch, 'add', noteText.trim() || null);
-                        if (ok) navigate(editorUrl(ch));
-                      }}
-                    >
-                      Save &amp; open editor
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-8 text-[12px]" onClick={() => setNoteFor(null)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
 
           );

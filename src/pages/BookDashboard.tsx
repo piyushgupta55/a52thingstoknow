@@ -441,7 +441,7 @@ const BookDashboard = () => {
                   <Button
                     size="lg"
                     className="text-base px-8 py-6 h-auto shadow-md max-w-full"
-                    onClick={() => navigate(`/book/${bookId}/overview`)}
+                    onClick={() => navigate(reviewPath)}
                   >
                     <BookOpen className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span className="truncate">{buttonLabel}</span>
