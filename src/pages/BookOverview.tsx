@@ -208,20 +208,6 @@ const BookOverview = () => {
     await supabase.from('chapters').update({ read_at: stamp }).eq('id', chapterId).is('read_at', null);
   }, []);
 
-  const setReview = async (ch: Chapter, status: string | null, note: string | null = null) => {
-    setSavingId(ch.id);
-    const { error } = await supabase
-      .from('chapters')
-      .update({ review_status: status, review_note: note })
-      .eq('id', ch.id);
-    setSavingId(null);
-    if (error) {
-      toast.error('Could not save that just now');
-      return false;
-    }
-    setChapters(prev => prev.map(c => (c.id === ch.id ? { ...c, review_status: status, review_note: note } : c)));
-    return true;
-  };
 
   // Landing on a chapter page marks it read after a beat (Read & Build only).
   const activeChapterId = activeChapter?.id;
