@@ -10,7 +10,7 @@ import { PREVIEW_PAGE_WIDTH } from '@/features/preview/geometry';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ArrowLeft, BookOpen, Camera, Check, ChevronLeft, ChevronRight, Gift, LayoutList, MessageCircleHeart, PenLine, Plus, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Camera, Check, ChevronLeft, ChevronRight, Gift, LayoutList, MessageCircleHeart, PenLine, Plus } from 'lucide-react';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const GOLD = '#BBA96A';
