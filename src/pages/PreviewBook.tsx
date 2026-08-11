@@ -584,7 +584,29 @@ const PreviewBook = () => {
           Close
         </button>
 
+        {reviewMode && (
+          <div className="px-4 pt-4 pb-1">
+            <div className="mx-auto max-w-md">
+              <div className="h-[3px] w-full rounded-full" style={{ background: 'rgba(187,169,106,0.22)' }}>
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ background: GOLD, width: `${reviewableTotal ? (reviewedCount / reviewableTotal) * 100 : 0}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-center text-[11px]" style={{ fontFamily: SERIF, color: '#7c766b' }}>
+                {reviewedCount} of {reviewableTotal} reviewed
+              </p>
+              {exactClampedSpread === 0 && (
+                <p className="mt-1 text-center text-[12px] italic" style={{ fontFamily: SERIF, color: '#8a8378' }}>
+                  Your book is written. Read through it and keep what you like.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-hidden flex items-center justify-center py-2 px-2 sm:px-4">
+
           <div
             className="relative"
             style={{
