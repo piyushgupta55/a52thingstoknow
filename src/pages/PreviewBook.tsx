@@ -682,10 +682,18 @@ const PreviewBook = () => {
         </div>
 
         {reviewMode && exactActiveChapter && (
-          <div className="px-3 pb-16 sm:pb-20 flex justify-center" style={{ pointerEvents: 'auto' }}>
-            {renderReviewBar(exactActiveChapter, true)}
+          <div className="absolute right-3 sm:right-5 top-20 z-30" style={{ pointerEvents: 'none' }}>
+            {renderReviewControls(exactActiveChapter, () => {
+              if (isCompactPreview) {
+                setCompactPageIndex(p => Math.min(exactCompactTotalPages - 1, p + 1));
+              } else {
+                setCurrentSpread(p => Math.min(exactTotalSpreads - 1, p + 1));
+              }
+            })}
           </div>
         )}
+
+
 
 
 
