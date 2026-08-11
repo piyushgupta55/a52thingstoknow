@@ -461,97 +461,84 @@ const PreviewBook = () => {
     setExactChapterPageMap(nextMapping);
   };
 
-  // Read / Add / Replace controls — identical on both preview surfaces.
-  const renderReviewBar = (ch: Chapter, floating = false) => {
-    const isAdd = ch.review_status === 'add';
-    const isRewrite = ch.review_status === 'rewrite';
+  // Keep / Needs editing — the only review controls on the book pages.
+  // Stored on chapters.review_status: 'keep' | 'rewrite' (+ optional review_note).
+  const renderReviewControls = (ch: Chapter, onAdvance: () => void) => {
+    const isKeep = ch.review_status === 'keep';
+    const isFlagged = ch.review_status === 'rewrite';
+    const noteOpen = noteFor === ch.id;
     return (
       <div
-        className="px-4 pb-1"
-        style={floating
-          ? { background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(4px)', borderRadius: '999px', paddingTop: '6px', paddingBottom: '6px', boxShadow: '0 6px 18px rgba(58,55,46,0.18)', pointerEvents: 'auto' }
-          : { background: '#EDEBE5' }}
+        className="w-[212px] rounded-xl p-3"
+        style={{
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(4px)',
+          boxShadow: '0 6px 18px rgba(58,55,46,0.16)',
+          pointerEvents: 'auto',
+        }}
       >
-        <div className="mx-auto max-w-2xl flex flex-wrap items-center justify-center gap-2">
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]"
-            style={{
-              fontFamily: SERIF,
-              background: ch.read_at ? 'rgba(138,167,155,0.16)' : 'rgba(0,0,0,0.04)',
-              color: ch.read_at ? '#4d6a5e' : '#8a8378',
-            }}
-          >
-            <Check className="h-3 w-3" /> {ch.read_at ? 'Read' : 'Kept'}
-          </span>
-          <Button
-            variant={isAdd ? 'secondary' : 'outline'}
-            size="sm"
-            className="h-8 gap-1.5 text-[12px]"
-            disabled={savingId === ch.id}
-            onClick={() => {
-              setNoteFor(noteFor === ch.id ? null : ch.id);
-              setNoteText(ch.review_note || '');
-            }}
-          >
-            <Plus className="h-3.5 w-3.5" /> {isAdd ? 'Marked to add' : 'Add to it'}
-          </Button>
-          <Button
-            variant={isRewrite ? 'secondary' : 'outline'}
-            size="sm"
-            className="h-8 gap-1.5 text-[12px]"
-            disabled={savingId === ch.id}
-            onClick={async () => {
-              const ok = await setReview(ch, 'rewrite', null);
-              if (ok) toast.success('Filed in “To rewrite”');
-            }}
-          >
-            <PenLine className="h-3.5 w-3.5" /> {isRewrite ? 'Marked to rewrite' : 'Replace'}
-          </Button>
-          {(isAdd || isRewrite) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-1.5 text-[12px]"
-              disabled={savingId === ch.id}
-              onClick={() => setReview(ch, null, null)}
-            >
-              <X className="h-3.5 w-3.5" /> Clear
-            </Button>
-          )}
-        </div>
-        {noteFor === ch.id && (
-          <div className="mx-auto max-w-2xl mt-2 rounded-md p-3" style={{ background: 'rgba(187,169,106,0.10)', border: `1px dashed ${GOLD}` }}>
+        {(isKeep || isFlagged) && (
+          <p className="mb-2 text-[11px]" style={{ fontFamily: SERIF, color: isKeep ? '#4d6a5e' : '#8a6f3c' }}>
+            {isKeep ? 'Kept ✓' : 'Marked: needs editing'}
+          </p>
+        )}
+        <Button
+          size="sm"
+          className="w-full h-9 gap-1.5 text-[13px]"
+          style={isKeep ? undefined : { background: '#4d8577', color: '#fff' }}
+          variant={isKeep ? 'secondary' : 'default'}
+          disabled={savingId === ch.id}
+          onClick={async () => {
+            const ok = await setReview(ch, 'keep', null);
+            if (ok) {
+              setNoteFor(null);
+              onAdvance();
+            }
+          }}
+        >
+          <Check className="h-4 w-4" /> Keep
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full h-9 gap-1.5 text-[13px] mt-2"
+          disabled={savingId === ch.id}
+          onClick={() => {
+            setNoteFor(noteOpen ? null : ch.id);
+            setNoteText(ch.review_note || '');
+          }}
+        >
+          <PenLine className="h-3.5 w-3.5" /> Needs editing
+        </Button>
+        {noteOpen && (
+          <div className="mt-2">
             <Textarea
               value={noteText}
               onChange={e => setNoteText(e.target.value)}
-              rows={2}
-              placeholder="What would you like to add here?"
-              className="bg-white text-[13px]"
+              rows={3}
+              placeholder="Optional — what would you change?"
+              className="bg-white text-[12px]"
             />
-            <div className="mt-2 flex items-center gap-2">
-              <Button
-                size="sm"
-                className="h-8 text-[12px]"
-                disabled={savingId === ch.id}
-                onClick={async () => {
-                  const ok = await setReview(ch, 'add', noteText.trim() || null);
-                  if (ok) {
-                    setNoteFor(null);
-                    toast.success('Filed in “To add to”');
-                  }
-                }}
-              >
-                Save note
-              </Button>
-              <Button variant="ghost" size="sm" className="h-8 text-[12px]" onClick={() => setNoteFor(null)}>
-                Cancel
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              className="w-full h-8 text-[12px] mt-2"
+              disabled={savingId === ch.id}
+              onClick={async () => {
+                const ok = await setReview(ch, 'rewrite', noteText.trim() || null);
+                if (ok) {
+                  setNoteFor(null);
+                  onAdvance();
+                }
+              }}
+            >
+              Save &amp; continue
+            </Button>
           </div>
         )}
       </div>
     );
   };
+
 
   if (loading) {
     return (
