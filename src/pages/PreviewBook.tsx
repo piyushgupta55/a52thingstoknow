@@ -155,25 +155,24 @@ const PreviewBook = () => {
   }, [bookId]);
 
   // The chapter shown in the exact (print-accurate) preview, if that's the surface in use.
+  // Includes the Letter from the Author (chapter_number 0), which is reviewable too.
   const exactActiveChapter = exactChapterNum
-    ? visibleChapters.find(c => String(c.chapter_number) === exactChapterNum) || null
+    ? chapters.find(c => String(c.chapter_number) === exactChapterNum) || null
     : null;
 
-  // Reading marks itself as the author turns pages (review mode only).
-  const fallbackChapterForRead = spreads[clampedSpread]?.type === 'chapter'
-    ? (spreads[clampedSpread] as { type: 'chapter'; chapter: Chapter }).chapter
-    : null;
-  const activeChapterForRead = exactPreviewHtml ? exactActiveChapter : fallbackChapterForRead;
-  const activeReadChapterId = activeChapterForRead && !activeChapterForRead.read_at ? activeChapterForRead.id : null;
-  useEffect(() => {
-    if (!reviewMode || !activeReadChapterId) return;
-    const t = window.setTimeout(async () => {
-      const stamp = new Date().toISOString();
-      setChapters(prev => prev.map(c => (c.id === activeReadChapterId ? { ...c, read_at: c.read_at || stamp } : c)));
-      await supabase.from('chapters').update({ read_at: stamp }).eq('id', activeReadChapterId).is('read_at', null);
-    }, 1500);
-    return () => window.clearTimeout(t);
-  }, [reviewMode, activeReadChapterId]);
+  const fallbackReviewChapter = (() => {
+    const s = spreads[clampedSpread];
+    if (s?.type === 'chapter') return s.chapter;
+    if (s?.type === 'letter') return chapters.find(c => c.chapter_number === 0) || null;
+    return null;
+  })();
+
+  // Reviewed = Kept or flagged as needing editing.
+  const reviewableTotal = visibleChapters.length;
+  const reviewedCount = visibleChapters.filter(
+    c => c.review_status === 'keep' || c.review_status === 'rewrite',
+  ).length;
+
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
