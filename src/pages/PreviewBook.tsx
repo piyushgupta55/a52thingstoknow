@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { toBookGender } from '@/lib/genderMap';
 
-import { X, ChevronLeft, ChevronRight, Camera, Check, Plus, PenLine } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Check, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
