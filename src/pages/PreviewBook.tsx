@@ -395,7 +395,7 @@ const PreviewBook = () => {
       : [pages[visibleIdx], pages[visibleIdx + 1]].filter(Boolean) as HTMLElement[];
     const chapterAttr = candidates
       .map(p => p.getAttribute('data-chapter'))
-      .find(v => v && /^\d+$/.test(v) && Number(v) > 0) || null;
+      .find(v => v && /^\d+$/.test(v)) || null;
     setExactChapterNum(prev => (prev === chapterAttr ? prev : chapterAttr));
 
 
