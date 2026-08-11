@@ -1558,8 +1558,28 @@ const PreviewBook = () => {
         </div>
       </div>
 
-      {/* Read / Add / Replace — the read-through happens right here in the book */}
-      {reviewMode && fallbackChapterForRead && renderReviewBar(fallbackChapterForRead)}
+      {/* Keep / Needs editing — beside the page area, always visible */}
+      {reviewMode && fallbackReviewChapter && (
+        <div className="fixed right-4 top-24 z-40">
+          {renderReviewControls(fallbackReviewChapter, () =>
+            setCurrentSpread(p => Math.min(totalSpreads - 1, p + 1)),
+          )}
+        </div>
+      )}
+      {reviewMode && (
+        <div className="fixed left-1/2 -translate-x-1/2 top-4 z-40 w-[260px]">
+          <div className="h-[3px] w-full rounded-full" style={{ background: 'rgba(187,169,106,0.22)' }}>
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ background: GOLD, width: `${reviewableTotal ? (reviewedCount / reviewableTotal) * 100 : 0}%` }}
+            />
+          </div>
+          <p className="mt-1.5 text-center text-[11px]" style={{ fontFamily: SERIF, color: '#7c766b' }}>
+            {reviewedCount} of {reviewableTotal} reviewed
+          </p>
+        </div>
+      )}
+
 
       {/* Navigation */}
       <div className="flex items-center justify-center gap-8 py-4" style={{ background: '#EDEBE5' }}>
