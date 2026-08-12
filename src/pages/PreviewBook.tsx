@@ -522,6 +522,8 @@ const PreviewBook = () => {
     const isKeep = ch.review_status === 'keep';
     const isFlagged = ch.review_status === 'rewrite';
     const noteOpen = noteFor === ch.id;
+    const isLetter = ch.chapter_number === 0;
+    const unitLabel = isLetter ? 'the Letter' : `Chapter ${ch.chapter_number}`;
     return (
       <div
         className="w-[212px] rounded-xl p-3"
@@ -532,6 +534,14 @@ const PreviewBook = () => {
           pointerEvents: 'auto',
         }}
       >
+        <p className="mb-0.5 text-[12px] font-semibold" style={{ fontFamily: SERIF, color: '#3a372e' }}>
+          {isLetter ? 'Letter from the Author' : `Chapter ${ch.chapter_number}`}
+        </p>
+        {!isLetter && (
+          <p className="mb-2 text-[11px] leading-snug" style={{ fontFamily: SERIF, color: '#7c766b' }}>
+            {ch.title}
+          </p>
+        )}
         {(isKeep || isFlagged) && (
           <p className="mb-2 text-[11px]" style={{ fontFamily: SERIF, color: isKeep ? '#4d6a5e' : '#8a6f3c' }}>
             {isKeep ? 'Kept ✓' : 'Marked: needs editing'}
@@ -551,7 +561,7 @@ const PreviewBook = () => {
             }
           }}
         >
-          <Check className="h-4 w-4" /> Keep
+          <Check className="h-4 w-4" /> Keep {unitLabel}
         </Button>
         <Button
           variant="outline"
@@ -565,6 +575,7 @@ const PreviewBook = () => {
         >
           <PenLine className="h-3.5 w-3.5" /> Needs editing
         </Button>
+
         {noteOpen && (
           <div className="mt-2">
             <Textarea
