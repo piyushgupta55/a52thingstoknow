@@ -357,26 +357,41 @@ const PreviewBook = () => {
       const hasMedia = page.querySelector('img, svg, .chapter-photo, .memory-item, .cover-frame') !== null;
       return hasText || hasMedia;
     });
-    const contentSpreads = Math.max(1, Math.ceil(Math.max(0, exactPageCount - 1) / 2));
-    const totalSpreads = contentSpreads + (exactHasInsideFrontCover ? 1 : 0);
-    const clamped = Math.max(0, Math.min(currentSpread, totalSpreads - 1));
-    const isInsideFrontCoverSpread = exactHasInsideFrontCover && clamped === 0;
-    const contentSpreadIndex = isInsideFrontCoverSpread ? 0 : clamped - (exactHasInsideFrontCover ? 1 : 0);
-    const start = isInsideFrontCoverSpread ? 0 : (contentSpreadIndex * 2) + 1;
-    const end = start + 1;
-    const selectedCompactDocIndex = isCompactPreview
+
+    const useReviewPairing = reviewSpreads.length > 0;
+    let isInsideFrontCoverSpread: boolean;
+    let start: number;
+    let end: number;
+
+    if (useReviewPairing) {
+      const rs = reviewSpreads[Math.max(0, Math.min(currentSpread, reviewSpreads.length - 1))];
+      isInsideFrontCoverSpread = rs.start < 0;
+      start = isInsideFrontCoverSpread ? 0 : rs.start;
+      end = isInsideFrontCoverSpread ? 0 : rs.end;
+    } else {
+      const contentSpreads = Math.max(1, Math.ceil(Math.max(0, exactPageCount - 1) / 2));
+      const totalSpreads = contentSpreads + (exactHasInsideFrontCover ? 1 : 0);
+      const clamped = Math.max(0, Math.min(currentSpread, totalSpreads - 1));
+      isInsideFrontCoverSpread = exactHasInsideFrontCover && clamped === 0;
+      const contentSpreadIndex = isInsideFrontCoverSpread ? 0 : clamped - (exactHasInsideFrontCover ? 1 : 0);
+      start = isInsideFrontCoverSpread ? 0 : (contentSpreadIndex * 2) + 1;
+      end = start + 1;
+    }
+
+    const compactActive = isCompactPreview && !useReviewPairing;
+    const selectedCompactDocIndex = compactActive
       ? (compactPageIndex === 0 ? null : compactPageIndex - 1)
       : null;
 
     pages.forEach((page, idx) => {
-      const shouldShow = isCompactPreview
+      const shouldShow = compactActive
         ? idx === selectedCompactDocIndex
         : idx === start || (!isInsideFrontCoverSpread && idx === end);
       page.style.display = shouldShow ? 'block' : 'none';
       page.style.flex = '0 0 auto';
       page.style.margin = '0';
       page.style.boxSizing = 'border-box';
-      if (isCompactPreview) {
+      if (compactActive) {
         page.style.paddingLeft = '0.5in';
         page.style.paddingRight = '0.5in';
         page.style.paddingTop = '0.5in';
@@ -386,16 +401,23 @@ const PreviewBook = () => {
     });
 
     // Which chapter is on screen right now (drives the review controls).
-    const visibleIdx = isCompactPreview
-      ? (selectedCompactDocIndex ?? -1)
-      : (isInsideFrontCoverSpread ? -1 : start);
-    const candidates = visibleIdx < 0
-      ? []
-      : [pages[visibleIdx], pages[visibleIdx + 1]].filter(Boolean) as HTMLElement[];
-    const chapterAttr = candidates
-      .map(p => p.getAttribute('data-chapter'))
-      .find(v => v && /^\d+$/.test(v)) || null;
+    let chapterAttr: string | null = null;
+    if (useReviewPairing) {
+      const rs = reviewSpreads[Math.max(0, Math.min(currentSpread, reviewSpreads.length - 1))];
+      chapterAttr = rs.chapterNum === null ? null : String(rs.chapterNum);
+    } else {
+      const visibleIdx = compactActive
+        ? (selectedCompactDocIndex ?? -1)
+        : (isInsideFrontCoverSpread ? -1 : start);
+      const candidates = visibleIdx < 0
+        ? []
+        : [pages[visibleIdx], pages[visibleIdx + 1]].filter(Boolean) as HTMLElement[];
+      chapterAttr = candidates
+        .map(p => p.getAttribute('data-chapter'))
+        .find(v => v && /^\d+$/.test(v)) || null;
+    }
     setExactChapterNum(prev => (prev === chapterAttr ? prev : chapterAttr));
+
 
 
 
