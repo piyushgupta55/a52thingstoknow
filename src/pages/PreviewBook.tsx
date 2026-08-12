@@ -678,7 +678,7 @@ const PreviewBook = () => {
               <p className="mt-1.5 text-center text-[11px]" style={{ fontFamily: SERIF, color: '#7c766b' }}>
                 {reviewedCount} of {reviewableTotal} reviewed
               </p>
-              {exactClampedSpread === 0 && (
+              {navIndex === 0 && (
                 <p className="mt-1 text-center text-[12px] italic" style={{ fontFamily: SERIF, color: '#8a8378' }}>
                   Your book is written. Read through it and keep what you like.
                 </p>
