@@ -167,6 +167,34 @@ const PreviewBook = () => {
     return null;
   })();
 
+  // Review pass only: pair the printed pages by CHAPTER instead of by page parity,
+  // so one spread always holds one complete chapter. Front matter keeps its
+  // existing pairing. Printed page numbers are untouched — only what is shown together.
+  const reviewSpreads: Array<{ start: number; end: number; chapterNum: number | null }> = (() => {
+    if (!reviewMode || exactPageCount === 0 || exactChapterPageMap.size === 0) return [];
+    const entries = Array.from(exactChapterPageMap.entries())
+      .filter(([k]) => /^\d+$/.test(k))
+      .map(([k, page]) => ({ chapterNum: Number(k), startIdx: page - 1 }))
+      .sort((a, b) => a.startIdx - b.startIdx);
+    if (entries.length === 0) return [];
+    const firstIdx = entries[0].startIdx;
+    const out: Array<{ start: number; end: number; chapterNum: number | null }> = [];
+    if (exactHasInsideFrontCover) out.push({ start: -1, end: -1, chapterNum: null });
+    for (let s = 1; s < firstIdx; s += 2) {
+      out.push({ start: s, end: s + 1 < firstIdx ? s + 1 : s, chapterNum: null });
+    }
+    entries.forEach(e => out.push({ start: e.startIdx, end: e.startIdx + 1, chapterNum: e.chapterNum }));
+    return out;
+  })();
+
+  const reviewStepIndex = reviewSpreads.length
+    ? Math.max(0, Math.min(currentSpread, reviewSpreads.length - 1))
+    : 0;
+  const reviewCurrentChapterNum = reviewSpreads.length
+    ? reviewSpreads[reviewStepIndex].chapterNum
+    : null;
+
+
   // Reviewed = Kept or flagged as needing editing.
   const reviewableTotal = visibleChapters.length;
   const reviewedCount = visibleChapters.filter(
