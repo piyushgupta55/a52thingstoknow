@@ -640,6 +640,21 @@ const PreviewBook = () => {
       : `Page ${compactPageIndex + 1} of ${exactCompactTotalPages}`;
     const compactWidth = isCompactPreview ? Math.min(PREVIEW_PAGE_WIDTH, Math.floor(window.innerWidth * 0.92)) : PREVIEW_SPREAD_WIDTH;
 
+    // Review pass: navigation and counting are chapter-based.
+    const usingReviewPairing = reviewSpreads.length > 0;
+    const navTotalSteps = usingReviewPairing ? reviewSpreads.length : exactTotalSpreads;
+    const navIndex = usingReviewPairing ? reviewStepIndex : exactClampedSpread;
+    const goToStep = (next: number) => setCurrentSpread(Math.max(0, Math.min(navTotalSteps - 1, next)));
+    const reviewChapterOrdinal = reviewCurrentChapterNum && reviewCurrentChapterNum > 0
+      ? reviewCurrentChapterNum
+      : null;
+    const reviewPagerLabel = reviewCurrentChapterNum === 0
+      ? 'Letter from the Author'
+      : reviewChapterOrdinal
+        ? `Chapter ${reviewChapterOrdinal} of ${reviewableTotal}`
+        : 'Front matter';
+
+
     return (
       <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'linear-gradient(180deg, #d7d4cc 0%, #d2cfc7 100%)' }}>
         <button
