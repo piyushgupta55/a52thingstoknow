@@ -240,7 +240,8 @@ const PreviewBook = () => {
 
   useEffect(() => {
     const computeScale = () => {
-      const compact = window.innerWidth < 1200;
+      // Review pass never falls back to one page — the spread scales down to fit instead.
+      const compact = !reviewMode && window.innerWidth < 1200;
       setIsCompactPreview(compact);
       const availableWidth = window.innerWidth * PREVIEW_MAX_VIEWPORT_WIDTH_RATIO;
       const availableHeight = window.innerHeight * PREVIEW_MAX_VIEWPORT_HEIGHT_RATIO;
@@ -249,13 +250,17 @@ const PreviewBook = () => {
       const widthScale = availableWidth / targetWidth;
       const heightScale = availableHeight / targetHeight;
       const next = Math.min(widthScale, heightScale, 1.25);
-      setViewportScale(Math.max(0.35, next));
+      setViewportScale(Math.max(reviewMode ? 0.18 : 0.35, next));
     };
 
     computeScale();
     window.addEventListener('resize', computeScale);
-    return () => window.removeEventListener('resize', computeScale);
-  }, []);
+    window.addEventListener('orientationchange', computeScale);
+    return () => {
+      window.removeEventListener('resize', computeScale);
+      window.removeEventListener('orientationchange', computeScale);
+    };
+  }, [reviewMode]);
 
   useEffect(() => {
     if (isCompactPreview) {
@@ -263,6 +268,7 @@ const PreviewBook = () => {
       setCompactPageIndex(0);
     }
   }, [isCompactPreview]);
+
 
   useEffect(() => {
     if (loading || !book) return;
