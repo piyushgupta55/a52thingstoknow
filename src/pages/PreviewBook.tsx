@@ -475,7 +475,7 @@ const PreviewBook = () => {
       doc.documentElement.style.height = '100%';
       doc.documentElement.style.overflow = 'hidden';
     }
-  }, [exactPreviewHtml, exactPageCount, currentSpread, exactHasInsideFrontCover, isCompactPreview, compactPageIndex]);
+  }, [exactPreviewHtml, exactPageCount, currentSpread, exactHasInsideFrontCover, isCompactPreview, compactPageIndex, reviewMode, exactChapterPageMap]);
 
   const waitForLayoutFinal = async (doc: Document) => {
     for (let i = 0; i < 120; i += 1) {
