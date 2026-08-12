@@ -167,6 +167,34 @@ const PreviewBook = () => {
     return null;
   })();
 
+  // Review pass only: pair the printed pages by CHAPTER instead of by page parity,
+  // so one spread always holds one complete chapter. Front matter keeps its
+  // existing pairing. Printed page numbers are untouched — only what is shown together.
+  const reviewSpreads: Array<{ start: number; end: number; chapterNum: number | null }> = (() => {
+    if (!reviewMode || exactPageCount === 0 || exactChapterPageMap.size === 0) return [];
+    const entries = Array.from(exactChapterPageMap.entries())
+      .filter(([k]) => /^\d+$/.test(k))
+      .map(([k, page]) => ({ chapterNum: Number(k), startIdx: page - 1 }))
+      .sort((a, b) => a.startIdx - b.startIdx);
+    if (entries.length === 0) return [];
+    const firstIdx = entries[0].startIdx;
+    const out: Array<{ start: number; end: number; chapterNum: number | null }> = [];
+    if (exactHasInsideFrontCover) out.push({ start: -1, end: -1, chapterNum: null });
+    for (let s = 1; s < firstIdx; s += 2) {
+      out.push({ start: s, end: s + 1 < firstIdx ? s + 1 : s, chapterNum: null });
+    }
+    entries.forEach(e => out.push({ start: e.startIdx, end: e.startIdx + 1, chapterNum: e.chapterNum }));
+    return out;
+  })();
+
+  const reviewStepIndex = reviewSpreads.length
+    ? Math.max(0, Math.min(currentSpread, reviewSpreads.length - 1))
+    : 0;
+  const reviewCurrentChapterNum = reviewSpreads.length
+    ? reviewSpreads[reviewStepIndex].chapterNum
+    : null;
+
+
   // Reviewed = Kept or flagged as needing editing.
   const reviewableTotal = visibleChapters.length;
   const reviewedCount = visibleChapters.filter(
@@ -212,7 +240,8 @@ const PreviewBook = () => {
 
   useEffect(() => {
     const computeScale = () => {
-      const compact = window.innerWidth < 1200;
+      // Review pass never falls back to one page — the spread scales down to fit instead.
+      const compact = !reviewMode && window.innerWidth < 1200;
       setIsCompactPreview(compact);
       const availableWidth = window.innerWidth * PREVIEW_MAX_VIEWPORT_WIDTH_RATIO;
       const availableHeight = window.innerHeight * PREVIEW_MAX_VIEWPORT_HEIGHT_RATIO;
@@ -221,13 +250,17 @@ const PreviewBook = () => {
       const widthScale = availableWidth / targetWidth;
       const heightScale = availableHeight / targetHeight;
       const next = Math.min(widthScale, heightScale, 1.25);
-      setViewportScale(Math.max(0.35, next));
+      setViewportScale(Math.max(reviewMode ? 0.18 : 0.35, next));
     };
 
     computeScale();
     window.addEventListener('resize', computeScale);
-    return () => window.removeEventListener('resize', computeScale);
-  }, []);
+    window.addEventListener('orientationchange', computeScale);
+    return () => {
+      window.removeEventListener('resize', computeScale);
+      window.removeEventListener('orientationchange', computeScale);
+    };
+  }, [reviewMode]);
 
   useEffect(() => {
     if (isCompactPreview) {
@@ -235,6 +268,7 @@ const PreviewBook = () => {
       setCompactPageIndex(0);
     }
   }, [isCompactPreview]);
+
 
   useEffect(() => {
     if (loading || !book) return;
@@ -357,26 +391,41 @@ const PreviewBook = () => {
       const hasMedia = page.querySelector('img, svg, .chapter-photo, .memory-item, .cover-frame') !== null;
       return hasText || hasMedia;
     });
-    const contentSpreads = Math.max(1, Math.ceil(Math.max(0, exactPageCount - 1) / 2));
-    const totalSpreads = contentSpreads + (exactHasInsideFrontCover ? 1 : 0);
-    const clamped = Math.max(0, Math.min(currentSpread, totalSpreads - 1));
-    const isInsideFrontCoverSpread = exactHasInsideFrontCover && clamped === 0;
-    const contentSpreadIndex = isInsideFrontCoverSpread ? 0 : clamped - (exactHasInsideFrontCover ? 1 : 0);
-    const start = isInsideFrontCoverSpread ? 0 : (contentSpreadIndex * 2) + 1;
-    const end = start + 1;
-    const selectedCompactDocIndex = isCompactPreview
+
+    const useReviewPairing = reviewSpreads.length > 0;
+    let isInsideFrontCoverSpread: boolean;
+    let start: number;
+    let end: number;
+
+    if (useReviewPairing) {
+      const rs = reviewSpreads[Math.max(0, Math.min(currentSpread, reviewSpreads.length - 1))];
+      isInsideFrontCoverSpread = rs.start < 0;
+      start = isInsideFrontCoverSpread ? 0 : rs.start;
+      end = isInsideFrontCoverSpread ? 0 : rs.end;
+    } else {
+      const contentSpreads = Math.max(1, Math.ceil(Math.max(0, exactPageCount - 1) / 2));
+      const totalSpreads = contentSpreads + (exactHasInsideFrontCover ? 1 : 0);
+      const clamped = Math.max(0, Math.min(currentSpread, totalSpreads - 1));
+      isInsideFrontCoverSpread = exactHasInsideFrontCover && clamped === 0;
+      const contentSpreadIndex = isInsideFrontCoverSpread ? 0 : clamped - (exactHasInsideFrontCover ? 1 : 0);
+      start = isInsideFrontCoverSpread ? 0 : (contentSpreadIndex * 2) + 1;
+      end = start + 1;
+    }
+
+    const compactActive = isCompactPreview && !useReviewPairing;
+    const selectedCompactDocIndex = compactActive
       ? (compactPageIndex === 0 ? null : compactPageIndex - 1)
       : null;
 
     pages.forEach((page, idx) => {
-      const shouldShow = isCompactPreview
+      const shouldShow = compactActive
         ? idx === selectedCompactDocIndex
         : idx === start || (!isInsideFrontCoverSpread && idx === end);
       page.style.display = shouldShow ? 'block' : 'none';
       page.style.flex = '0 0 auto';
       page.style.margin = '0';
       page.style.boxSizing = 'border-box';
-      if (isCompactPreview) {
+      if (compactActive) {
         page.style.paddingLeft = '0.5in';
         page.style.paddingRight = '0.5in';
         page.style.paddingTop = '0.5in';
@@ -386,16 +435,23 @@ const PreviewBook = () => {
     });
 
     // Which chapter is on screen right now (drives the review controls).
-    const visibleIdx = isCompactPreview
-      ? (selectedCompactDocIndex ?? -1)
-      : (isInsideFrontCoverSpread ? -1 : start);
-    const candidates = visibleIdx < 0
-      ? []
-      : [pages[visibleIdx], pages[visibleIdx + 1]].filter(Boolean) as HTMLElement[];
-    const chapterAttr = candidates
-      .map(p => p.getAttribute('data-chapter'))
-      .find(v => v && /^\d+$/.test(v)) || null;
+    let chapterAttr: string | null = null;
+    if (useReviewPairing) {
+      const rs = reviewSpreads[Math.max(0, Math.min(currentSpread, reviewSpreads.length - 1))];
+      chapterAttr = rs.chapterNum === null ? null : String(rs.chapterNum);
+    } else {
+      const visibleIdx = compactActive
+        ? (selectedCompactDocIndex ?? -1)
+        : (isInsideFrontCoverSpread ? -1 : start);
+      const candidates = visibleIdx < 0
+        ? []
+        : [pages[visibleIdx], pages[visibleIdx + 1]].filter(Boolean) as HTMLElement[];
+      chapterAttr = candidates
+        .map(p => p.getAttribute('data-chapter'))
+        .find(v => v && /^\d+$/.test(v)) || null;
+    }
     setExactChapterNum(prev => (prev === chapterAttr ? prev : chapterAttr));
+
 
 
 
@@ -419,7 +475,7 @@ const PreviewBook = () => {
       doc.documentElement.style.height = '100%';
       doc.documentElement.style.overflow = 'hidden';
     }
-  }, [exactPreviewHtml, exactPageCount, currentSpread, exactHasInsideFrontCover, isCompactPreview, compactPageIndex]);
+  }, [exactPreviewHtml, exactPageCount, currentSpread, exactHasInsideFrontCover, isCompactPreview, compactPageIndex, reviewMode, exactChapterPageMap]);
 
   const waitForLayoutFinal = async (doc: Document) => {
     for (let i = 0; i < 120; i += 1) {
@@ -466,6 +522,8 @@ const PreviewBook = () => {
     const isKeep = ch.review_status === 'keep';
     const isFlagged = ch.review_status === 'rewrite';
     const noteOpen = noteFor === ch.id;
+    const isLetter = ch.chapter_number === 0;
+    const unitLabel = isLetter ? 'the Letter' : `Chapter ${ch.chapter_number}`;
     return (
       <div
         className="w-[212px] rounded-xl p-3"
@@ -476,6 +534,14 @@ const PreviewBook = () => {
           pointerEvents: 'auto',
         }}
       >
+        <p className="mb-0.5 text-[12px] font-semibold" style={{ fontFamily: SERIF, color: '#3a372e' }}>
+          {isLetter ? 'Letter from the Author' : `Chapter ${ch.chapter_number}`}
+        </p>
+        {!isLetter && (
+          <p className="mb-2 text-[11px] leading-snug" style={{ fontFamily: SERIF, color: '#7c766b' }}>
+            {ch.title}
+          </p>
+        )}
         {(isKeep || isFlagged) && (
           <p className="mb-2 text-[11px]" style={{ fontFamily: SERIF, color: isKeep ? '#4d6a5e' : '#8a6f3c' }}>
             {isKeep ? 'Kept ✓' : 'Marked: needs editing'}
@@ -495,7 +561,7 @@ const PreviewBook = () => {
             }
           }}
         >
-          <Check className="h-4 w-4" /> Keep
+          <Check className="h-4 w-4" /> Keep {unitLabel}
         </Button>
         <Button
           variant="outline"
@@ -509,6 +575,7 @@ const PreviewBook = () => {
         >
           <PenLine className="h-3.5 w-3.5" /> Needs editing
         </Button>
+
         {noteOpen && (
           <div className="mt-2">
             <Textarea
@@ -573,6 +640,21 @@ const PreviewBook = () => {
       : `Page ${compactPageIndex + 1} of ${exactCompactTotalPages}`;
     const compactWidth = isCompactPreview ? Math.min(PREVIEW_PAGE_WIDTH, Math.floor(window.innerWidth * 0.92)) : PREVIEW_SPREAD_WIDTH;
 
+    // Review pass: navigation and counting are chapter-based.
+    const usingReviewPairing = reviewSpreads.length > 0;
+    const navTotalSteps = usingReviewPairing ? reviewSpreads.length : exactTotalSpreads;
+    const navIndex = usingReviewPairing ? reviewStepIndex : exactClampedSpread;
+    const goToStep = (next: number) => setCurrentSpread(Math.max(0, Math.min(navTotalSteps - 1, next)));
+    const reviewChapterOrdinal = reviewCurrentChapterNum && reviewCurrentChapterNum > 0
+      ? reviewCurrentChapterNum
+      : null;
+    const reviewPagerLabel = reviewCurrentChapterNum === 0
+      ? 'Letter from the Author'
+      : reviewChapterOrdinal
+        ? `Chapter ${reviewChapterOrdinal} of ${reviewableTotal}`
+        : 'Front matter';
+
+
     return (
       <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'linear-gradient(180deg, #d7d4cc 0%, #d2cfc7 100%)' }}>
         <button
@@ -596,7 +678,7 @@ const PreviewBook = () => {
               <p className="mt-1.5 text-center text-[11px]" style={{ fontFamily: SERIF, color: '#7c766b' }}>
                 {reviewedCount} of {reviewableTotal} reviewed
               </p>
-              {exactClampedSpread === 0 && (
+              {navIndex === 0 && (
                 <p className="mt-1 text-center text-[12px] italic" style={{ fontFamily: SERIF, color: '#8a8378' }}>
                   Your book is written. Read through it and keep what you like.
                 </p>
@@ -706,7 +788,9 @@ const PreviewBook = () => {
         {reviewMode && exactActiveChapter && (
           <div className="absolute right-3 sm:right-5 top-20 z-30" style={{ pointerEvents: 'none' }}>
             {renderReviewControls(exactActiveChapter, () => {
-              if (isCompactPreview) {
+              if (usingReviewPairing) {
+                goToStep(navIndex + 1);
+              } else if (isCompactPreview) {
                 setCompactPageIndex(p => Math.min(exactCompactTotalPages - 1, p + 1));
               } else {
                 setCurrentSpread(p => Math.min(exactTotalSpreads - 1, p + 1));
@@ -715,23 +799,21 @@ const PreviewBook = () => {
           </div>
         )}
 
-
-
-
-
         <div
           className="absolute left-0 right-0 bottom-3 sm:bottom-4 z-20 flex items-center justify-center gap-3 sm:gap-8"
           style={{ pointerEvents: 'none' }}
         >
           <button
             onClick={() => {
-              if (isCompactPreview) {
+              if (usingReviewPairing) {
+                goToStep(navIndex - 1);
+              } else if (isCompactPreview) {
                 setCompactPageIndex(p => Math.max(0, p - 1));
               } else {
                 setCurrentSpread(p => Math.max(0, p - 1));
               }
             }}
-            disabled={isCompactPreview ? compactPageIndex === 0 : exactClampedSpread === 0}
+            disabled={usingReviewPairing ? navIndex === 0 : (isCompactPreview ? compactPageIndex === 0 : exactClampedSpread === 0)}
             className="flex items-center justify-center rounded-full border transition-opacity disabled:opacity-20"
             style={{ color: '#6B7280', width: '40px', height: '40px', background: '#fff', borderColor: '#D1CCC4', pointerEvents: 'auto' }}
           >
@@ -739,24 +821,31 @@ const PreviewBook = () => {
           </button>
 
           <span className="tabular-nums min-w-[120px] sm:min-w-[160px] text-center" style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF', background: 'rgba(255,255,255,0.72)', borderRadius: '999px', padding: '6px 10px', pointerEvents: 'auto' }}>
-            {exactPageCount > 0 ? (isCompactPreview ? compactLabel : (exactIsInsideFrontCoverSpread ? 'Inside Front Cover' : `Page ${exactLeftPageNum}${exactRightPageNum > exactLeftPageNum ? `-${exactRightPageNum}` : ''} of ${exactTotalPages}`)) : 'Preparing pages...'}
+            {exactPageCount === 0
+              ? 'Preparing pages...'
+              : usingReviewPairing
+                ? reviewPagerLabel
+                : (isCompactPreview ? compactLabel : (exactIsInsideFrontCoverSpread ? 'Inside Front Cover' : `Page ${exactLeftPageNum}${exactRightPageNum > exactLeftPageNum ? `-${exactRightPageNum}` : ''} of ${exactTotalPages}`))}
           </span>
 
           <button
             onClick={() => {
-              if (isCompactPreview) {
+              if (usingReviewPairing) {
+                goToStep(navIndex + 1);
+              } else if (isCompactPreview) {
                 setCompactPageIndex(p => Math.min(exactCompactTotalPages - 1, p + 1));
               } else {
                 setCurrentSpread(p => Math.min(exactTotalSpreads - 1, p + 1));
               }
             }}
-            disabled={isCompactPreview ? compactPageIndex >= exactCompactTotalPages - 1 : exactClampedSpread >= exactTotalSpreads - 1}
+            disabled={usingReviewPairing ? navIndex >= navTotalSteps - 1 : (isCompactPreview ? compactPageIndex >= exactCompactTotalPages - 1 : exactClampedSpread >= exactTotalSpreads - 1)}
             className="flex items-center justify-center rounded-full border transition-opacity disabled:opacity-20"
             style={{ color: '#6B7280', width: '40px', height: '40px', background: '#fff', borderColor: '#D1CCC4', pointerEvents: 'auto' }}
           >
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
+
       </div>
     );
   }
