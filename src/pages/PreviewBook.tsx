@@ -788,7 +788,9 @@ const PreviewBook = () => {
         {reviewMode && exactActiveChapter && (
           <div className="absolute right-3 sm:right-5 top-20 z-30" style={{ pointerEvents: 'none' }}>
             {renderReviewControls(exactActiveChapter, () => {
-              if (isCompactPreview) {
+              if (usingReviewPairing) {
+                goToStep(navIndex + 1);
+              } else if (isCompactPreview) {
                 setCompactPageIndex(p => Math.min(exactCompactTotalPages - 1, p + 1));
               } else {
                 setCurrentSpread(p => Math.min(exactTotalSpreads - 1, p + 1));
@@ -797,23 +799,21 @@ const PreviewBook = () => {
           </div>
         )}
 
-
-
-
-
         <div
           className="absolute left-0 right-0 bottom-3 sm:bottom-4 z-20 flex items-center justify-center gap-3 sm:gap-8"
           style={{ pointerEvents: 'none' }}
         >
           <button
             onClick={() => {
-              if (isCompactPreview) {
+              if (usingReviewPairing) {
+                goToStep(navIndex - 1);
+              } else if (isCompactPreview) {
                 setCompactPageIndex(p => Math.max(0, p - 1));
               } else {
                 setCurrentSpread(p => Math.max(0, p - 1));
               }
             }}
-            disabled={isCompactPreview ? compactPageIndex === 0 : exactClampedSpread === 0}
+            disabled={usingReviewPairing ? navIndex === 0 : (isCompactPreview ? compactPageIndex === 0 : exactClampedSpread === 0)}
             className="flex items-center justify-center rounded-full border transition-opacity disabled:opacity-20"
             style={{ color: '#6B7280', width: '40px', height: '40px', background: '#fff', borderColor: '#D1CCC4', pointerEvents: 'auto' }}
           >
@@ -821,24 +821,31 @@ const PreviewBook = () => {
           </button>
 
           <span className="tabular-nums min-w-[120px] sm:min-w-[160px] text-center" style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF', background: 'rgba(255,255,255,0.72)', borderRadius: '999px', padding: '6px 10px', pointerEvents: 'auto' }}>
-            {exactPageCount > 0 ? (isCompactPreview ? compactLabel : (exactIsInsideFrontCoverSpread ? 'Inside Front Cover' : `Page ${exactLeftPageNum}${exactRightPageNum > exactLeftPageNum ? `-${exactRightPageNum}` : ''} of ${exactTotalPages}`)) : 'Preparing pages...'}
+            {exactPageCount === 0
+              ? 'Preparing pages...'
+              : usingReviewPairing
+                ? reviewPagerLabel
+                : (isCompactPreview ? compactLabel : (exactIsInsideFrontCoverSpread ? 'Inside Front Cover' : `Page ${exactLeftPageNum}${exactRightPageNum > exactLeftPageNum ? `-${exactRightPageNum}` : ''} of ${exactTotalPages}`))}
           </span>
 
           <button
             onClick={() => {
-              if (isCompactPreview) {
+              if (usingReviewPairing) {
+                goToStep(navIndex + 1);
+              } else if (isCompactPreview) {
                 setCompactPageIndex(p => Math.min(exactCompactTotalPages - 1, p + 1));
               } else {
                 setCurrentSpread(p => Math.min(exactTotalSpreads - 1, p + 1));
               }
             }}
-            disabled={isCompactPreview ? compactPageIndex >= exactCompactTotalPages - 1 : exactClampedSpread >= exactTotalSpreads - 1}
+            disabled={usingReviewPairing ? navIndex >= navTotalSteps - 1 : (isCompactPreview ? compactPageIndex >= exactCompactTotalPages - 1 : exactClampedSpread >= exactTotalSpreads - 1)}
             className="flex items-center justify-center rounded-full border transition-opacity disabled:opacity-20"
             style={{ color: '#6B7280', width: '40px', height: '40px', background: '#fff', borderColor: '#D1CCC4', pointerEvents: 'auto' }}
           >
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
+
       </div>
     );
   }
