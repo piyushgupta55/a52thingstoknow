@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Circle, PenLine, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Circle, PenLine, ArrowLeft, Camera } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { computeChapterTotalWords, getPage2Status } from '@/lib/page2Status';
 
@@ -20,6 +20,11 @@ interface Chapter {
   content: string | null;
   reference_text: string | null;
   chapter_template: string | null;
+  review_status: string | null;
+  review_note: string | null;
+  is_photo_chapter: boolean | null;
+  photo_urls: string[] | null;
+  photo_declined: boolean | null;
 }
 
 const statusConfig = {
@@ -110,6 +115,28 @@ const ChapterGrid = () => {
                     </span>
                   )}
                 </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {chapter.review_status === 'keep' ? (
+                    <Badge className="text-[0.65rem] bg-primary/10 text-primary hover:bg-primary/10 border-transparent">Kept</Badge>
+                  ) : chapter.review_status === 'rewrite' || chapter.review_status === 'add' ? (
+                    <Badge className="text-[0.65rem] bg-accent/15 text-accent-foreground hover:bg-accent/15 border-transparent">Needs editing</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[0.65rem] text-muted-foreground">Undecided</Badge>
+                  )}
+                  {chapter.is_photo_chapter &&
+                    !chapter.photo_declined &&
+                    !(chapter.photo_urls && chapter.photo_urls.length > 0) && (
+                      <Badge variant="outline" className="text-[0.65rem] text-muted-foreground gap-1">
+                        <Camera className="h-3 w-3" /> Photo needed
+                      </Badge>
+                    )}
+                </div>
+                {chapter.review_status === 'rewrite' && chapter.review_note && (
+                  <p className="mt-1.5 text-[0.7rem] italic text-muted-foreground line-clamp-2">
+                    “{chapter.review_note}”
+                  </p>
+                )}
+
               </button>
             );
           })}

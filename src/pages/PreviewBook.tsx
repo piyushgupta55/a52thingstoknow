@@ -194,6 +194,14 @@ const PreviewBook = () => {
     ? reviewSpreads[reviewStepIndex].chapterNum
     : null;
 
+  // In the review pass the controls follow the paired spread itself, so every chapter
+  // stays reachable (and re-decidable) no matter what its current review state is.
+  const reviewActiveChapter =
+    reviewMode && reviewCurrentChapterNum != null
+      ? chapters.find(c => c.chapter_number === reviewCurrentChapterNum) || null
+      : null;
+
+
 
   // Reviewed = Kept or flagged as needing editing.
   const reviewableTotal = visibleChapters.length;
@@ -543,10 +551,25 @@ const PreviewBook = () => {
           </p>
         )}
         {(isKeep || isFlagged) && (
-          <p className="mb-2 text-[11px]" style={{ fontFamily: SERIF, color: isKeep ? '#4d6a5e' : '#8a6f3c' }}>
-            {isKeep ? 'Kept ✓' : 'Marked: needs editing'}
-          </p>
+          <div className="mb-2">
+            <span
+              className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold"
+              style={{
+                fontFamily: SERIF,
+                background: isKeep ? 'rgba(77,133,119,0.14)' : 'rgba(201,168,76,0.18)',
+                color: isKeep ? '#3f6a5c' : '#8a6f3c',
+              }}
+            >
+              {isKeep ? 'Kept' : 'Needs editing'}
+            </span>
+            {isFlagged && ch.review_note && (
+              <p className="mt-1 text-[11px] italic leading-snug" style={{ fontFamily: SERIF, color: '#7c766b' }}>
+                “{ch.review_note}”
+              </p>
+            )}
+          </div>
         )}
+
         <Button
           size="sm"
           className="w-full h-9 gap-1.5 text-[13px]"
@@ -601,6 +624,21 @@ const PreviewBook = () => {
             </Button>
           </div>
         )}
+
+        {(isKeep || isFlagged) && (
+          <button
+            className="mt-2 w-full text-[11px] underline"
+            style={{ fontFamily: SERIF, color: '#9a9385' }}
+            disabled={savingId === ch.id}
+            onClick={async () => {
+              const ok = await setReview(ch, null, null);
+              if (ok) setNoteFor(null);
+            }}
+          >
+            Clear this decision
+          </button>
+        )}
+
       </div>
     );
   };
@@ -785,9 +823,9 @@ const PreviewBook = () => {
           </div>
         </div>
 
-        {reviewMode && exactActiveChapter && (
+        {reviewMode && (reviewActiveChapter || exactActiveChapter) && (
           <div className="absolute right-3 sm:right-5 top-20 z-30" style={{ pointerEvents: 'none' }}>
-            {renderReviewControls(exactActiveChapter, () => {
+            {renderReviewControls((reviewActiveChapter || exactActiveChapter)!, () => {
               if (usingReviewPairing) {
                 goToStep(navIndex + 1);
               } else if (isCompactPreview) {
