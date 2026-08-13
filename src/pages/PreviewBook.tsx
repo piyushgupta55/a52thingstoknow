@@ -624,6 +624,21 @@ const PreviewBook = () => {
             </Button>
           </div>
         )}
+
+        {(isKeep || isFlagged) && (
+          <button
+            className="mt-2 w-full text-[11px] underline"
+            style={{ fontFamily: SERIF, color: '#9a9385' }}
+            disabled={savingId === ch.id}
+            onClick={async () => {
+              const ok = await setReview(ch, null, null);
+              if (ok) setNoteFor(null);
+            }}
+          >
+            Clear this decision
+          </button>
+        )}
+
       </div>
     );
   };
