@@ -823,9 +823,9 @@ const PreviewBook = () => {
           </div>
         </div>
 
-        {reviewMode && exactActiveChapter && (
+        {reviewMode && (reviewActiveChapter || exactActiveChapter) && (
           <div className="absolute right-3 sm:right-5 top-20 z-30" style={{ pointerEvents: 'none' }}>
-            {renderReviewControls(exactActiveChapter, () => {
+            {renderReviewControls((reviewActiveChapter || exactActiveChapter)!, () => {
               if (usingReviewPairing) {
                 goToStep(navIndex + 1);
               } else if (isCompactPreview) {
