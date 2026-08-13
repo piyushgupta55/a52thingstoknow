@@ -194,6 +194,14 @@ const PreviewBook = () => {
     ? reviewSpreads[reviewStepIndex].chapterNum
     : null;
 
+  // In the review pass the controls follow the paired spread itself, so every chapter
+  // stays reachable (and re-decidable) no matter what its current review state is.
+  const reviewActiveChapter =
+    reviewMode && reviewCurrentChapterNum != null
+      ? chapters.find(c => c.chapter_number === reviewCurrentChapterNum) || null
+      : null;
+
+
 
   // Reviewed = Kept or flagged as needing editing.
   const reviewableTotal = visibleChapters.length;
