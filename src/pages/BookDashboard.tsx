@@ -446,7 +446,17 @@ const BookDashboard = () => {
                     <BookOpen className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span className="truncate">{buttonLabel}</span>
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="text-sm px-8 h-11 max-w-full"
+                    onClick={() => navigate(`/book/${bookId}/chapters`)}
+                  >
+                    <LayoutGrid className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="truncate">Open any chapter</span>
+                  </Button>
                 </div>
+
 
               </div>
             </div>
