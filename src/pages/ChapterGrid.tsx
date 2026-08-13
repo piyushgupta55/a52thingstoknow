@@ -20,6 +20,11 @@ interface Chapter {
   content: string | null;
   reference_text: string | null;
   chapter_template: string | null;
+  review_status: string | null;
+  review_note: string | null;
+  is_photo_chapter: boolean | null;
+  photo_urls: string[] | null;
+  photo_declined: boolean | null;
 }
 
 const statusConfig = {
