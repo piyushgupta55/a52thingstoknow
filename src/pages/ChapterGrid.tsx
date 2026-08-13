@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Circle, PenLine, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Circle, PenLine, ArrowLeft, Camera } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { computeChapterTotalWords, getPage2Status } from '@/lib/page2Status';
 
