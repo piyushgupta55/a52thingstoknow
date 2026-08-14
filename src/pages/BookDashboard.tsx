@@ -127,7 +127,6 @@ const BookDashboard = () => {
         ancestryPdfUrl: ancestry?.pdf_url || undefined,
         familyHistoryText: familyHistory?.content || undefined,
         chapters: chapters
-          .filter((ch: any) => ch.chapter_number === 0 || ch.status === 'complete')
           .sort((a, b) => a.chapter_number - b.chapter_number)
           .map((ch: any) => ({
             title: ch.title,
