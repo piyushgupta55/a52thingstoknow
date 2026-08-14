@@ -458,6 +458,7 @@ const ChapterEditor = () => {
         const counts: Record<string, number> = {};
         rows.forEach((m) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
         setMemoryCountsByChapter(counts);
+        setUnusedMemoryCount(rows.filter((m) => !m.chapter_id).length);
         setPlacedMemories(
           rows
             .filter((m) => m.chapter_id === chapterId)
@@ -483,7 +484,13 @@ const ChapterEditor = () => {
     load();
   }, [chapterId, bookId]);
 
-  // Auto-save removed — author saves explicitly via the Save Draft button.
+  // Debounced autosave — the author never saves by hand.
+  const saveRef = useRef<(silent?: boolean) => Promise<void>>();
+  useEffect(() => {
+    if (!hasUnsavedChanges || saving || loading || previewMode) return;
+    const t = setTimeout(() => { saveRef.current?.(true); }, 1500);
+    return () => clearTimeout(t);
+  }, [hasUnsavedChanges, saving, loading, previewMode, mergedText, content, referenceText, chapter?.title, template, photoLayout, photoUrls, bibleVerseText, bibleVerseRef, quoteText, quoteAttribution]);
 
   const siblingChapters = allChapters.filter(c => c.id !== chapterId);
   const chaptersForNav = allChapters.map(ch => ({
@@ -702,6 +709,8 @@ const ChapterEditor = () => {
     setSaving(false);
   };
 
+  saveRef.current = save;
+
   const handleCompanionApplyEdit = useCallback((nextContent: string, edit: CompanionEdit) => {
     if (edit.field === 'reference_text') {
       setReferenceText(nextContent);
@@ -733,78 +742,17 @@ const ChapterEditor = () => {
     toast({ title: 'Reverted to last saved' });
   }, [chapterId, toast, isLetterChapter]);
 
-  // Warn on tab close / hard refresh
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, [hasUnsavedChanges]);
-
-  // Global in-app navigation interceptor while we have unsaved changes.
-  // We monkey-patch history.pushState/replaceState and watch popstate so that
-  // ANY navigation (Navbar links, logo, back button, chapter arrows) prompts first.
   const hasUnsavedRef = useRef(false);
   useEffect(() => { hasUnsavedRef.current = hasUnsavedChanges; }, [hasUnsavedChanges]);
 
-  useEffect(() => {
-    const currentPath = window.location.pathname + window.location.search;
-    const origPush = window.history.pushState;
-    const origReplace = window.history.replaceState;
-
-    // Push a sentinel state so the first Back press fires popstate (which we intercept).
-    window.history.pushState({ __chapterEditorSentinel: true }, '', currentPath);
-
-    const intercept = (target: string): boolean => {
-      // Allow same-URL navigations (no real change)
-      if (target === currentPath) return false;
-      if (!hasUnsavedRef.current) return false;
-      setPendingNavigation(target);
-      setShowUnsavedDialog(true);
-      return true;
-    };
-
-    window.history.pushState = function (data: unknown, unused: string, url?: string | URL | null) {
-      const target = url ? (typeof url === 'string' ? url : url.toString()) : currentPath;
-      if (intercept(target)) return;
-      return origPush.apply(this, [data, unused, url] as Parameters<History['pushState']>);
-    };
-    window.history.replaceState = function (data: unknown, unused: string, url?: string | URL | null) {
-      const target = url ? (typeof url === 'string' ? url : url.toString()) : currentPath;
-      if (intercept(target)) return;
-      return origReplace.apply(this, [data, unused, url] as Parameters<History['replaceState']>);
-    };
-
-    const onPop = () => {
-      if (hasUnsavedRef.current) {
-        // Re-push sentinel so we stay on the page until user decides
-        origPush.call(window.history, { __chapterEditorSentinel: true }, '', currentPath);
-        setPendingNavigation('__BACK__');
-        setShowUnsavedDialog(true);
-      }
-    };
-    window.addEventListener('popstate', onPop);
-
-    return () => {
-      window.history.pushState = origPush;
-      window.history.replaceState = origReplace;
-      window.removeEventListener('popstate', onPop);
-    };
-  }, [chapterId]);
-
   // Used by ChapterNav arrows
-  const tryNavigate = (targetChapterId: string) => {
-    const target = `/book/${bookId}/chapter/${targetChapterId}`;
-    if (hasUnsavedChanges) {
-      setPendingNavigation(target);
-      setShowUnsavedDialog(true);
-      return;
-    }
+  const flushAndNavigate = async (target: string) => {
+    if (hasUnsavedRef.current) await save(true);
     navigate(target);
+  };
+
+  const tryNavigate = (targetChapterId: string) => {
+    void flushAndNavigate(`/book/${bookId}/chapter/${targetChapterId}`);
   };
 
   const proceedPendingNav = () => {
@@ -2048,6 +1996,7 @@ const ChapterEditor = () => {
               const counts: Record<string, number> = {};
               rows.forEach((m) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
               setMemoryCountsByChapter(counts);
+              setUnusedMemoryCount(rows.filter((m) => !m.chapter_id).length);
               setPlacedMemories(
                 rows
                   .filter((m) => m.chapter_id === chapterId)
