@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Circle, PenLine, ArrowLeft, Camera } from 'lucide-react';
+import { ArrowLeft, Camera } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { computeChapterTotalWords, getPage2Status } from '@/lib/page2Status';
 
@@ -16,7 +16,6 @@ interface Chapter {
   id: string;
   chapter_number: number;
   title: string;
-  status: 'not_started' | 'in_progress' | 'complete';
   content: string | null;
   reference_text: string | null;
   chapter_template: string | null;
@@ -26,12 +25,6 @@ interface Chapter {
   photo_urls: string[] | null;
   photo_declined: boolean | null;
 }
-
-const statusConfig = {
-  not_started: { label: 'Not Started', variant: 'secondary' as const, icon: Circle },
-  in_progress: { label: 'In Progress', variant: 'default' as const, icon: PenLine },
-  complete: { label: 'Complete', variant: 'outline' as const, icon: CheckCircle },
-};
 
 const ChapterGrid = () => {
   const { bookId } = useParams<{ bookId: string }>();
@@ -76,8 +69,6 @@ const ChapterGrid = () => {
         </h1>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {chapters.map(chapter => {
-            const config = statusConfig[chapter.status];
-            const StatusIcon = config.icon;
             const isLetter = chapter.chapter_number === 0;
             const totalWords = computeChapterTotalWords(chapter, memoryCounts[chapter.id] || 0);
             const page2 = getPage2Status(totalWords, chapter.chapter_template);
@@ -96,12 +87,8 @@ const ChapterGrid = () => {
                       {chapter.title}
                     </div>
                   </div>
-                  <StatusIcon className={`h-4 w-4 flex-shrink-0 mt-1 ${chapter.status === 'complete' ? 'text-primary' : chapter.status === 'in_progress' ? 'text-accent' : 'text-muted-foreground/40'}`} />
                 </div>
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <Badge variant={config.variant} className="text-xs">
-                    {config.label}
-                  </Badge>
+                <div className="mt-2 flex items-center justify-end gap-2">
                   {!isLetter && (
                     <span
                       className="inline-flex items-center gap-1.5 text-[0.65rem] text-muted-foreground"
