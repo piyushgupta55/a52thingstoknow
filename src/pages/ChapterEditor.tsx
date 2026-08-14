@@ -1225,35 +1225,19 @@ const ChapterEditor = () => {
       {/* Toolbar */}
       <div className="sticky top-0 z-20 border-b border-[hsl(var(--devotional-border))]" style={{ background: 'hsla(40, 33%, 97%, 0.95)', backdropFilter: 'blur(8px)' }}>
         <div className="container mx-auto max-w-screen-xl px-4 py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          {/* Left: crumb back-link, chapter nav, Edit/Preview */}
           <div className="flex items-center gap-3 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
-            {returnTo && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 h-8 px-3 text-xs flex-shrink-0"
-                onClick={() => {
-                  if (hasUnsavedChanges) {
-                    setPendingNavigation(returnTo);
-                    setShowUnsavedDialog(true);
-                  } else {
-                    navigate(returnTo);
-                  }
-                }}
-                title="Back to list"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                <span>Back to list</span>
-              </Button>
-            )}
-            {recipientName && (
-              <div
-                className="text-[0.65rem] uppercase tracking-wider text-muted-foreground/70 truncate max-w-[120px] sm:max-w-[180px] flex-shrink-0"
-                style={{ fontFamily: 'var(--font-body)' }}
-                title={`${recipientName}'s Book`}
-              >
-                {recipientName}'s Book
-              </div>
-            )}
+            <button
+              onClick={() => void flushAndNavigate(returnTo || `/book/${bookId}`)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              style={{ fontFamily: 'var(--font-body)' }}
+              title={returnTo ? 'Back to list' : 'Back to dashboard'}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span className="truncate max-w-[160px]">
+                {returnTo ? (returnLabel || 'Back to list') : `${recipientName ? `${recipientName}'s Book` : 'Dashboard'}`}
+              </span>
+            </button>
 
             <ChapterNav
               currentChapter={chapter.chapter_number}
@@ -1262,90 +1246,71 @@ const ChapterEditor = () => {
               onNavigate={handleChapterNavigate}
               memoryCountsByChapter={memoryCountsByChapter}
               ancestryStatus={ancestryStatus}
-              onNavigateAncestry={() => {
-                const target = `/book/${bookId}/ancestry`;
-                if (hasUnsavedChanges) {
-                  setPendingNavigation(target);
-                  setShowUnsavedDialog(true);
-                } else {
-                  navigate(target);
-                }
-              }}
+              onNavigateAncestry={() => void flushAndNavigate(`/book/${bookId}/ancestry`)}
             />
-          </div>
 
-          <div className="flex items-center rounded-sm overflow-hidden border border-[hsl(var(--devotional-border))] flex-shrink-0" style={{ fontFamily: 'var(--font-body)' }}>
-            <button
-              onClick={exitPreview}
-              className={`px-3 py-1 text-[0.65rem] uppercase tracking-wider transition-colors ${
-                !previewMode ? 'text-white font-semibold' : 'text-muted-foreground/50 hover:text-muted-foreground'
-              }`}
-              style={!previewMode ? { background: '#C9A84C' } : undefined}
-            >
-              Edit
-            </button>
-            <button
-              onClick={enterPreview}
-              className={`px-3 py-1 text-[0.65rem] uppercase tracking-wider transition-colors ${
-                previewMode ? 'bg-foreground/10 text-foreground font-semibold' : 'text-muted-foreground/50 hover:text-muted-foreground'
-              }`}
-            >
-              Preview
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-start sm:justify-end">
-            {/* Unsaved-changes indicator — visible in edit mode */}
-            {!previewMode && hasUnsavedChanges && (
-              <span
-                className="text-[0.6rem] uppercase tracking-wider text-muted-foreground/70"
-                style={{ fontFamily: 'var(--font-body)' }}
+            <div className="flex items-center rounded-sm overflow-hidden border border-[hsl(var(--devotional-border))] flex-shrink-0" style={{ fontFamily: 'var(--font-body)' }}>
+              <button
+                onClick={exitPreview}
+                className={`px-3 py-1 text-[0.65rem] uppercase tracking-wider transition-colors ${
+                  !previewMode ? 'text-white font-semibold' : 'text-muted-foreground/50 hover:text-muted-foreground'
+                }`}
+                style={!previewMode ? { background: '#C9A84C' } : undefined}
               >
-                • Unsaved changes
-              </span>
-            )}
+                Edit
+              </button>
+              <button
+                onClick={enterPreview}
+                className={`px-3 py-1 text-[0.65rem] uppercase tracking-wider transition-colors ${
+                  previewMode ? 'bg-foreground/10 text-foreground font-semibold' : 'text-muted-foreground/50 hover:text-muted-foreground'
+                }`}
+              >
+                Preview
+              </button>
+            </div>
+          </div>
+
+          {/* Right: quiet save state, Add a memory, Ask 52 */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-start sm:justify-end">
+            <span
+              className="text-[0.6rem] uppercase tracking-wider text-muted-foreground/60 min-w-[52px] text-right"
+              style={{ fontFamily: 'var(--font-body)' }}
+            >
+              {saving ? 'Saving…' : hasUnsavedChanges ? '' : lastSavedAt ? 'Saved' : ''}
+            </span>
 
             <Button
               variant="ghost"
               size="sm"
               onClick={() => { setMemoryOverlayMode('manual'); setMemoryOverlayOpen(true); }}
               className="gap-1.5 text-xs h-8"
-              title="Add a memory to the pool"
+              title="Add a memory — a short story from you or your family that prints inside a chapter"
             >
-              <MessageCircleHeart className="h-3.5 w-3.5" /> Memory
+              <MessageCircleHeart className="h-3.5 w-3.5" />
+              Add a memory
+              {unusedMemoryCount > 0 && (
+                <span className="ml-0.5 rounded-full bg-accent/25 px-1.5 text-[0.6rem] text-accent-foreground">
+                  {unusedMemoryCount} waiting
+                </span>
+              )}
             </Button>
 
-            {!previewMode && (
-              <>
-                <Button variant="ghost" size="sm" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload} className="gap-1.5 text-xs h-8">
-                  <Save className="h-3 w-3" /> {saving ? 'Saving…' : 'Save Draft'}
-                </Button>
-                {isComplete ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 text-xs h-8"
-                    onClick={() => {
-                      setChapter((prev) => (prev ? { ...prev, status: 'in_progress' } : prev));
-                      save(false, 'in_progress');
-                    }}
-                    disabled={saving || photoTemplateNeedsUpload}
-                  >
-                    <Check className="h-3.5 w-3.5" /> Unmark Complete
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="gap-1.5 text-xs h-8"
-                    onClick={handleMarkComplete}
-                    disabled={saving || photoTemplateNeedsUpload}
-                  >
-                    <CheckCircle className="h-3.5 w-3.5" /> Mark Complete
-                  </Button>
-                )}
-              </>
-            )}
+            <button
+              onClick={() => { if (previewMode) exitPreview(); setCompanionOpen(true); }}
+              className="flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 transition-all hover:scale-[1.03] active:scale-95"
+              style={{ background: '#FFFFFF', border: '2px solid #C4788A' }}
+              title="Ask 52 — your writing companion. It can rewrite, soften, or add to this chapter for you."
+            >
+              <span
+                className="flex items-center justify-center rounded-full font-bold"
+                style={{ fontFamily: "'Merriweather', Georgia, serif", fontSize: '15px', color: '#C4788A', width: '26px', height: '26px' }}
+              >
+                52
+              </span>
+              <span className="text-xs font-medium" style={{ fontFamily: 'var(--font-body)', color: '#C4788A' }}>Ask 52</span>
+            </button>
           </div>
+
         </div>
       </div>
 
