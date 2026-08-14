@@ -1826,33 +1826,21 @@ const ChapterEditor = () => {
         {!previewMode && (
           <div className="flex flex-col items-center gap-3 pt-8 mx-auto max-w-[600px]" style={{ padding: '32px 60px 64px' }}>
             <div className="flex w-full gap-3">
-              <Button variant="outline" size="lg" className="flex-1 gap-2" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload}>
-                <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save Draft'}
+              <Button
+                variant="outline"
+                size="lg"
+                className="flex-1 gap-2"
+                onClick={() => void flushAndNavigate(returnTo || `/book/${bookId}`)}
+              >
+                <ArrowLeft className="h-4 w-4" /> {returnTo ? (returnLabel || 'Back to list') : 'Back to dashboard'}
               </Button>
-              {isComplete ? (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="flex-1 gap-2"
-                  onClick={() => { 
-                    setChapter(prev => prev ? { ...prev, status: 'in_progress' } : prev);
-                    save(false, 'in_progress');
-                  }}
-                  disabled={saving || photoTemplateNeedsUpload}
-                >
-                  <Check className="h-4 w-4" /> Unmark Complete
-                </Button>
-              ) : (
-                <Button size="lg" className="flex-1 gap-2" onClick={handleMarkComplete} disabled={saving || photoTemplateNeedsUpload}>
-                  <CheckCircle className="h-4 w-4" /> Mark Complete
-                </Button>
-              )}
             </div>
             <p className="text-[11px] text-muted-foreground/75 italic text-center mt-1" style={{ fontFamily: 'var(--font-body)' }}>
-              Please save draft before marking complete to ensure correct formatting and accurate page preview.
+              Your changes save automatically.
             </p>
           </div>
         )}
+
       </div>
 
       {/* Content Search Panel */}
