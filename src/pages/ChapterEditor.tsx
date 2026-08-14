@@ -186,8 +186,6 @@ const ChapterEditor = () => {
 
   // Unsaved changes tracking
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
   // Memory capture
   const [memoryOverlayOpen, setMemoryOverlayOpen] = useState(false);
@@ -753,40 +751,6 @@ const ChapterEditor = () => {
 
   const tryNavigate = (targetChapterId: string) => {
     void flushAndNavigate(`/book/${bookId}/chapter/${targetChapterId}`);
-  };
-
-  const proceedPendingNav = () => {
-    const target = pendingNavigation;
-    setPendingNavigation(null);
-    if (!target) return;
-    if (target === '__BACK__') {
-      // Use raw history to bypass our patched pushState
-      window.history.back();
-    } else {
-      navigate(target);
-    }
-  };
-
-  const handleDialogSaveAndContinue = async () => {
-    await save(false);
-    // Force the ref false synchronously so the navigation interceptor
-    // (which reads from hasUnsavedRef, updated only via useEffect after render)
-    // does not re-trigger the prompt before React flushes the state update.
-    hasUnsavedRef.current = false;
-    setShowUnsavedDialog(false);
-    proceedPendingNav();
-  };
-
-  const handleDialogDiscard = () => {
-    setHasUnsavedChanges(false);
-    hasUnsavedRef.current = false;
-    setShowUnsavedDialog(false);
-    proceedPendingNav();
-  };
-
-  const handleDialogCancel = () => {
-    setShowUnsavedDialog(false);
-    setPendingNavigation(null);
   };
 
   const handleUnplaceMemory = async (memoryId: string) => {
@@ -1946,29 +1910,6 @@ const ChapterEditor = () => {
         excludeText={searchPanelType === 'verse' ? bibleVerseText : quoteText}
         bookId={bookId}
       />
-
-      {/* Unsaved changes dialog */}
-      <AlertDialog
-        open={showUnsavedDialog}
-        onOpenChange={(open) => { if (!open) handleDialogCancel(); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>You have unsaved changes.</AlertDialogTitle>
-            <AlertDialogDescription>
-              Save before leaving?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <Button variant="outline" onClick={handleDialogDiscard}>
-              Leave without saving
-            </Button>
-            <AlertDialogAction onClick={handleDialogSaveAndContinue}>
-              Save &amp; leave
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Memory capture overlay (toolbar manual entry + post-complete guided flow) */}
       {bookId && (
