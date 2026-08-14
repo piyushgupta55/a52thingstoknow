@@ -102,9 +102,10 @@ interface MemoryRow {
 // Photo chapter designation is now loaded from database (chapter_templates.is_photo_chapter)
 // instead of being hardcoded
 
-const getChapterIndicatorStatus = (ch: { status: string }) => {
-  if (ch.status === 'complete') return 'complete';
-  if (ch.status === 'in_progress') return 'in_progress';
+// Chapter indicators follow the review decision, not chapters.status.
+const getChapterIndicatorStatus = (ch: { review_status?: string | null }) => {
+  if (ch.review_status === 'keep') return 'complete';
+  if (ch.review_status === 'rewrite' || ch.review_status === 'add') return 'in_progress';
   return 'not_started';
 };
 
@@ -147,6 +148,8 @@ const ChapterEditor = () => {
   const [editingQuote, setEditingQuote] = useState(false);
   const [previewMode, setPreviewMode] = useState(true);
   const [companionOpen, setCompanionOpen] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [unusedMemoryCount, setUnusedMemoryCount] = useState(0);
   const [printNotice, setPrintNotice] = useState(false);
   const printNoticeTimer = useRef<ReturnType<typeof setTimeout>>();
   const exactPreviewIframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -176,7 +179,7 @@ const ChapterEditor = () => {
   const [searchPanelOpen, setSearchPanelOpen] = useState(false);
   const [searchPanelType, setSearchPanelType] = useState<'verse' | 'quote'>('verse');
 
-  const [allChapters, setAllChapters] = useState<{ id: string; chapter_number: number; title: string; status: string; created_at: string; updated_at: string; content: string | null; verse_id: string | null; quote_id: string | null; bible_verse_text: string | null; quote_text: string | null; chapter_template: string; photo_layout?: string | null; photo_urls?: string[] }[]>([]);
+  const [allChapters, setAllChapters] = useState<{ id: string; chapter_number: number; title: string; review_status: string | null; created_at: string; updated_at: string; content: string | null; verse_id: string | null; quote_id: string | null; bible_verse_text: string | null; quote_text: string | null; chapter_template: string; photo_layout?: string | null; photo_urls?: string[] }[]>([]);
   const [photoChapterNums, setPhotoChapterNums] = useState<Set<number>>(new Set());
   const [memoryCountsByChapter, setMemoryCountsByChapter] = useState<Record<string, number>>({});
   const [placedMemories, setPlacedMemories] = useState<{ id: string; memory_text: string; contributor_name: string }[]>([]);
@@ -317,7 +320,7 @@ const ChapterEditor = () => {
     const load = async () => {
       const [{ data: chapterData }, { data: allCh }, { data: bookData }, { data: memoriesData }, { data: capData }, { data: allTpls }] = await Promise.all([
         supabase.from('chapters').select('*').eq('id', chapterId).single(),
-        supabase.from('chapters').select('id, chapter_number, title, status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls, photo_layout').eq('book_id', bookId).order('chapter_number'),
+        supabase.from('chapters').select('id, chapter_number, title, review_status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls, photo_layout').eq('book_id', bookId).order('chapter_number'),
         supabase.from('books').select('recipient_name, recipient_gender, gender, user_id, author_label').eq('id', bookId).single(),
         supabase.from('memories').select('id, chapter_id, memory_text, contributor_name, placed_at, created_at').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory').order('placed_at', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
         supabase.from('app_settings').select('value').eq('key', 'photo_chapter_cap').single(),
