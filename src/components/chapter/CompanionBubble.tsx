@@ -5,6 +5,14 @@ import { Button } from '@/components/ui/button';
 import { useCompanionChat, type CompanionEdit } from '@/hooks/useCompanionChat';
 import ReactMarkdown from 'react-markdown';
 
+const FIRST_RUN_KEY = 'companion52_first_run_v1';
+
+const STARTER_PROMPTS = [
+  'Make it more personal',
+  'Add a short story here',
+  'Shorten this chapter',
+];
+
 interface Props {
   bookId: string;
   chapterId: string;
@@ -92,6 +100,15 @@ const CompanionBubble = ({
   useEffect(() => {
     if (forceOpen) setOpen(true);
   }, [forceOpen]);
+
+  // First run per user: open 52 once so authors discover it, then remember.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(FIRST_RUN_KEY)) return;
+      localStorage.setItem(FIRST_RUN_KEY, '1');
+      setOpen(true);
+    } catch { /* storage unavailable */ }
+  }, []);
 
   useEffect(() => {
     clearMessages();
@@ -228,8 +245,22 @@ const CompanionBubble = ({
                 className="text-sm italic"
                 style={{ fontFamily: 'var(--font-devotional)', color: 'hsl(var(--muted-foreground))' }}
               >
-                We're in this together. Ask me anything about this chapter — or just tell me what's on your mind.
+                I'm 52 — I help you write this chapter. Tell me what you want and I'll draft it for you.
               </p>
+              <div className="flex flex-col gap-2 pt-2">
+                {STARTER_PROMPTS.map(prompt => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => send(prompt)}
+                    disabled={isLoading}
+                    className="rounded-full border border-border px-3 py-1.5 text-xs transition-colors hover:bg-secondary disabled:opacity-50"
+                    style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--foreground))' }}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
