@@ -323,11 +323,14 @@ const BookDashboard = () => {
 
   const numberedChapters = chapters.filter(c => c.chapter_number > 0);
   const letterChapter = chapters.find(c => c.chapter_number === 0);
-  const completed = numberedChapters.filter(c => c.status === 'complete').length;
-  const inProgress = numberedChapters.filter(c => c.status === 'in_progress').length;
-  const notStarted = numberedChapters.filter(c => c.status === 'not_started').length;
+  // Progress is driven by review decisions, not by chapters.status.
+  // Reviewed = keep or rewrite. Undecided = no review_status yet.
+  const isReviewed = (c: Chapter) => c.review_status === 'keep' || c.review_status === 'rewrite';
+  const completed = numberedChapters.filter(isReviewed).length;
+  const undecided = numberedChapters.length - completed;
   const progress = numberedChapters.length > 0 ? (completed / numberedChapters.length) * 100 : 0;
-  const nextChapter = chapters.find(c => c.status === 'in_progress') || chapters.find(c => c.status === 'not_started');
+  const nextChapter = chapters.find(c => !isReviewed(c));
+
 
   const memoriesPlaced = memories.filter(m => m.chapter_id != null).length;
   const memoriesUnplaced = memories.filter(m => m.chapter_id == null).length;
@@ -369,8 +372,9 @@ const BookDashboard = () => {
     /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`) && !c.reading_reward_decision
   ).length;
   const flaggedChapters = numberedChapters.filter(
-    c => (c.review_status === 'add' || c.review_status === 'rewrite') && c.status !== 'complete'
+    c => c.review_status === 'add' || c.review_status === 'rewrite'
   ).length;
+
   const blockingItems = openPhotoSpots + openRewardDecisions;
   const isReadyToPrint = blockingItems === 0;
   const readParts: string[] = [];
@@ -769,8 +773,8 @@ const BookDashboard = () => {
                   const numbered = sorted.filter(c => c.chapter_number > 0);
 
                   const renderRow = (ch: Chapter, displayNum: number | null, draggable: boolean, idx: number) => {
-                    const isComplete = ch.status === 'complete';
-                    const isInProgress = ch.status === 'in_progress';
+                    const isKept = ch.review_status === 'keep';
+                    const isFlagged = ch.review_status === 'rewrite' || ch.review_status === 'add';
                     const isLetter = displayNum === null;
                     const isDragging = dragIndex === idx;
                     const isOver = overIndex === idx && dragIndex !== null && dragIndex !== idx;
@@ -785,18 +789,19 @@ const BookDashboard = () => {
                         ) : (
                           <span className="text-xs w-6 text-right flex-shrink-0 tabular-nums">{displayNum}.</span>
                         )}
-                        <span className={`truncate ${isComplete ? 'font-medium' : ''}`}>{ch.title}</span>
-                        {!reorderMode && isComplete && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
-                        {!reorderMode && isInProgress && <PenLine className="h-3.5 w-3.5 text-accent ml-auto flex-shrink-0" />}
-                        {!reorderMode && !isComplete && !isInProgress && (
-                          <span className="text-[0.65rem] italic text-muted-foreground/30 ml-auto flex-shrink-0">not started</span>
+                        <span className="truncate">{ch.title}</span>
+                        {!reorderMode && isKept && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
+                        {!reorderMode && isFlagged && <PenLine className="h-3.5 w-3.5 text-accent ml-auto flex-shrink-0" />}
+                        {!reorderMode && !isKept && !isFlagged && (
+                          <span className="text-[0.65rem] italic text-muted-foreground/40 ml-auto flex-shrink-0">undecided</span>
                         )}
                       </>
                     );
 
-                    const cls = `flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors ${
-                      isComplete ? 'text-foreground' : isInProgress ? 'text-foreground/70' : 'text-muted-foreground/40'
-                    } ${reorderMode ? 'bg-muted/20' : 'hover:bg-muted/50'} ${isDragging ? 'opacity-40' : ''} ${isOver ? 'ring-1 ring-primary/40 bg-primary/5' : ''}`;
+                    const cls = `flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors text-foreground ${reorderMode ? 'bg-muted/20' : 'hover:bg-muted/50'} ${isDragging ? 'opacity-40' : ''} ${isOver ? 'ring-1 ring-primary/40 bg-primary/5' : ''}`;
+
+
+
 
                     if (reorderMode && draggable) {
                       return (

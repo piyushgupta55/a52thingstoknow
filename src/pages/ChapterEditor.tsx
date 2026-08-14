@@ -41,16 +41,6 @@ import {
   PREVIEW_PAGE_WIDTH,
 } from '@/features/preview/geometry';
 import { extractExactChapterSplit, measureLayout, isRenderablePage, isRealOverflow, displayFillPercent, type ExactChapterSplitResult, type LayoutMeasurementResult } from '@/features/preview/layoutMeasurement';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 
@@ -102,9 +92,10 @@ interface MemoryRow {
 // Photo chapter designation is now loaded from database (chapter_templates.is_photo_chapter)
 // instead of being hardcoded
 
-const getChapterIndicatorStatus = (ch: { status: string }) => {
-  if (ch.status === 'complete') return 'complete';
-  if (ch.status === 'in_progress') return 'in_progress';
+// Chapter indicators follow the review decision, not chapters.status.
+const getChapterIndicatorStatus = (ch: { review_status?: string | null }) => {
+  if (ch.review_status === 'keep') return 'complete';
+  if (ch.review_status === 'rewrite' || ch.review_status === 'add') return 'in_progress';
   return 'not_started';
 };
 
@@ -147,6 +138,8 @@ const ChapterEditor = () => {
   const [editingQuote, setEditingQuote] = useState(false);
   const [previewMode, setPreviewMode] = useState(true);
   const [companionOpen, setCompanionOpen] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [unusedMemoryCount, setUnusedMemoryCount] = useState(0);
   const [printNotice, setPrintNotice] = useState(false);
   const printNoticeTimer = useRef<ReturnType<typeof setTimeout>>();
   const exactPreviewIframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -176,15 +169,13 @@ const ChapterEditor = () => {
   const [searchPanelOpen, setSearchPanelOpen] = useState(false);
   const [searchPanelType, setSearchPanelType] = useState<'verse' | 'quote'>('verse');
 
-  const [allChapters, setAllChapters] = useState<{ id: string; chapter_number: number; title: string; status: string; created_at: string; updated_at: string; content: string | null; verse_id: string | null; quote_id: string | null; bible_verse_text: string | null; quote_text: string | null; chapter_template: string; photo_layout?: string | null; photo_urls?: string[] }[]>([]);
+  const [allChapters, setAllChapters] = useState<{ id: string; chapter_number: number; title: string; review_status: string | null; created_at: string; updated_at: string; content: string | null; verse_id: string | null; quote_id: string | null; bible_verse_text: string | null; quote_text: string | null; chapter_template: string; photo_layout?: string | null; photo_urls?: string[] }[]>([]);
   const [photoChapterNums, setPhotoChapterNums] = useState<Set<number>>(new Set());
   const [memoryCountsByChapter, setMemoryCountsByChapter] = useState<Record<string, number>>({});
   const [placedMemories, setPlacedMemories] = useState<{ id: string; memory_text: string; contributor_name: string }[]>([]);
 
   // Unsaved changes tracking
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
   // Memory capture
   const [memoryOverlayOpen, setMemoryOverlayOpen] = useState(false);
@@ -226,7 +217,6 @@ const ChapterEditor = () => {
     ? 'You need to add a photo or select a classic template.'
     : null;
   const isLetterChapter = chapter?.chapter_number === 0;
-  const isComplete = chapter?.status === 'complete';
 
   useLayoutEffect(() => {
     autoResizeTitle();
@@ -318,7 +308,7 @@ const ChapterEditor = () => {
     const load = async () => {
       const [{ data: chapterData }, { data: allCh }, { data: bookData }, { data: memoriesData }, { data: capData }, { data: allTpls }] = await Promise.all([
         supabase.from('chapters').select('*').eq('id', chapterId).single(),
-        supabase.from('chapters').select('id, chapter_number, title, status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls, photo_layout').eq('book_id', bookId).order('chapter_number'),
+        supabase.from('chapters').select('id, chapter_number, title, review_status, created_at, updated_at, content, verse_id, quote_id, bible_verse_text, quote_text, chapter_template, photo_urls, photo_layout').eq('book_id', bookId).order('chapter_number'),
         supabase.from('books').select('recipient_name, recipient_gender, gender, user_id, author_label').eq('id', bookId).single(),
         supabase.from('memories').select('id, chapter_id, memory_text, contributor_name, placed_at, created_at').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory').order('placed_at', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
         supabase.from('app_settings').select('value').eq('key', 'photo_chapter_cap').single(),
@@ -456,6 +446,7 @@ const ChapterEditor = () => {
         const counts: Record<string, number> = {};
         rows.forEach((m) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
         setMemoryCountsByChapter(counts);
+        setUnusedMemoryCount(rows.filter((m) => !m.chapter_id).length);
         setPlacedMemories(
           rows
             .filter((m) => m.chapter_id === chapterId)
@@ -481,7 +472,13 @@ const ChapterEditor = () => {
     load();
   }, [chapterId, bookId]);
 
-  // Auto-save removed — author saves explicitly via the Save Draft button.
+  // Debounced autosave — the author never saves by hand.
+  const saveRef = useRef<(silent?: boolean) => Promise<void>>();
+  useEffect(() => {
+    if (!hasUnsavedChanges || saving || loading || previewMode) return;
+    const t = setTimeout(() => { saveRef.current?.(true); }, 1500);
+    return () => clearTimeout(t);
+  }, [hasUnsavedChanges, saving, loading, previewMode, mergedText, content, referenceText, chapter?.title, template, photoLayout, photoUrls, bibleVerseText, bibleVerseRef, quoteText, quoteAttribution]);
 
   const siblingChapters = allChapters.filter(c => c.id !== chapterId);
   const chaptersForNav = allChapters.map(ch => ({
@@ -507,33 +504,6 @@ const ChapterEditor = () => {
   }, [siblingChapters]);
 
   const hasOverflow = isRealOverflow(layoutMeasurement?.pages || []);
-
-  const canMarkComplete = () => {
-    if (isLetterChapter) return true;
-    if (hasOverflow) return false;
-    return layoutMeasurement?.pages.some((page) => page.fillPercent > 0) || false;
-  };
-
-  const handleMarkComplete = () => {
-    if (hasOverflow && !isLetterChapter) {
-      toast({
-        title: 'Layout Overflow',
-        description: 'This chapter runs onto a third page — shorten the text, memory, or photo.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    if (!canMarkComplete()) {
-      toast({
-        title: 'Nothing to complete yet',
-        description: 'Add chapter content before marking this chapter complete.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    save(true);
-  };
 
   const validateMemoryPlacement = (text: string, contributorName: string): boolean | string => {
     const iframe = exactPreviewIframeRef.current;
@@ -616,19 +586,20 @@ const ChapterEditor = () => {
     setHasUnsavedChanges(true);
   };
 
-  const save = async (markComplete = false, statusOverride?: string) => {
+  const save = async (silent = false) => {
     if (!chapterId) return;
     if (photoTemplateNeedsUpload) {
-      toast({
-        title: 'Photo required',
-        description: 'You need to add a photo or select a classic template.',
-        variant: 'destructive',
-      });
+      if (!silent) {
+        toast({
+          title: 'Photo required',
+          description: 'You need to add a photo or select a classic template.',
+          variant: 'destructive',
+        });
+      }
       return;
     }
     setSaving(true);
     const savedAt = new Date().toISOString();
-    const newStatus = statusOverride || (markComplete ? 'complete' : chapter?.status === 'complete' ? 'complete' : 'in_progress');
 
     let refToSave = referenceText;
     let contentToSave = content;
@@ -666,10 +637,12 @@ const ChapterEditor = () => {
 
     if (!isLetterChapter) {
       if (exactPreviewLoading) {
-        toast({
-          title: 'Evaluating Layout',
-          description: 'Please wait a moment for the layout engine to finish updating with your latest text.',
-        });
+        if (!silent) {
+          toast({
+            title: 'Evaluating Layout',
+            description: 'Please wait a moment for the layout engine to finish updating with your latest text.',
+          });
+        }
         setSaving(false);
         return;
       }
@@ -680,37 +653,15 @@ const ChapterEditor = () => {
         const measurement = measureLayout(doc);
         const chapterPages = measurement.pages.filter(p => p.chapter === String(chapter.chapter_number));
         const overflow = isRealOverflow(chapterPages);
-        if (overflow) {
+        if (overflow && !silent) {
           toast({
             title: 'Layout Overflow',
             description: `This chapter runs onto a third page — shorten the text, memory, or photo.`,
             variant: 'destructive',
           });
-          if (markComplete) {
-            setSaving(false);
-            return;
-          }
         }
       }
 
-      if (markComplete) {
-        const page1HasPhoto = template === 'photo_top' && hasUploadedPhoto;
-        const page1HasContent = !!refToSave.trim() || page1HasPhoto;
-        
-        const page2HasPhoto = template === 'photo_second' && hasUploadedPhoto;
-        const page2HasMemory = placedMemories.length > 0;
-        const page2HasContent = !!contentToSave.trim() || page2HasPhoto || page2HasMemory;
-
-        if (!page1HasContent || !page2HasContent) {
-          toast({
-            title: 'Missing Page Content',
-            description: 'Both pages need some content before you can mark the chapter complete. Make sure you have text, a photo, or a memory on each page.',
-            variant: 'destructive',
-          });
-          setSaving(false);
-          return;
-        }
-      }
     }
 
     const { error } = await supabase.from('chapters').update({
@@ -726,7 +677,6 @@ const ChapterEditor = () => {
       chapter_template: template,
       verse_id: verseId,
       quote_id: quoteId,
-      status: newStatus,
       updated_at: savedAt,
     }).eq('id', chapterId);
 
@@ -737,33 +687,17 @@ const ChapterEditor = () => {
       // was persisted.
       setReferenceText(refToSave);
       setContent(contentToSave);
-      setChapter(prev => prev ? { ...prev, status: newStatus } : prev);
-      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: chapter?.title ?? c.title, status: newStatus, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout } : c));
+      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: chapter?.title ?? c.title, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout } : c));
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
-      // Update last saved snapshot for revert
       lastSavedRef.current = { referenceText: refToSave || '', content: contentToSave || '' };
-      toast({ title: markComplete ? 'Chapter marked complete!' : 'Draft saved!' });
-      // If we came from another page (e.g. Book Review), return there after save.
-      if (returnTo) {
-        navigate(returnTo);
-      } else if (markComplete) {
-        // After Mark Complete, advance to the next chapter that isn't complete yet
-        const nextIncomplete = allChapters
-          .filter(c => c.id !== chapterId && c.chapter_number > (chapter?.chapter_number ?? 0))
-          .sort((a, b) => a.chapter_number - b.chapter_number)
-          .find(c => c.status !== 'complete')
-          || allChapters
-            .filter(c => c.id !== chapterId)
-            .sort((a, b) => a.chapter_number - b.chapter_number)
-            .find(c => c.status !== 'complete');
-        if (nextIncomplete) {
-          navigate(`/book/${bookId}/chapter/${nextIncomplete.id}`);
-        }
-      }
+      setLastSavedAt(savedAt);
+      if (!silent) toast({ title: 'Saved' });
     }
     setSaving(false);
   };
+
+  saveRef.current = save;
 
   const handleCompanionApplyEdit = useCallback((nextContent: string, edit: CompanionEdit) => {
     if (edit.field === 'reference_text') {
@@ -796,112 +730,17 @@ const ChapterEditor = () => {
     toast({ title: 'Reverted to last saved' });
   }, [chapterId, toast, isLetterChapter]);
 
-  // Warn on tab close / hard refresh
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, [hasUnsavedChanges]);
-
-  // Global in-app navigation interceptor while we have unsaved changes.
-  // We monkey-patch history.pushState/replaceState and watch popstate so that
-  // ANY navigation (Navbar links, logo, back button, chapter arrows) prompts first.
   const hasUnsavedRef = useRef(false);
   useEffect(() => { hasUnsavedRef.current = hasUnsavedChanges; }, [hasUnsavedChanges]);
 
-  useEffect(() => {
-    const currentPath = window.location.pathname + window.location.search;
-    const origPush = window.history.pushState;
-    const origReplace = window.history.replaceState;
-
-    // Push a sentinel state so the first Back press fires popstate (which we intercept).
-    window.history.pushState({ __chapterEditorSentinel: true }, '', currentPath);
-
-    const intercept = (target: string): boolean => {
-      // Allow same-URL navigations (no real change)
-      if (target === currentPath) return false;
-      if (!hasUnsavedRef.current) return false;
-      setPendingNavigation(target);
-      setShowUnsavedDialog(true);
-      return true;
-    };
-
-    window.history.pushState = function (data: unknown, unused: string, url?: string | URL | null) {
-      const target = url ? (typeof url === 'string' ? url : url.toString()) : currentPath;
-      if (intercept(target)) return;
-      return origPush.apply(this, [data, unused, url] as Parameters<History['pushState']>);
-    };
-    window.history.replaceState = function (data: unknown, unused: string, url?: string | URL | null) {
-      const target = url ? (typeof url === 'string' ? url : url.toString()) : currentPath;
-      if (intercept(target)) return;
-      return origReplace.apply(this, [data, unused, url] as Parameters<History['replaceState']>);
-    };
-
-    const onPop = () => {
-      if (hasUnsavedRef.current) {
-        // Re-push sentinel so we stay on the page until user decides
-        origPush.call(window.history, { __chapterEditorSentinel: true }, '', currentPath);
-        setPendingNavigation('__BACK__');
-        setShowUnsavedDialog(true);
-      }
-    };
-    window.addEventListener('popstate', onPop);
-
-    return () => {
-      window.history.pushState = origPush;
-      window.history.replaceState = origReplace;
-      window.removeEventListener('popstate', onPop);
-    };
-  }, [chapterId]);
-
   // Used by ChapterNav arrows
-  const tryNavigate = (targetChapterId: string) => {
-    const target = `/book/${bookId}/chapter/${targetChapterId}`;
-    if (hasUnsavedChanges) {
-      setPendingNavigation(target);
-      setShowUnsavedDialog(true);
-      return;
-    }
+  const flushAndNavigate = async (target: string) => {
+    if (hasUnsavedRef.current) await save(true);
     navigate(target);
   };
 
-  const proceedPendingNav = () => {
-    const target = pendingNavigation;
-    setPendingNavigation(null);
-    if (!target) return;
-    if (target === '__BACK__') {
-      // Use raw history to bypass our patched pushState
-      window.history.back();
-    } else {
-      navigate(target);
-    }
-  };
-
-  const handleDialogSaveAndContinue = async () => {
-    await save(false);
-    // Force the ref false synchronously so the navigation interceptor
-    // (which reads from hasUnsavedRef, updated only via useEffect after render)
-    // does not re-trigger the prompt before React flushes the state update.
-    hasUnsavedRef.current = false;
-    setShowUnsavedDialog(false);
-    proceedPendingNav();
-  };
-
-  const handleDialogDiscard = () => {
-    setHasUnsavedChanges(false);
-    hasUnsavedRef.current = false;
-    setShowUnsavedDialog(false);
-    proceedPendingNav();
-  };
-
-  const handleDialogCancel = () => {
-    setShowUnsavedDialog(false);
-    setPendingNavigation(null);
+  const tryNavigate = (targetChapterId: string) => {
+    void flushAndNavigate(`/book/${bookId}/chapter/${targetChapterId}`);
   };
 
   const handleUnplaceMemory = async (memoryId: string) => {
@@ -915,7 +754,7 @@ const ChapterEditor = () => {
     }
     setPlacedMemories(prev => prev.filter(m => m.id !== memoryId));
     setHasUnsavedChanges(true);
-    toast({ title: 'Memory returned to pool — remember to Save Draft.' });
+    toast({ title: 'Memory returned to pool.' });
   };
 
   const [photoWarning, setPhotoWarning] = useState<string | null>(null);
@@ -988,7 +827,7 @@ const ChapterEditor = () => {
     }
     setHasUnsavedChanges(true);
     setSearchPanelOpen(false);
-    toast({ title: `${searchPanelType === 'verse' ? 'Bible verse' : 'Quote'} swapped — remember to Save Draft.` });
+    toast({ title: `${searchPanelType === 'verse' ? 'Bible verse' : 'Quote'} swapped.` });
   };
 
   const handleChapterNavigate = (targetChapterId: string) => {
@@ -1386,35 +1225,19 @@ const ChapterEditor = () => {
       {/* Toolbar */}
       <div className="sticky top-0 z-20 border-b border-[hsl(var(--devotional-border))]" style={{ background: 'hsla(40, 33%, 97%, 0.95)', backdropFilter: 'blur(8px)' }}>
         <div className="container mx-auto max-w-screen-xl px-4 py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          {/* Left: crumb back-link, chapter nav, Edit/Preview */}
           <div className="flex items-center gap-3 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
-            {returnTo && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 h-8 px-3 text-xs flex-shrink-0"
-                onClick={() => {
-                  if (hasUnsavedChanges) {
-                    setPendingNavigation(returnTo);
-                    setShowUnsavedDialog(true);
-                  } else {
-                    navigate(returnTo);
-                  }
-                }}
-                title="Back to list"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                <span>Back to list</span>
-              </Button>
-            )}
-            {recipientName && (
-              <div
-                className="text-[0.65rem] uppercase tracking-wider text-muted-foreground/70 truncate max-w-[120px] sm:max-w-[180px] flex-shrink-0"
-                style={{ fontFamily: 'var(--font-body)' }}
-                title={`${recipientName}'s Book`}
-              >
-                {recipientName}'s Book
-              </div>
-            )}
+            <button
+              onClick={() => void flushAndNavigate(returnTo || `/book/${bookId}`)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              style={{ fontFamily: 'var(--font-body)' }}
+              title={returnTo ? 'Back to list' : 'Back to dashboard'}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span className="truncate max-w-[160px]">
+                {returnTo ? (returnLabel || 'Back to list') : `${recipientName ? `${recipientName}'s Book` : 'Dashboard'}`}
+              </span>
+            </button>
 
             <ChapterNav
               currentChapter={chapter.chapter_number}
@@ -1423,90 +1246,71 @@ const ChapterEditor = () => {
               onNavigate={handleChapterNavigate}
               memoryCountsByChapter={memoryCountsByChapter}
               ancestryStatus={ancestryStatus}
-              onNavigateAncestry={() => {
-                const target = `/book/${bookId}/ancestry`;
-                if (hasUnsavedChanges) {
-                  setPendingNavigation(target);
-                  setShowUnsavedDialog(true);
-                } else {
-                  navigate(target);
-                }
-              }}
+              onNavigateAncestry={() => void flushAndNavigate(`/book/${bookId}/ancestry`)}
             />
-          </div>
 
-          <div className="flex items-center rounded-sm overflow-hidden border border-[hsl(var(--devotional-border))] flex-shrink-0" style={{ fontFamily: 'var(--font-body)' }}>
-            <button
-              onClick={exitPreview}
-              className={`px-3 py-1 text-[0.65rem] uppercase tracking-wider transition-colors ${
-                !previewMode ? 'text-white font-semibold' : 'text-muted-foreground/50 hover:text-muted-foreground'
-              }`}
-              style={!previewMode ? { background: '#C9A84C' } : undefined}
-            >
-              Edit
-            </button>
-            <button
-              onClick={enterPreview}
-              className={`px-3 py-1 text-[0.65rem] uppercase tracking-wider transition-colors ${
-                previewMode ? 'bg-foreground/10 text-foreground font-semibold' : 'text-muted-foreground/50 hover:text-muted-foreground'
-              }`}
-            >
-              Preview
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-start sm:justify-end">
-            {/* Unsaved-changes indicator — visible in edit mode */}
-            {!previewMode && hasUnsavedChanges && (
-              <span
-                className="text-[0.6rem] uppercase tracking-wider text-muted-foreground/70"
-                style={{ fontFamily: 'var(--font-body)' }}
+            <div className="flex items-center rounded-sm overflow-hidden border border-[hsl(var(--devotional-border))] flex-shrink-0" style={{ fontFamily: 'var(--font-body)' }}>
+              <button
+                onClick={exitPreview}
+                className={`px-3 py-1 text-[0.65rem] uppercase tracking-wider transition-colors ${
+                  !previewMode ? 'text-white font-semibold' : 'text-muted-foreground/50 hover:text-muted-foreground'
+                }`}
+                style={!previewMode ? { background: '#C9A84C' } : undefined}
               >
-                • Unsaved changes
-              </span>
-            )}
+                Edit
+              </button>
+              <button
+                onClick={enterPreview}
+                className={`px-3 py-1 text-[0.65rem] uppercase tracking-wider transition-colors ${
+                  previewMode ? 'bg-foreground/10 text-foreground font-semibold' : 'text-muted-foreground/50 hover:text-muted-foreground'
+                }`}
+              >
+                Preview
+              </button>
+            </div>
+          </div>
+
+          {/* Right: quiet save state, Add a memory, Ask 52 */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-start sm:justify-end">
+            <span
+              className="text-[0.6rem] uppercase tracking-wider text-muted-foreground/60 min-w-[52px] text-right"
+              style={{ fontFamily: 'var(--font-body)' }}
+            >
+              {saving ? 'Saving…' : hasUnsavedChanges ? '' : lastSavedAt ? 'Saved' : ''}
+            </span>
 
             <Button
               variant="ghost"
               size="sm"
               onClick={() => { setMemoryOverlayMode('manual'); setMemoryOverlayOpen(true); }}
               className="gap-1.5 text-xs h-8"
-              title="Add a memory to the pool"
+              title="Add a memory — a short story from you or your family that prints inside a chapter"
             >
-              <MessageCircleHeart className="h-3.5 w-3.5" /> Memory
+              <MessageCircleHeart className="h-3.5 w-3.5" />
+              Add a memory
+              {unusedMemoryCount > 0 && (
+                <span className="ml-0.5 rounded-full bg-accent/25 px-1.5 text-[0.6rem] text-accent-foreground">
+                  {unusedMemoryCount} waiting
+                </span>
+              )}
             </Button>
 
-            {!previewMode && (
-              <>
-                <Button variant="ghost" size="sm" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload} className="gap-1.5 text-xs h-8">
-                  <Save className="h-3 w-3" /> {saving ? 'Saving…' : 'Save Draft'}
-                </Button>
-                {isComplete ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 text-xs h-8"
-                    onClick={() => {
-                      setChapter((prev) => (prev ? { ...prev, status: 'in_progress' } : prev));
-                      save(false, 'in_progress');
-                    }}
-                    disabled={saving || photoTemplateNeedsUpload}
-                  >
-                    <Check className="h-3.5 w-3.5" /> Unmark Complete
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="gap-1.5 text-xs h-8"
-                    onClick={handleMarkComplete}
-                    disabled={saving || photoTemplateNeedsUpload}
-                  >
-                    <CheckCircle className="h-3.5 w-3.5" /> Mark Complete
-                  </Button>
-                )}
-              </>
-            )}
+            <button
+              onClick={() => { if (previewMode) exitPreview(); setCompanionOpen(true); }}
+              className="flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 transition-all hover:scale-[1.03] active:scale-95"
+              style={{ background: '#FFFFFF', border: '2px solid #C4788A' }}
+              title="Ask 52 — your writing companion. It can rewrite, soften, or add to this chapter for you."
+            >
+              <span
+                className="flex items-center justify-center rounded-full font-bold"
+                style={{ fontFamily: "'Merriweather', Georgia, serif", fontSize: '15px', color: '#C4788A', width: '26px', height: '26px' }}
+              >
+                52
+              </span>
+              <span className="text-xs font-medium" style={{ fontFamily: 'var(--font-body)', color: '#C4788A' }}>Ask 52</span>
+            </button>
           </div>
+
         </div>
       </div>
 
@@ -2022,33 +1826,21 @@ const ChapterEditor = () => {
         {!previewMode && (
           <div className="flex flex-col items-center gap-3 pt-8 mx-auto max-w-[600px]" style={{ padding: '32px 60px 64px' }}>
             <div className="flex w-full gap-3">
-              <Button variant="outline" size="lg" className="flex-1 gap-2" onClick={() => save(false)} disabled={saving || photoTemplateNeedsUpload}>
-                <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save Draft'}
+              <Button
+                variant="outline"
+                size="lg"
+                className="flex-1 gap-2"
+                onClick={() => void flushAndNavigate(returnTo || `/book/${bookId}`)}
+              >
+                <ArrowLeft className="h-4 w-4" /> {returnTo ? (returnLabel || 'Back to list') : 'Back to dashboard'}
               </Button>
-              {isComplete ? (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="flex-1 gap-2"
-                  onClick={() => { 
-                    setChapter(prev => prev ? { ...prev, status: 'in_progress' } : prev);
-                    save(false, 'in_progress');
-                  }}
-                  disabled={saving || photoTemplateNeedsUpload}
-                >
-                  <Check className="h-4 w-4" /> Unmark Complete
-                </Button>
-              ) : (
-                <Button size="lg" className="flex-1 gap-2" onClick={handleMarkComplete} disabled={saving || photoTemplateNeedsUpload}>
-                  <CheckCircle className="h-4 w-4" /> Mark Complete
-                </Button>
-              )}
             </div>
             <p className="text-[11px] text-muted-foreground/75 italic text-center mt-1" style={{ fontFamily: 'var(--font-body)' }}>
-              Please save draft before marking complete to ensure correct formatting and accurate page preview.
+              Your changes save automatically.
             </p>
           </div>
         )}
+
       </div>
 
       {/* Content Search Panel */}
@@ -2061,29 +1853,6 @@ const ChapterEditor = () => {
         excludeText={searchPanelType === 'verse' ? bibleVerseText : quoteText}
         bookId={bookId}
       />
-
-      {/* Unsaved changes dialog */}
-      <AlertDialog
-        open={showUnsavedDialog}
-        onOpenChange={(open) => { if (!open) handleDialogCancel(); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>You have unsaved changes.</AlertDialogTitle>
-            <AlertDialogDescription>
-              Save before leaving?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <Button variant="outline" onClick={handleDialogDiscard}>
-              Leave without saving
-            </Button>
-            <AlertDialogAction onClick={handleDialogSaveAndContinue}>
-              Save &amp; leave
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Memory capture overlay (toolbar manual entry + post-complete guided flow) */}
       {bookId && (
@@ -2111,6 +1880,7 @@ const ChapterEditor = () => {
               const counts: Record<string, number> = {};
               rows.forEach((m) => { if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1; });
               setMemoryCountsByChapter(counts);
+              setUnusedMemoryCount(rows.filter((m) => !m.chapter_id).length);
               setPlacedMemories(
                 rows
                   .filter((m) => m.chapter_id === chapterId)
@@ -2118,7 +1888,7 @@ const ChapterEditor = () => {
               );
               // Refresh placed memories after saving from the overlay.
             }
-            // A placed memory is a chapter change — author must explicitly Save Draft.
+            // A placed memory is a chapter change — autosave picks it up.
             setHasUnsavedChanges(true);
           }}
         />
