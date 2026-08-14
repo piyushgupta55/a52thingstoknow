@@ -798,7 +798,9 @@ const BookDashboard = () => {
                       </>
                     );
 
-                    const cls = `flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors text-foreground
+                    const cls = `flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors text-foreground ${reorderMode ? 'bg-muted/20' : 'hover:bg-muted/50'} ${isDragging ? 'opacity-40' : ''} ${isOver ? 'ring-1 ring-primary/40 bg-primary/5' : ''}`;
+
+
 
 
                     if (reorderMode && draggable) {
