@@ -701,7 +701,7 @@ const PreviewBook = () => {
           style={{ background: 'rgba(255,255,255,0.5)', color: '#6B7280', fontFamily: SERIF, fontSize: '0.75rem', minWidth: '44px', minHeight: '44px', backdropFilter: 'blur(2px)' }}
         >
           <X className="h-3.5 w-3.5" />
-          Close
+          Back to dashboard
         </button>
 
         {reviewMode && (
@@ -1609,7 +1609,7 @@ const PreviewBook = () => {
         style={{ background: 'rgba(0,0,0,0.05)', color: '#6B7280', fontFamily: SERIF, fontSize: '0.75rem', minWidth: '44px', minHeight: '44px' }}
       >
         <X className="h-3.5 w-3.5" />
-        Close
+        Back to dashboard
       </button>
 
       {/* Two-page spread */}
@@ -1637,7 +1637,7 @@ const PreviewBook = () => {
                   chapterTitle={getChapterTitle(ch)}
                   currentContent={ch.content ?? ''}
                   currentReferenceText={ch.reference_text ?? ''}
-                  onRequestEdit={() => navigate(`/book/${bookId}/chapter/${ch.id}`)}
+                  onRequestEdit={() => navigate(`/book/${bookId}/chapter/${ch.id}?returnTo=${encodeURIComponent(`/book/${bookId}/preview${reviewMode ? '?review=1' : ''}`)}&returnLabel=${encodeURIComponent('Back to reading')}`)}
                   variant="badge"
                 />
               </div>
