@@ -240,27 +240,19 @@ const CompanionBubble = ({
 
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {messages.length === 0 && (
-            <div className="text-center py-8 space-y-2">
+            <div className="text-center py-6 space-y-3">
               <p
-                className="text-sm italic"
-                style={{ fontFamily: 'var(--font-devotional)', color: 'hsl(var(--muted-foreground))' }}
+                className="text-sm leading-relaxed"
+                style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--foreground))' }}
               >
-                I'm 52 — I help you write this chapter. Tell me what you want and I'll draft it for you.
+                I'm 52 — tell me what you want and I'll write it for you.
               </p>
-              <div className="flex flex-col gap-2 pt-2">
-                {STARTER_PROMPTS.map(prompt => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => send(prompt)}
-                    disabled={isLoading}
-                    className="rounded-full border border-border px-3 py-1.5 text-xs transition-colors hover:bg-secondary disabled:opacity-50"
-                    style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--foreground))' }}
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
+              <p
+                className="text-xs leading-relaxed"
+                style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--muted-foreground))' }}
+              >
+                Keep the parts you like and change the rest. Rewrite just one section. Or start the chapter over from the points that matter to you. Add a story about a trip, work in a Bible verse, say it the way you'd say it out loud, make it shorter or warmer or more like you. Anything at all — tell me in your own words and we'll get it right together.
+              </p>
             </div>
           )}
 
