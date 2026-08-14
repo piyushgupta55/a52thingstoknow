@@ -372,8 +372,9 @@ const BookDashboard = () => {
     /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`) && !c.reading_reward_decision
   ).length;
   const flaggedChapters = numberedChapters.filter(
-    c => (c.review_status === 'add' || c.review_status === 'rewrite') && c.status !== 'complete'
+    c => c.review_status === 'add' || c.review_status === 'rewrite'
   ).length;
+
   const blockingItems = openPhotoSpots + openRewardDecisions;
   const isReadyToPrint = blockingItems === 0;
   const readParts: string[] = [];
