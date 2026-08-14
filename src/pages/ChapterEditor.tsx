@@ -226,7 +226,6 @@ const ChapterEditor = () => {
     ? 'You need to add a photo or select a classic template.'
     : null;
   const isLetterChapter = chapter?.chapter_number === 0;
-  const isComplete = chapter?.status === 'complete';
 
   useLayoutEffect(() => {
     autoResizeTitle();
@@ -508,33 +507,6 @@ const ChapterEditor = () => {
 
   const hasOverflow = isRealOverflow(layoutMeasurement?.pages || []);
 
-  const canMarkComplete = () => {
-    if (isLetterChapter) return true;
-    if (hasOverflow) return false;
-    return layoutMeasurement?.pages.some((page) => page.fillPercent > 0) || false;
-  };
-
-  const handleMarkComplete = () => {
-    if (hasOverflow && !isLetterChapter) {
-      toast({
-        title: 'Layout Overflow',
-        description: 'This chapter runs onto a third page — shorten the text, memory, or photo.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    if (!canMarkComplete()) {
-      toast({
-        title: 'Nothing to complete yet',
-        description: 'Add chapter content before marking this chapter complete.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    save(true);
-  };
-
   const validateMemoryPlacement = (text: string, contributorName: string): boolean | string => {
     const iframe = exactPreviewIframeRef.current;
     if (!iframe?.contentDocument) return true;
@@ -616,19 +588,20 @@ const ChapterEditor = () => {
     setHasUnsavedChanges(true);
   };
 
-  const save = async (markComplete = false, statusOverride?: string) => {
+  const save = async (silent = false) => {
     if (!chapterId) return;
     if (photoTemplateNeedsUpload) {
-      toast({
-        title: 'Photo required',
-        description: 'You need to add a photo or select a classic template.',
-        variant: 'destructive',
-      });
+      if (!silent) {
+        toast({
+          title: 'Photo required',
+          description: 'You need to add a photo or select a classic template.',
+          variant: 'destructive',
+        });
+      }
       return;
     }
     setSaving(true);
     const savedAt = new Date().toISOString();
-    const newStatus = statusOverride || (markComplete ? 'complete' : chapter?.status === 'complete' ? 'complete' : 'in_progress');
 
     let refToSave = referenceText;
     let contentToSave = content;
@@ -666,10 +639,12 @@ const ChapterEditor = () => {
 
     if (!isLetterChapter) {
       if (exactPreviewLoading) {
-        toast({
-          title: 'Evaluating Layout',
-          description: 'Please wait a moment for the layout engine to finish updating with your latest text.',
-        });
+        if (!silent) {
+          toast({
+            title: 'Evaluating Layout',
+            description: 'Please wait a moment for the layout engine to finish updating with your latest text.',
+          });
+        }
         setSaving(false);
         return;
       }
@@ -680,37 +655,15 @@ const ChapterEditor = () => {
         const measurement = measureLayout(doc);
         const chapterPages = measurement.pages.filter(p => p.chapter === String(chapter.chapter_number));
         const overflow = isRealOverflow(chapterPages);
-        if (overflow) {
+        if (overflow && !silent) {
           toast({
             title: 'Layout Overflow',
             description: `This chapter runs onto a third page — shorten the text, memory, or photo.`,
             variant: 'destructive',
           });
-          if (markComplete) {
-            setSaving(false);
-            return;
-          }
         }
       }
 
-      if (markComplete) {
-        const page1HasPhoto = template === 'photo_top' && hasUploadedPhoto;
-        const page1HasContent = !!refToSave.trim() || page1HasPhoto;
-        
-        const page2HasPhoto = template === 'photo_second' && hasUploadedPhoto;
-        const page2HasMemory = placedMemories.length > 0;
-        const page2HasContent = !!contentToSave.trim() || page2HasPhoto || page2HasMemory;
-
-        if (!page1HasContent || !page2HasContent) {
-          toast({
-            title: 'Missing Page Content',
-            description: 'Both pages need some content before you can mark the chapter complete. Make sure you have text, a photo, or a memory on each page.',
-            variant: 'destructive',
-          });
-          setSaving(false);
-          return;
-        }
-      }
     }
 
     const { error } = await supabase.from('chapters').update({
@@ -726,7 +679,6 @@ const ChapterEditor = () => {
       chapter_template: template,
       verse_id: verseId,
       quote_id: quoteId,
-      status: newStatus,
       updated_at: savedAt,
     }).eq('id', chapterId);
 
@@ -737,30 +689,12 @@ const ChapterEditor = () => {
       // was persisted.
       setReferenceText(refToSave);
       setContent(contentToSave);
-      setChapter(prev => prev ? { ...prev, status: newStatus } : prev);
-      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: chapter?.title ?? c.title, status: newStatus, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout } : c));
+      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: chapter?.title ?? c.title, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout } : c));
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
-      // Update last saved snapshot for revert
       lastSavedRef.current = { referenceText: refToSave || '', content: contentToSave || '' };
-      toast({ title: markComplete ? 'Chapter marked complete!' : 'Draft saved!' });
-      // If we came from another page (e.g. Book Review), return there after save.
-      if (returnTo) {
-        navigate(returnTo);
-      } else if (markComplete) {
-        // After Mark Complete, advance to the next chapter that isn't complete yet
-        const nextIncomplete = allChapters
-          .filter(c => c.id !== chapterId && c.chapter_number > (chapter?.chapter_number ?? 0))
-          .sort((a, b) => a.chapter_number - b.chapter_number)
-          .find(c => c.status !== 'complete')
-          || allChapters
-            .filter(c => c.id !== chapterId)
-            .sort((a, b) => a.chapter_number - b.chapter_number)
-            .find(c => c.status !== 'complete');
-        if (nextIncomplete) {
-          navigate(`/book/${bookId}/chapter/${nextIncomplete.id}`);
-        }
-      }
+      setLastSavedAt(savedAt);
+      if (!silent) toast({ title: 'Saved' });
     }
     setSaving(false);
   };
