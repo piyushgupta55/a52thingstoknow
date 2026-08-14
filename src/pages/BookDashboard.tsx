@@ -323,11 +323,14 @@ const BookDashboard = () => {
 
   const numberedChapters = chapters.filter(c => c.chapter_number > 0);
   const letterChapter = chapters.find(c => c.chapter_number === 0);
-  const completed = numberedChapters.filter(c => c.status === 'complete').length;
-  const inProgress = numberedChapters.filter(c => c.status === 'in_progress').length;
-  const notStarted = numberedChapters.filter(c => c.status === 'not_started').length;
+  // Progress is driven by review decisions, not by chapters.status.
+  // Reviewed = keep or rewrite. Undecided = no review_status yet.
+  const isReviewed = (c: Chapter) => c.review_status === 'keep' || c.review_status === 'rewrite';
+  const completed = numberedChapters.filter(isReviewed).length;
+  const undecided = numberedChapters.length - completed;
   const progress = numberedChapters.length > 0 ? (completed / numberedChapters.length) * 100 : 0;
-  const nextChapter = chapters.find(c => c.status === 'in_progress') || chapters.find(c => c.status === 'not_started');
+  const nextChapter = chapters.find(c => !isReviewed(c));
+
 
   const memoriesPlaced = memories.filter(m => m.chapter_id != null).length;
   const memoriesUnplaced = memories.filter(m => m.chapter_id == null).length;
