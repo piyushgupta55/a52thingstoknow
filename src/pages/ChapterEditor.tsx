@@ -754,7 +754,7 @@ const ChapterEditor = () => {
     }
     setPlacedMemories(prev => prev.filter(m => m.id !== memoryId));
     setHasUnsavedChanges(true);
-    toast({ title: 'Memory returned to pool — remember to Save Draft.' });
+    toast({ title: 'Memory returned to pool.' });
   };
 
   const [photoWarning, setPhotoWarning] = useState<string | null>(null);
@@ -827,7 +827,7 @@ const ChapterEditor = () => {
     }
     setHasUnsavedChanges(true);
     setSearchPanelOpen(false);
-    toast({ title: `${searchPanelType === 'verse' ? 'Bible verse' : 'Quote'} swapped — remember to Save Draft.` });
+    toast({ title: `${searchPanelType === 'verse' ? 'Bible verse' : 'Quote'} swapped.` });
   };
 
   const handleChapterNavigate = (targetChapterId: string) => {
@@ -1888,7 +1888,7 @@ const ChapterEditor = () => {
               );
               // Refresh placed memories after saving from the overlay.
             }
-            // A placed memory is a chapter change — author must explicitly Save Draft.
+            // A placed memory is a chapter change — autosave picks it up.
             setHasUnsavedChanges(true);
           }}
         />
