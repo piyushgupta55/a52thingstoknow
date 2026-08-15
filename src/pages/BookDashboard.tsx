@@ -422,8 +422,8 @@ const BookDashboard = () => {
           const buttonLabel = started
             ? `Continue reading${firstName && !longName ? ` ${firstName}'s book` : ''}`
             : firstName
-              ? `Read & work on ${firstName}'s book`
-              : 'Read & work on your book';
+              ? `Read ${firstName}'s book`
+              : 'Read your book';
           return (
             <div className="bg-card rounded-xl border-2 border-primary p-7 md:p-8 mb-8 shadow-lg ring-4 ring-primary/10">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
