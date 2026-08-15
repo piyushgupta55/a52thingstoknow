@@ -380,7 +380,7 @@ const BookDashboard = () => {
   const readParts: string[] = [];
   if (openPhotoSpots > 0) readParts.push(`${openPhotoSpots} photo spot${openPhotoSpots === 1 ? '' : 's'}`);
   if (openRewardDecisions > 0) readParts.push(`${openRewardDecisions} reward decision${openRewardDecisions === 1 ? '' : 's'}`);
-  if (flaggedChapters > 0) readParts.push(`${flaggedChapters} flagged chapter${flaggedChapters === 1 ? '' : 's'}`);
+  if (flaggedChapters > 0) readParts.push(`${flaggedChapters} chapter${flaggedChapters === 1 ? '' : 's'} needing editing`);
   const openSummary = readParts.length
     ? `Your book is ready — ${readParts.join(' and ')} still to go.`
     : 'Your book is ready to print.';
@@ -435,9 +435,9 @@ const BookDashboard = () => {
                     </h2>
                   </div>
                   <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
-                    {possessive} book is already written — all {numberedChapters.length || 52} chapters. Open it and read
-                    through, one page at a time. As you go, keep what's perfect, add to some, rewrite a few, and drop in
-                    photos and memories where you're moved. This is where you start.
+                    {possessive} book is already written — all {numberedChapters.length || 52} chapters, ready to print
+                    exactly as they are. Read it through and mark each chapter Keep or Needs editing as you go, or jump
+                    straight into any chapter and change it yourself. Nothing here is required.
                   </p>
                 </div>
                 <div className="md:flex-shrink-0 flex flex-col gap-2 max-w-full">
@@ -456,7 +456,7 @@ const BookDashboard = () => {
                     onClick={() => navigate(`/book/${bookId}/chapters`)}
                   >
                     <LayoutGrid className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="truncate">Open any chapter</span>
+                    <span className="truncate">Edit any chapter</span>
                   </Button>
                 </div>
 
@@ -491,9 +491,9 @@ const BookDashboard = () => {
           </div>
           <Progress value={readinessPct} className="h-3 mb-2" />
           <p className="text-xs text-muted-foreground mb-4">
-            Every chapter is already written and counts as complete — Add and Replace are optional, and the original words print if you leave them.
-            {` ${readCount} of ${numberedChapters.length} read so far`}
-            {notReviewed > 0 ? ' — reading never blocks printing.' : ' — you have read the whole book.'}
+            Every chapter is already written and counts as complete — if you leave a chapter alone, its original words print as they are.
+            {` ${readCount} of ${numberedChapters.length} reviewed`}
+            {notReviewed > 0 ? ' — reviewing never blocks printing.' : ' — you have reviewed the whole book.'}
           </p>
 
           <div className="flex flex-wrap gap-x-6 gap-y-1 mb-5 text-sm text-muted-foreground">
@@ -523,7 +523,7 @@ const BookDashboard = () => {
             >
               <div className="flex items-center gap-1.5 mb-1.5">
                 <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">To rewrite</span>
+                <span className="text-xs text-muted-foreground">Needs editing</span>
               </div>
               <div className="font-heading text-xl font-bold text-foreground">{reviewRewrite}</div>
             </button>
