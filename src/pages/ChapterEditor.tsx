@@ -1841,23 +1841,52 @@ const ChapterEditor = () => {
         )}
 
         {/* Bottom actions */}
-        {!previewMode && (
-          <div className="flex flex-col items-center gap-3 pt-8 mx-auto max-w-[600px]" style={{ padding: '32px 60px 64px' }}>
-            <div className="flex w-full gap-3">
-              <Button
-                variant="outline"
-                size="lg"
-                className="flex-1 gap-2"
-                onClick={() => void flushAndNavigate(returnTo || `/book/${bookId}`)}
-              >
-                <ArrowLeft className="h-4 w-4" /> {returnTo ? (returnLabel || 'Back to list') : 'Back to dashboard'}
-              </Button>
+        {!previewMode && (() => {
+          const backTarget = returnTo || `/book/${bookId}`;
+          const bookLabel = returnTo
+            ? (returnLabel || 'Back to list')
+            : `Back to ${recipientName ? `${recipientName}'s Book` : 'your book'}`;
+          const nextChapter = allChapters
+            .filter(c => c.chapter_number > (chapter?.chapter_number ?? 0))
+            .sort((a, b) => a.chapter_number - b.chapter_number)[0];
+
+          return (
+            <div className="flex flex-col items-center gap-3 pt-8 mx-auto max-w-[600px]" style={{ padding: '32px 60px 64px' }}>
+              {nextChapter ? (
+                <>
+                  <Button
+                    size="lg"
+                    className="w-full h-auto py-3 flex-col gap-0.5 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                    onClick={() => tryNavigate(nextChapter.id)}
+                  >
+                    <span className="font-medium">Next chapter →</span>
+                    <span className="text-[0.75rem] font-normal opacity-85">{nextChapter.title}</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full gap-2"
+                    onClick={() => void flushAndNavigate(backTarget)}
+                  >
+                    <ArrowLeft className="h-4 w-4" /> {bookLabel}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="lg"
+                  className="w-full gap-2 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white"
+                  onClick={() => void flushAndNavigate(backTarget)}
+                >
+                  <ArrowLeft className="h-4 w-4" /> {bookLabel}
+                </Button>
+              )}
+              <p className="text-[11px] text-muted-foreground/75 italic text-center mt-1" style={{ fontFamily: 'var(--font-body)' }}>
+                Your changes save automatically.
+              </p>
             </div>
-            <p className="text-[11px] text-muted-foreground/75 italic text-center mt-1" style={{ fontFamily: 'var(--font-body)' }}>
-              Your changes save automatically.
-            </p>
-          </div>
-        )}
+          );
+        })()}
+
 
       </div>
 
