@@ -41,9 +41,12 @@ const CompanionBubble = ({
   currentReferenceText,
   onApplyEdit,
   onRevert,
+  prefillInput,
+  prefillHint,
 }: Props) => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [showPrefillHint, setShowPrefillHint] = useState(Boolean(prefillInput?.trim()));
   const { messages, isLoading, send, clearMessages, applyPending, retryLast } = useCompanionChat(bookId, chapterId, {
     currentContent,
     currentReferenceText,
