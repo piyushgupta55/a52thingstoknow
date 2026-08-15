@@ -25,6 +25,8 @@ interface Props {
   currentReferenceText?: string;
   onApplyEdit?: (nextContent: string, edit: CompanionEdit) => Promise<void> | void;
   onRevert?: () => void;
+  prefillInput?: string;
+  prefillHint?: string;
 }
 
 const CompanionBubble = ({
@@ -39,9 +41,12 @@ const CompanionBubble = ({
   currentReferenceText,
   onApplyEdit,
   onRevert,
+  prefillInput,
+  prefillHint,
 }: Props) => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [showPrefillHint, setShowPrefillHint] = useState(Boolean(prefillInput?.trim()));
   const { messages, isLoading, send, clearMessages, applyPending, retryLast } = useCompanionChat(bookId, chapterId, {
     currentContent,
     currentReferenceText,
@@ -101,6 +106,17 @@ const CompanionBubble = ({
     if (forceOpen) setOpen(true);
   }, [forceOpen]);
 
+  // Pre-fill 52's input with a review note when the chapter is opened from a
+  // flagged state. We only set the text; the author must press send.
+  useEffect(() => {
+    if (prefillInput?.trim()) {
+      setInput(prefillInput.trim());
+      setShowPrefillHint(true);
+    } else {
+      setShowPrefillHint(false);
+    }
+  }, [prefillInput]);
+
   // First run per user: open 52 once so authors discover it, then remember.
   useEffect(() => {
     try {
@@ -141,6 +157,7 @@ const CompanionBubble = ({
     if (!input.trim() || isLoading) return;
     send(input);
     setInput('');
+    setShowPrefillHint(false);
     if (inputRef.current) inputRef.current.style.height = 'auto';
   };
 
@@ -335,39 +352,49 @@ const CompanionBubble = ({
           <div ref={bottomRef} />
         </div>
 
-        <form onSubmit={handleSubmit} className="border-t border-border px-3 py-2.5 flex items-end gap-2">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={e => {
-              setInput(e.target.value);
-              const ta = e.target;
-              ta.style.height = 'auto';
-              ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Tell me what's on your mind..."
-            rows={1}
-            className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground overflow-y-auto"
-            style={{
-              fontFamily: 'var(--font-body)',
-              maxHeight: '200px',
-              color: 'hsl(var(--foreground))',
-            }}
-          />
-          <Button
-            type="submit"
-            size="icon"
-            variant="ghost"
-            disabled={!input.trim() || isLoading}
-            className="shrink-0 h-8 w-8"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
+        <form onSubmit={handleSubmit} className="border-t border-border px-3 py-2.5">
+          {showPrefillHint && prefillHint && (
+            <p
+              className="mb-2 text-xs leading-relaxed"
+              style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--muted-foreground))' }}
+            >
+              {prefillHint}
+            </p>
+          )}
+          <div className="flex items-end gap-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => {
+                setInput(e.target.value);
+                const ta = e.target;
+                ta.style.height = 'auto';
+                ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Tell me what's on your mind..."
+              rows={1}
+              className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground overflow-y-auto"
+              style={{
+                fontFamily: 'var(--font-body)',
+                maxHeight: '200px',
+                color: 'hsl(var(--foreground))',
+              }}
+            />
+            <Button
+              type="submit"
+              size="icon"
+              variant="ghost"
+              disabled={!input.trim() || isLoading}
+              className="shrink-0 h-8 w-8"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </form>
       </div>,
       document.body,

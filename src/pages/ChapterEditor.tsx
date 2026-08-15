@@ -65,6 +65,8 @@ interface ChapterData {
   seed_content?: string | null;
   reading_reward_decision?: string | null;
   reading_reward_ack_at?: string | null;
+  review_note?: string | null;
+  review_status?: string | null;
 }
 
 interface LibraryItem {
@@ -465,6 +467,12 @@ const ChapterEditor = () => {
       }
       setLoading(false);
       setPreviewMode(false);
+      // If the chapter was flagged during the review pass, open 52's panel
+      // automatically and pre-fill any existing review note as the author's
+      // instruction. The author must still press send; we do not auto-run it.
+      if (chapterData?.review_status === 'rewrite') {
+        setCompanionOpen(true);
+      }
       // The merged textarea is sized by the useLayoutEffect below, which
       // fires reliably once the editor is mounted and visible — no fragile
       // setTimeout needed.
@@ -1186,6 +1194,8 @@ const ChapterEditor = () => {
       onApplyEdit={handleCompanionApplyEdit}
       onRevert={handleRevertToSaved}
       variant="badge"
+      prefillInput={chapter?.review_note?.trim() || undefined}
+      prefillHint={chapter?.review_note?.trim() ? "You said you wanted this changed — want me to take a run at it?" : undefined}
     />
   ) : null;
 
