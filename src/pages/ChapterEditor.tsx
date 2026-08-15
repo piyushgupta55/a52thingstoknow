@@ -1194,6 +1194,8 @@ const ChapterEditor = () => {
       onApplyEdit={handleCompanionApplyEdit}
       onRevert={handleRevertToSaved}
       variant="badge"
+      prefillInput={chapter?.review_note?.trim() || undefined}
+      prefillHint={chapter?.review_note?.trim() ? "You said you wanted this changed — want me to take a run at it?" : undefined}
     />
   ) : null;
 
