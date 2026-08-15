@@ -182,6 +182,10 @@ const ChapterEditor = () => {
   // Memory capture
   const [memoryOverlayOpen, setMemoryOverlayOpen] = useState(false);
   const [memoryOverlayMode, setMemoryOverlayMode] = useState<'manual' | 'guided'>('manual');
+  // Did the author save a real content change during this visit?
+  const savedRealChangeRef = useRef(false);
+  // Where to go once the guided memory prompt closes.
+  const pendingNavRef = useRef<string | null>(null);
 
   // Deep link from the book overview: ?memory=1 opens the Add Memory flow directly.
   useEffect(() => {
@@ -704,6 +708,7 @@ const ChapterEditor = () => {
       }
       setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: chapter?.title ?? c.title, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout, review_status: shouldResolveReview ? 'keep' : c.review_status } : c));
 
+      savedRealChangeRef.current = true;
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
       lastSavedRef.current = { referenceText: refToSave || '', content: contentToSave || '' };
@@ -755,8 +760,67 @@ const ChapterEditor = () => {
     navigate(target);
   };
 
+  // --- Guided memory prompt gating -------------------------------------
+  // Persisted per book in localStorage (no schema change): which milestones
+  // have already fired. Session guard keeps it to once per session.
+  const guidedKey = `guidedMemory:${bookId}`;
+  const readGuidedShown = (): string[] => {
+    try {
+      const raw = localStorage.getItem(guidedKey);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  };
+  const markGuidedShown = (milestone: string) => {
+    try {
+      const next = Array.from(new Set([...readGuidedShown(), milestone]));
+      localStorage.setItem(guidedKey, JSON.stringify(next));
+      sessionStorage.setItem(`${guidedKey}:session`, '1');
+    } catch {
+      /* ignore */
+    }
+  };
+  const shownThisSession = () => {
+    try {
+      return sessionStorage.getItem(`${guidedKey}:session`) === '1';
+    } catch {
+      return false;
+    }
+  };
+
+  /** Which guided milestone (if any) should fire when leaving this chapter. */
+  const pendingGuidedMilestone = (): string | null => {
+    if (!bookId || shownThisSession()) return null;
+    const shown = readGuidedShown();
+    const num = chapter?.chapter_number ?? 0;
+    if (!shown.includes('first')) {
+      return savedRealChangeRef.current ? 'first' : null;
+    }
+    if (unusedMemoryCount >= 5) return null;
+    if (num >= 17 && !shown.includes('mid17')) return 'mid17';
+    if (num >= 35 && !shown.includes('mid35')) return 'mid35';
+    return null;
+  };
+
+  /** Navigate to a chapter, showing the guided memory prompt first if due. */
+  const advanceToChapter = async (targetChapterId: string) => {
+    const target = `/book/${bookId}/chapter/${targetChapterId}`;
+    if (hasUnsavedRef.current) await save(true);
+    const milestone = pendingGuidedMilestone();
+    if (milestone) {
+      markGuidedShown(milestone);
+      pendingNavRef.current = target;
+      setMemoryOverlayMode('guided');
+      setMemoryOverlayOpen(true);
+      return;
+    }
+    navigate(target);
+  };
+
   const tryNavigate = (targetChapterId: string) => {
-    void flushAndNavigate(`/book/${bookId}/chapter/${targetChapterId}`);
+    void advanceToChapter(targetChapterId);
   };
 
   const handleUnplaceMemory = async (memoryId: string) => {
@@ -1905,7 +1969,13 @@ const ChapterEditor = () => {
       {bookId && (
         <MemoryCaptureOverlay
           open={memoryOverlayOpen}
-          onClose={() => setMemoryOverlayOpen(false)}
+          onClose={() => {
+            setMemoryOverlayOpen(false);
+            const target = pendingNavRef.current;
+            pendingNavRef.current = null;
+            if (target) navigate(target);
+          }}
+          onInviteFamily={() => { pendingNavRef.current = null; navigate(`/book/${bookId}/memories`); }}
           bookId={bookId}
           chapterId={chapterId}
           onValidatePlacement={validateMemoryPlacement}
