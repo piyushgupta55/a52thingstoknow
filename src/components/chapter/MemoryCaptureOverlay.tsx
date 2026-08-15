@@ -39,6 +39,8 @@ interface Props {
   recipientGender?: string;
   onSaved?: () => void;
   onValidatePlacement?: (text: string, contributorName: string) => boolean | string;
+  /** Guided mode: opens the family invite flow from the closing panel. */
+  onInviteFamily?: () => void;
 }
 
 const MemoryCaptureOverlay = ({
