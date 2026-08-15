@@ -65,6 +65,8 @@ interface ChapterData {
   seed_content?: string | null;
   reading_reward_decision?: string | null;
   reading_reward_ack_at?: string | null;
+  review_note?: string | null;
+  review_status?: string | null;
 }
 
 interface LibraryItem {
