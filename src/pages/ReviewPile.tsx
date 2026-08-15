@@ -31,7 +31,7 @@ type PileKey = 'add' | 'rewrite' | 'photos' | 'memories' | 'kept' | 'short' | 'n
 
 const PILE_META: Record<string, { title: string; subtitle: string; Icon: typeof Plus }> = {
   add:      { title: 'To add to',          subtitle: 'chapters you marked to add something to', Icon: Plus },
-  rewrite:  { title: 'To rewrite',         subtitle: 'chapters you marked to replace with your own words', Icon: PenLine },
+  rewrite:  { title: 'Needs editing',       subtitle: 'chapters you marked as needing editing', Icon: PenLine },
   photos:   { title: 'Photos & Decisions', subtitle: 'photo spots and the reading-reward decision', Icon: Camera },
   memories: { title: 'Memories',           subtitle: 'chapters that would love a memory', Icon: MessageCircleHeart },
   kept:     { title: 'Kept',               subtitle: 'everything is kept by default', Icon: Circle },
@@ -119,7 +119,7 @@ const ReviewPile = () => {
     }
     if (pile === 'memories') return 'A memory would sit beautifully here';
     if (pile === 'add') return c.review_note ? `You wanted to add: ${c.review_note}` : 'You marked this one to add to';
-    if (pile === 'rewrite') return 'You marked this one to replace with your own words';
+    if (pile === 'rewrite') return 'You marked this one as needing editing';
     return '';
   };
 
