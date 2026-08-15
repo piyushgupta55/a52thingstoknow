@@ -672,6 +672,9 @@ const ChapterEditor = () => {
 
     }
 
+    // Editing resolves a chapter: an untouched or flagged chapter becomes "kept".
+    const shouldResolveReview = !chapter?.review_status || chapter.review_status === 'rewrite';
+
     const { error } = await supabase.from('chapters').update({
       title: chapter?.title ?? null,
       bible_verse_text: bibleVerseText || null,
@@ -686,6 +689,7 @@ const ChapterEditor = () => {
       verse_id: verseId,
       quote_id: quoteId,
       updated_at: savedAt,
+      ...(shouldResolveReview ? { review_status: 'keep', review_note: null } : {}),
     }).eq('id', chapterId);
 
     if (error) {
@@ -695,7 +699,11 @@ const ChapterEditor = () => {
       // was persisted.
       setReferenceText(refToSave);
       setContent(contentToSave);
-      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: chapter?.title ?? c.title, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout } : c));
+      if (shouldResolveReview) {
+        setChapter(prev => prev ? { ...prev, review_status: 'keep', review_note: null } : prev);
+      }
+      setAllChapters(prev => prev.map(c => c.id === chapterId ? { ...c, title: chapter?.title ?? c.title, updated_at: savedAt, content: contentToSave || null, photo_layout: photoLayout, review_status: shouldResolveReview ? 'keep' : c.review_status } : c));
+
       setHasUnsavedChanges(false);
       hasUnsavedRef.current = false;
       lastSavedRef.current = { referenceText: refToSave || '', content: contentToSave || '' };
