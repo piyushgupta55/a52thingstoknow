@@ -25,6 +25,8 @@ interface Props {
   currentReferenceText?: string;
   onApplyEdit?: (nextContent: string, edit: CompanionEdit) => Promise<void> | void;
   onRevert?: () => void;
+  prefillInput?: string;
+  prefillHint?: string;
 }
 
 const CompanionBubble = ({
