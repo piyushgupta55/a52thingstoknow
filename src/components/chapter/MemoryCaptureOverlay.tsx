@@ -54,13 +54,14 @@ const MemoryCaptureOverlay = ({
   recipientGender,
   onSaved,
   onValidatePlacement,
+  onInviteFamily,
 }: Props) => {
   const [fromName, setFromName] = useState(defaultFromName);
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   // Guided-mode state
   // 'prompt' = show textarea, 'ask-another' = Yes/No
-  const [stage, setStage] = useState<'prompt' | 'ask-another'>('prompt');
+  const [stage, setStage] = useState<'prompt' | 'ask-another' | 'family'>('prompt');
   const [savedCount, setSavedCount] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [placementError, setPlacementError] = useState<string | null>(null);
