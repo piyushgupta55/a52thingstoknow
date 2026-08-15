@@ -435,9 +435,7 @@ const BookDashboard = () => {
                     </h2>
                   </div>
                   <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
-                    {possessive} book is already written — all {numberedChapters.length || 52} chapters, ready to print
-                    exactly as they are. Read it through and mark each chapter Keep or Needs editing as you go, or jump
-                    straight into any chapter and change it yourself. Nothing here is required.
+                    All {numberedChapters.length || 52} chapters are written and ready to print — you could give this to {firstName || 'your loved one'} today. Read through it and note anything you'd want different, or open a chapter and change it yourself.
                   </p>
                 </div>
                 <div className="md:flex-shrink-0 flex flex-col gap-2 max-w-full">
@@ -491,9 +489,7 @@ const BookDashboard = () => {
           </div>
           <Progress value={readinessPct} className="h-3 mb-2" />
           <p className="text-xs text-muted-foreground mb-4">
-            Every chapter is already written and counts as complete — if you leave a chapter alone, its original words print as they are.
-            {` ${readCount} of ${numberedChapters.length} reviewed`}
-            {notReviewed > 0 ? ' — reviewing never blocks printing.' : ' — you have reviewed the whole book.'}
+            {reviewedCount} of {numberedChapters.length} looked at · {photosUploaded} of {photoChaptersDesignated} photos added · {openRewardDecisions} reward decision{openRewardDecisions === 1 ? '' : 's'}
           </p>
 
           <div className="flex flex-wrap gap-x-6 gap-y-1 mb-5 text-sm text-muted-foreground">
