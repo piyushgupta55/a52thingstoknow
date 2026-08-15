@@ -341,7 +341,7 @@ const BookDashboard = () => {
   const photosUploaded = chapters.filter(c => photoChapterNums.has(c.chapter_number) && c.photo_urls && c.photo_urls.length > 0).length;
 
   // Read-through tallies. Everything is kept by default; Add/Replace are optional marks.
-  const reviewAdd = numberedChapters.filter(c => c.review_status === 'add').length;
+  
   const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite').length;
   const readCount = numberedChapters.filter(c => !!(c as any).read_at).length;
   const notReviewed = numberedChapters.length - readCount;
@@ -372,7 +372,7 @@ const BookDashboard = () => {
     /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`) && !c.reading_reward_decision
   ).length;
   const flaggedChapters = numberedChapters.filter(
-    c => c.review_status === 'add' || c.review_status === 'rewrite'
+    c => c.review_status === 'rewrite'
   ).length;
 
   const blockingItems = openPhotoSpots + openRewardDecisions;
@@ -505,17 +505,6 @@ const BookDashboard = () => {
 
           <p className="text-xs text-muted-foreground/60 mb-3">Baskets — jump straight to a set of things to look at:</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(`/book/${bookId}/pile/add`)}
-              className="text-left rounded-lg border border-border p-3 bg-muted/20 hover:bg-muted/50 hover:border-primary/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">To add to</span>
-              </div>
-              <div className="font-heading text-xl font-bold text-foreground">{reviewAdd}</div>
-            </button>
             <button
               type="button"
               onClick={() => navigate(`/book/${bookId}/pile/rewrite`)}
@@ -774,7 +763,7 @@ const BookDashboard = () => {
 
                   const renderRow = (ch: Chapter, displayNum: number | null, draggable: boolean, idx: number) => {
                     const isKept = ch.review_status === 'keep';
-                    const isFlagged = ch.review_status === 'rewrite' || ch.review_status === 'add';
+                    const isFlagged = ch.review_status === 'rewrite';
                     const isLetter = displayNum === null;
                     const isDragging = dragIndex === idx;
                     const isOver = overIndex === idx && dragIndex !== null && dragIndex !== idx;

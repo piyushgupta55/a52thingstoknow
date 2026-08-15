@@ -105,7 +105,7 @@ const ChapterGrid = () => {
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   {chapter.review_status === 'keep' ? (
                     <Badge className="text-[0.65rem] bg-primary/10 text-primary hover:bg-primary/10 border-transparent">Kept</Badge>
-                  ) : chapter.review_status === 'rewrite' || chapter.review_status === 'add' ? (
+                  ) : chapter.review_status === 'rewrite' ? (
                     <Badge className="text-[0.65rem] bg-accent/15 text-accent-foreground hover:bg-accent/15 border-transparent">Needs editing</Badge>
                   ) : (
                     <Badge variant="outline" className="text-[0.65rem] text-muted-foreground">Undecided</Badge>
