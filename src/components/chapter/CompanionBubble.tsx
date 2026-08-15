@@ -157,6 +157,7 @@ const CompanionBubble = ({
     if (!input.trim() || isLoading) return;
     send(input);
     setInput('');
+    setShowPrefillHint(false);
     if (inputRef.current) inputRef.current.style.height = 'auto';
   };
 
