@@ -1975,7 +1975,7 @@ const ChapterEditor = () => {
             pendingNavRef.current = null;
             if (target) navigate(target);
           }}
-          onInviteFamily={() => navigate(`/book/${bookId}/memories`)}
+          onInviteFamily={() => { pendingNavRef.current = null; navigate(`/book/${bookId}/memories`); }}
           bookId={bookId}
           chapterId={chapterId}
           onValidatePlacement={validateMemoryPlacement}
