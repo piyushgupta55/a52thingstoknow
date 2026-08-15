@@ -87,7 +87,7 @@ const ReviewPile = () => {
         // Pre-populated: the curated memory-invitation chapters.
         return chapters.filter(c => memoryChapters.includes(c.chapter_number));
       case 'kept':
-        return chapters.filter(c => c.review_status !== 'add' && c.review_status !== 'rewrite');
+        return chapters.filter(c => c.review_status !== 'rewrite');
       case 'notyet':
         return chapters.filter(c => !c.review_status);
       default:
@@ -115,7 +115,7 @@ const ReviewPile = () => {
       return 'Nothing left here';
     }
     if (pile === 'memories') return 'A memory would sit beautifully here';
-    if (pile === 'add') return c.review_note ? `You wanted to add: ${c.review_note}` : 'You marked this one to add to';
+    
     if (pile === 'rewrite') return 'You marked this one as needing editing';
     return '';
   };
@@ -173,11 +173,9 @@ const ReviewPile = () => {
         ) : list.length === 0 ? (
           <div className="bg-card rounded-xl border border-border p-8 text-center">
             <p className="text-muted-foreground">
-              {pile === 'add'
-                ? 'Nothing here yet — mark “Add to it” while you read and it lands here.'
-                : pile === 'rewrite'
-                  ? 'Nothing here yet — mark “Replace” while you read and it lands here.'
-                  : 'All done here — nothing left in this basket.'}
+              {pile === 'rewrite'
+                ? 'Nothing here yet — mark “Needs editing” while you read and it lands here.'
+                : 'All done here — nothing left in this basket.'}
             </p>
           </div>
         ) : (
