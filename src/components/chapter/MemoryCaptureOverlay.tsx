@@ -428,18 +428,44 @@ const MemoryCaptureOverlay = ({
                 <div className="flex items-center justify-between gap-2">
                   <button
                     type="button"
-                    onClick={onClose}
+                    onClick={() => setStage('family')}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Done for now
                   </button>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={onClose}>No, I'm done</Button>
+                    <Button variant="outline" onClick={() => setStage('family')}>No, I'm done</Button>
                     <Button onClick={handleAnotherYes}>Yes, add another</Button>
                   </div>
                 </div>
               </>
             )}
+
+            {stage === 'family' && (
+              <>
+                <div
+                  className="rounded-xl px-4 py-3 text-sm leading-relaxed"
+                  style={{
+                    background: 'hsl(var(--secondary))',
+                    color: 'hsl(var(--foreground))',
+                    fontFamily: 'var(--font-body)',
+                  }}
+                >
+                  You can also ask family to send memories — they'll show up here for you to place.
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Not now
+                  </button>
+                  <Button onClick={() => { onInviteFamily?.(); onClose(); }}>Ask family</Button>
+                </div>
+              </>
+            )}
+
           </div>
         )}
       </div>
