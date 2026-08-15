@@ -219,7 +219,7 @@ const QuickRead = () => {
     if (index + 1 < total) setIndex(i => i + 1);
   };
 
-  const handleChoice = async (choice: 'keep' | 'add' | 'rewrite') => {
+  const handleChoice = async (choice: 'keep' | 'rewrite') => {
     if (!chapter || saving) return;
     const wasAlreadyReviewed = !!chapter.review_status;
     setSaving(true);
@@ -549,26 +549,6 @@ const QuickRead = () => {
             )}
           </Button>
           <Button
-            onClick={() => handleChoice('add')}
-            disabled={saving}
-            variant="outline"
-            className="w-full h-16 text-base md:text-lg justify-start gap-4 border-2 hover:bg-white"
-            style={{
-              borderColor: GOLD,
-              color: '#2a1f1a',
-              background: chapter.review_status === 'add' ? 'rgba(187,169,106,0.15)' : 'transparent',
-            }}
-          >
-            <Plus className="h-5 w-5" style={{ color: GOLD }} />
-            <div className="text-left">
-              <div className="font-semibold">Add to it</div>
-              <div className="text-xs opacity-70 font-normal">Love it — I'll add my own words later</div>
-            </div>
-            {chapter.review_status === 'add' && (
-              <span className="ml-auto text-xs font-semibold" style={{ color: GOLD }}>Selected</span>
-            )}
-          </Button>
-          <Button
             onClick={() => handleChoice('rewrite')}
             disabled={saving}
             variant="outline"
@@ -581,8 +561,8 @@ const QuickRead = () => {
           >
             <PenLine className="h-5 w-5" style={{ color: PINK }} />
             <div className="text-left">
-              <div className="font-semibold">Rewrite this</div>
-              <div className="text-xs opacity-70 font-normal">I'd like to write my own version later</div>
+              <div className="font-semibold">Needs editing</div>
+              <div className="text-xs opacity-70 font-normal">I'd like to change this one later</div>
             </div>
             {chapter.review_status === 'rewrite' && (
               <span className="ml-auto text-xs font-semibold" style={{ color: PINK }}>Selected</span>

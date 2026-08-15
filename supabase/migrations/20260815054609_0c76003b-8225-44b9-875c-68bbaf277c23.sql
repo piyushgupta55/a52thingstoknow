@@ -1,0 +1,1 @@
+UPDATE public.chapters SET review_status = 'rewrite' WHERE review_status = 'add';

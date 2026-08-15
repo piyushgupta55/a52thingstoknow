@@ -95,7 +95,7 @@ interface MemoryRow {
 // Chapter indicators follow the review decision, not chapters.status.
 const getChapterIndicatorStatus = (ch: { review_status?: string | null }) => {
   if (ch.review_status === 'keep') return 'complete';
-  if (ch.review_status === 'rewrite' || ch.review_status === 'add') return 'in_progress';
+  if (ch.review_status === 'rewrite') return 'in_progress';
   return 'not_started';
 };
 

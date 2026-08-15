@@ -433,7 +433,7 @@ const BookOverview = () => {
           const photo = (ch.photo_urls || []).filter(Boolean)[0];
           const photoSpot = !finalLook && isPhotoChapter(ch) && !photo;
           const isRewrite = !finalLook && ch.review_status === 'rewrite';
-          const isAdd = !finalLook && ch.review_status === 'add';
+          
           const chapterMemories = memories.filter(m => m.chapter_id === ch.id);
           const memoryInvite = !finalLook && memoryChapters.includes(ch.chapter_number) && chapterMemories.length === 0;
           const rewardNeedsOk = !finalLook && hasRewardMark(ch) && !ch.reading_reward_decision;
@@ -559,15 +559,6 @@ const BookOverview = () => {
                 />
               )}
 
-              {isAdd && (
-                <Cue
-                  tone="gold"
-                  icon={<Plus className="h-4 w-4" />}
-                  label={ch.review_note ? `You wanted to add: ${ch.review_note}` : 'You wanted to add something to this one.'}
-                  detail="Tap to open the chapter and add it whenever you like."
-                  onClick={() => navigate(editorUrl(ch))}
-                />
-              )}
 
               {memoryInvite && (
                 <Cue

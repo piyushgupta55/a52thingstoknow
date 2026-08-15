@@ -206,7 +206,7 @@ const QuickReadHub = () => {
                                 </div>
                               ) : reviewed ? (
                                 <div className="text-xs mt-0.5" style={{ color: TEAL }}>
-                                  Reviewed · {c.review_status === 'keep' ? 'Kept' : c.review_status === 'add' ? 'Add to it' : 'Rewrite'}
+                                  Reviewed · {c.review_status === 'keep' ? 'Kept' : 'Needs editing'}
                                 </div>
                               ) : editable ? (
                                 <div className="text-xs mt-0.5 italic" style={{ color: '#b8875a' }}>
