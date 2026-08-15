@@ -149,10 +149,13 @@ const ChapterNav = ({ currentChapter, totalChapters, chapters, onNavigate, memor
       <button
         onClick={() => nextChapter && onNavigate(nextChapter.id)}
         disabled={!nextChapter}
-        className={`p-1 rounded-sm transition-colors ${
+        title={nextChapter ? `Next chapter — ${nextChapter.title}` : 'Last chapter'}
+        className={`flex items-center gap-1 pl-2 pr-1.5 py-1 rounded-sm transition-colors ${
           nextChapter ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/20 cursor-not-allowed'
         }`}
+        style={{ fontFamily: 'var(--font-body)' }}
       >
+        <span className="text-[0.65rem] uppercase tracking-wider">Next chapter</span>
         <ChevronRight className="h-4 w-4" />
       </button>
     </div>
