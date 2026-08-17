@@ -109,16 +109,9 @@ const CompanionBubble = ({
     if (forceOpen) setOpen(true);
   }, [forceOpen]);
 
-  // Pre-fill 52's input with a review note when the chapter is opened from a
-  // flagged state. We only set the text; the author must press send.
-  useEffect(() => {
-    if (prefillInput?.trim()) {
-      setInput(prefillInput.trim());
-      setShowPrefillHint(true);
-    } else {
-      setShowPrefillHint(false);
-    }
-  }, [prefillInput]);
+  // The review note is shown as quoted context above the input rather than
+  // pre-filling it, so the author can type freely while 52 still sees it.
+
 
   // First run per user: open 52 once so authors discover it, then remember.
   useEffect(() => {
