@@ -20,8 +20,10 @@ type Msg = {
 interface UseCompanionChatOptions {
   currentContent?: string;
   currentReferenceText?: string;
+  reviewNote?: string;
   onApplyEdit?: (nextContent: string, edit: CompanionEdit) => Promise<void> | void;
 }
+
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/companion-chat`;
 
