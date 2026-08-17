@@ -154,9 +154,9 @@ export default function PreviewSetsManager() {
   };
 
   const counts: Record<Field, number> = {
-    website_samples: topics.filter((r) => isChecked("website_samples", r.titles)).length,
-    trial_readable: topics.filter((r) => isChecked("trial_readable", r.titles)).length,
-    trial_editable: topics.filter((r) => isChecked("trial_editable", r.titles)).length,
+    website_samples: topics.filter((r) => isChecked("website_samples", r)).length,
+    trial_readable: topics.filter((r) => isChecked("trial_readable", r)).length,
+    trial_editable: topics.filter((r) => isChecked("trial_editable", r)).length,
   };
 
   if (loading) return <div className="text-muted-foreground">Loading…</div>;
