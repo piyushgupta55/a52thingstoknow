@@ -50,8 +50,10 @@ const CompanionBubble = ({
   const { messages, isLoading, send, clearMessages, applyPending, retryLast } = useCompanionChat(bookId, chapterId, {
     currentContent,
     currentReferenceText,
+    reviewNote: prefillInput,
     onApplyEdit,
   });
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [hasPulsed, setHasPulsed] = useState<Set<string>>(new Set());
