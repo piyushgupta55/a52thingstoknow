@@ -111,11 +111,14 @@ export default function PreviewSetsManager() {
     );
   }, [topics, filter]);
 
-  const isChecked = (field: Field, titles: string[]): boolean => {
-    return titles.some((t) => {
-      const n = normalizeTitle(t);
-      return sets[field].some((x) => normalizeTitle(x) === n);
-    });
+  const isChecked = (field: Field, row: TopicRow): boolean => {
+    // Scope the display check to the row's own slot/topic (headline title).
+    // Using only the primary title prevents adjacent step-book rows from
+    // appearing checked when they happen to share a variant title.
+    const ownTitle = row.titles[0];
+    if (!ownTitle) return false;
+    const n = normalizeTitle(ownTitle);
+    return sets[field].some((x) => normalizeTitle(x) === n);
   };
 
   const toggle = (field: Field, titles: string[]) => {
