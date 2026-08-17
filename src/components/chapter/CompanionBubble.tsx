@@ -354,15 +354,40 @@ const CompanionBubble = ({
         </div>
 
         <form onSubmit={handleSubmit} className="border-t border-border px-3 py-2.5">
-          {showPrefillHint && prefillHint && (
-            <p
-              className="mb-2 text-xs leading-relaxed"
-              style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--muted-foreground))' }}
-            >
-              {prefillHint}
-            </p>
+          {note && (
+            <div className="mb-2 space-y-2">
+              {prefillHint && (
+                <p
+                  className="text-xs leading-relaxed"
+                  style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--muted-foreground))' }}
+                >
+                  {prefillHint}
+                </p>
+              )}
+              <div
+                className="rounded-lg border p-2.5"
+                style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}
+              >
+                <p
+                  className="text-xs leading-relaxed italic"
+                  style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--foreground))' }}
+                >
+                  You noted: {note}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleUseNote}
+                  disabled={isLoading}
+                  className="mt-1.5 text-xs font-medium underline-offset-2 hover:underline disabled:opacity-50"
+                  style={{ color: '#C9A84C' }}
+                >
+                  Use this note
+                </button>
+              </div>
+            </div>
           )}
           <div className="flex items-end gap-2">
+
             <textarea
               ref={inputRef}
               value={input}
