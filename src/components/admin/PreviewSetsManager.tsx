@@ -111,11 +111,14 @@ export default function PreviewSetsManager() {
     );
   }, [topics, filter]);
 
-  const isChecked = (field: Field, titles: string[]): boolean => {
-    return titles.some((t) => {
-      const n = normalizeTitle(t);
-      return sets[field].some((x) => normalizeTitle(x) === n);
-    });
+  const isChecked = (field: Field, row: TopicRow): boolean => {
+    // Scope the display check to the row's own slot/topic (headline title).
+    // Using only the primary title prevents adjacent step-book rows from
+    // appearing checked when they happen to share a variant title.
+    const ownTitle = row.titles[0];
+    if (!ownTitle) return false;
+    const n = normalizeTitle(ownTitle);
+    return sets[field].some((x) => normalizeTitle(x) === n);
   };
 
   const toggle = (field: Field, titles: string[]) => {
@@ -151,9 +154,9 @@ export default function PreviewSetsManager() {
   };
 
   const counts: Record<Field, number> = {
-    website_samples: topics.filter((r) => isChecked("website_samples", r.titles)).length,
-    trial_readable: topics.filter((r) => isChecked("trial_readable", r.titles)).length,
-    trial_editable: topics.filter((r) => isChecked("trial_editable", r.titles)).length,
+    website_samples: topics.filter((r) => isChecked("website_samples", r)).length,
+    trial_readable: topics.filter((r) => isChecked("trial_readable", r)).length,
+    trial_editable: topics.filter((r) => isChecked("trial_editable", r)).length,
   };
 
   if (loading) return <div className="text-muted-foreground">Loading…</div>;
@@ -225,7 +228,7 @@ export default function PreviewSetsManager() {
                 {(Object.keys(FIELD_LABELS) as Field[]).map((f) => (
                   <td key={f} className="p-2 text-center">
                     <Checkbox
-                      checked={isChecked(f, row.titles)}
+                      checked={isChecked(f, row)}
                       onCheckedChange={() => toggle(f, row.titles)}
                     />
                   </td>
