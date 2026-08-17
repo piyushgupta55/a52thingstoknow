@@ -74,7 +74,8 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { messages, bookId, chapterId, currentContent: clientContent, currentReferenceText: clientReferenceText } = body;
+    const { messages, bookId, chapterId, currentContent: clientContent, currentReferenceText: clientReferenceText, reviewNote } = body;
+
     console.log(`[${reqId}] body: bookId=${bookId} chapterId=${chapterId} msgs=${messages?.length} contentLen=${(clientContent || "").length} refLen=${(clientReferenceText || "").length}`);
 
     if (!messages || !bookId) {
