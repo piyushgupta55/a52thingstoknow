@@ -228,7 +228,7 @@ export default function PreviewSetsManager() {
                 {(Object.keys(FIELD_LABELS) as Field[]).map((f) => (
                   <td key={f} className="p-2 text-center">
                     <Checkbox
-                      checked={isChecked(f, row.titles)}
+                      checked={isChecked(f, row)}
                       onCheckedChange={() => toggle(f, row.titles)}
                     />
                   </td>
