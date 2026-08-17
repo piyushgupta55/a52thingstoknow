@@ -153,9 +153,14 @@ const CompanionBubble = ({
     if (!input.trim() || isLoading) return;
     send(input);
     setInput('');
-    setShowPrefillHint(false);
     if (inputRef.current) inputRef.current.style.height = 'auto';
   };
+
+  const handleUseNote = () => {
+    if (!note || isLoading) return;
+    send(note);
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
