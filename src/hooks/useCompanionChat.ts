@@ -35,13 +35,15 @@ export function useCompanionChat(
   const [messages, setMessages] = useState<Msg[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const { onApplyEdit, currentContent, currentReferenceText } = options;
+  const { onApplyEdit, currentContent, currentReferenceText, reviewNote } = options;
 
   const currentContentRef = useRef(currentContent);
   const currentReferenceTextRef = useRef(currentReferenceText);
+  const reviewNoteRef = useRef(reviewNote);
   const onApplyEditRef = useRef(onApplyEdit);
   currentContentRef.current = currentContent;
   currentReferenceTextRef.current = currentReferenceText;
+  reviewNoteRef.current = reviewNote;
   onApplyEditRef.current = onApplyEdit;
 
   const sendInternal = useCallback(
@@ -69,9 +71,11 @@ export function useCompanionChat(
             chapterId,
             currentContent: liveContent,
             currentReferenceText: liveReferenceText,
+            reviewNote: reviewNoteRef.current,
           }),
           signal: abortRef.current.signal,
         });
+
 
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({ error: 'Something went wrong' }));
