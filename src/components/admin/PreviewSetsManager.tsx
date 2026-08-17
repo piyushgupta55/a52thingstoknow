@@ -124,10 +124,14 @@ export default function PreviewSetsManager() {
       const normalizedVariants = new Set(titles.map(normalizeTitle));
       const alreadyIn = existing.some((x) => normalizedVariants.has(normalizeTitle(x)));
       const stripped = existing.filter((x) => !normalizedVariants.has(normalizeTitle(x)));
-      const next = alreadyIn ? stripped : [...stripped, ...titles];
+      // The public /samples list isn't gender-aware, so the website set stores
+      // only the headline title per topic. Other sets keep group behaviour.
+      const added = field === "website_samples" ? titles.slice(0, 1) : titles;
+      const next = alreadyIn ? stripped : [...stripped, ...added];
       return { ...prev, [field]: next };
     });
   };
+
 
   const dirty = JSON.stringify(sets) !== JSON.stringify(initial);
 
