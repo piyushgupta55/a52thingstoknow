@@ -46,12 +46,15 @@ const CompanionBubble = ({
 }: Props) => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const [showPrefillHint, setShowPrefillHint] = useState(Boolean(prefillInput?.trim()));
+  const note = prefillInput?.trim() || '';
+
   const { messages, isLoading, send, clearMessages, applyPending, retryLast } = useCompanionChat(bookId, chapterId, {
     currentContent,
     currentReferenceText,
+    reviewNote: prefillInput,
     onApplyEdit,
   });
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [hasPulsed, setHasPulsed] = useState<Set<string>>(new Set());
@@ -106,16 +109,9 @@ const CompanionBubble = ({
     if (forceOpen) setOpen(true);
   }, [forceOpen]);
 
-  // Pre-fill 52's input with a review note when the chapter is opened from a
-  // flagged state. We only set the text; the author must press send.
-  useEffect(() => {
-    if (prefillInput?.trim()) {
-      setInput(prefillInput.trim());
-      setShowPrefillHint(true);
-    } else {
-      setShowPrefillHint(false);
-    }
-  }, [prefillInput]);
+  // The review note is shown as quoted context above the input rather than
+  // pre-filling it, so the author can type freely while 52 still sees it.
+
 
   // First run per user: open 52 once so authors discover it, then remember.
   useEffect(() => {
@@ -157,9 +153,14 @@ const CompanionBubble = ({
     if (!input.trim() || isLoading) return;
     send(input);
     setInput('');
-    setShowPrefillHint(false);
     if (inputRef.current) inputRef.current.style.height = 'auto';
   };
+
+  const handleUseNote = () => {
+    if (!note || isLoading) return;
+    send(note);
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -353,15 +354,40 @@ const CompanionBubble = ({
         </div>
 
         <form onSubmit={handleSubmit} className="border-t border-border px-3 py-2.5">
-          {showPrefillHint && prefillHint && (
-            <p
-              className="mb-2 text-xs leading-relaxed"
-              style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--muted-foreground))' }}
-            >
-              {prefillHint}
-            </p>
+          {note && (
+            <div className="mb-2 space-y-2">
+              {prefillHint && (
+                <p
+                  className="text-xs leading-relaxed"
+                  style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--muted-foreground))' }}
+                >
+                  {prefillHint}
+                </p>
+              )}
+              <div
+                className="rounded-lg border p-2.5"
+                style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--muted))' }}
+              >
+                <p
+                  className="text-xs leading-relaxed italic"
+                  style={{ fontFamily: 'var(--font-body)', color: 'hsl(var(--foreground))' }}
+                >
+                  You noted: {note}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleUseNote}
+                  disabled={isLoading}
+                  className="mt-1.5 text-xs font-medium underline-offset-2 hover:underline disabled:opacity-50"
+                  style={{ color: '#C9A84C' }}
+                >
+                  Use this note
+                </button>
+              </div>
+            </div>
           )}
           <div className="flex items-end gap-2">
+
             <textarea
               ref={inputRef}
               value={input}

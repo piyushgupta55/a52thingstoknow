@@ -74,7 +74,8 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { messages, bookId, chapterId, currentContent: clientContent, currentReferenceText: clientReferenceText } = body;
+    const { messages, bookId, chapterId, currentContent: clientContent, currentReferenceText: clientReferenceText, reviewNote } = body;
+
     console.log(`[${reqId}] body: bookId=${bookId} chapterId=${chapterId} msgs=${messages?.length} contentLen=${(clientContent || "").length} refLen=${(clientReferenceText || "").length}`);
 
     if (!messages || !bookId) {
@@ -119,13 +120,17 @@ serve(async (req) => {
         const isLetter = ch.chapter_template === "letter";
         const templateLabel = ch.chapter_template === "all_words" ? "Classic" : ch.chapter_template === "photo_top" ? "Horizontal Photo" : ch.chapter_template === "photo_second" ? "Vertical Photo" : "Letter";
 
+        const noteContext = reviewNote?.trim()
+          ? `\n\nAUTHOR'S NOTE\nThe author previously noted this about the chapter:\"\"\"\n${reviewNote.trim()}\n\"\"\"\nConsider this note when editing.`
+          : "";
+
         if (isLetter) {
           chapterContext = `
 CURRENT CHAPTER
 - Title: "${ch.title}" (Letter)
 - Template: ${templateLabel}
 - Word budget: ${budget} (currently ${totalWords} — ${budgetStatus})
-- Status: ${ch.status}
+- Status: ${ch.status}${noteContext}
 
 CHAPTER TEXT (verbatim — use field "wisdom_content" to edit this):
 """
@@ -137,7 +142,7 @@ CURRENT CHAPTER
 - Title: "${ch.title}" (Chapter ${ch.chapter_number})
 - Template: ${templateLabel}
 - Word budget: ${budget} (currently ${totalWords} — ${budgetStatus})
-- Status: ${ch.status}
+- Status: ${ch.status}${noteContext}
 
 SECTION 1 — WISDOM BODY (reference_text field — the main pre-written text shown in italic; use field "reference_text" to edit this):
 """
@@ -149,6 +154,7 @@ SECTION 2 — PERSONAL WISDOM (wisdom_content field — the author's own additio
 ${liveContent || "(empty)"}
 """`;
         }
+
       }
     }
 
