@@ -40,7 +40,7 @@ interface ChapterSummary {
   id: string;
   chapter_number: number;
   title: string | null;
-  status: string | null;
+  review_status: string | null;
   word_count: number | null;
 }
 
@@ -73,7 +73,7 @@ const TestersManager: React.FC = () => {
     if (bookChapters[bookId]) return;
     const { data } = await supabase
       .from('chapters')
-      .select('id, chapter_number, title, status, word_count')
+      .select('id, chapter_number, title, review_status, word_count')
       .eq('book_id', bookId)
       .order('chapter_number');
     setBookChapters((prev) => ({ ...prev, [bookId]: (data as ChapterSummary[]) || [] }));
@@ -83,7 +83,7 @@ const TestersManager: React.FC = () => {
 
   const chapterPercent = (chapters: ChapterSummary[]) => {
     if (!chapters.length) return 0;
-    const done = chapters.filter((c) => c.status === 'complete').length;
+    const done = chapters.filter((c) => !!c.review_status).length;
     return Math.round((done / chapters.length) * 100);
   };
 
@@ -227,13 +227,13 @@ const TestersManager: React.FC = () => {
                                       ) : (
                                         <>
                                           <div className="mb-2 text-muted-foreground">
-                                            {chapterPercent(chapters)}% complete · {chapters.filter((c) => c.status === 'complete').length}/{chapters.length} chapters done
+                                            {chapterPercent(chapters)}% reviewed · {chapters.filter((c) => !!c.review_status).length}/{chapters.length} chapters reviewed
                                           </div>
                                           <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
                                             {chapters.map((c) => (
                                               <div key={c.id} className="flex justify-between px-2 py-1 rounded bg-muted/40">
                                                 <span className="truncate">{c.chapter_number}. {c.title || '(untitled)'}</span>
-                                                <span className={c.status === 'complete' ? 'text-emerald-600' : 'text-muted-foreground'}>
+                                                <span className={c.review_status === 'keep' ? 'text-emerald-600' : c.review_status === 'rewrite' ? 'text-amber-600' : 'text-muted-foreground'}>
                                                   {c.word_count || 0}w
                                                 </span>
                                               </div>
