@@ -495,7 +495,7 @@ const ChapterEditor = () => {
   const siblingChapters = allChapters.filter(c => c.id !== chapterId);
   const chaptersForNav = allChapters.map(ch => ({
     ...ch,
-    status: getChapterIndicatorStatus(ch),
+    review_status: ch.review_status ?? null,
     is_photo_chapter:
       photoChapterNums.has(ch.chapter_number) ||
       ch.chapter_template === 'photo_top' ||
@@ -1371,7 +1371,7 @@ const ChapterEditor = () => {
               chapters={chaptersForNav}
               onNavigate={handleChapterNavigate}
               memoryCountsByChapter={memoryCountsByChapter}
-              ancestryStatus={ancestryStatus}
+              ancestryStatus={ancestryStatus === 'complete' ? 'keep' : ancestryStatus === 'in_progress' ? 'rewrite' : null}
               onNavigateAncestry={() => void flushAndNavigate(`/book/${bookId}/ancestry`)}
             />
 
