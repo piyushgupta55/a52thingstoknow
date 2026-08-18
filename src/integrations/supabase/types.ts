@@ -554,6 +554,30 @@ export type Database = {
           },
         ]
       }
+      chapters_status_backup_20260818: {
+        Row: {
+          backed_up_at: string | null
+          book_id: string | null
+          chapter_id: string | null
+          chapter_number: number | null
+          status: string | null
+        }
+        Insert: {
+          backed_up_at?: string | null
+          book_id?: string | null
+          chapter_id?: string | null
+          chapter_number?: number | null
+          status?: string | null
+        }
+        Update: {
+          backed_up_at?: string | null
+          book_id?: string | null
+          chapter_id?: string | null
+          chapter_number?: number | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       content_pool: {
         Row: {
           book_id: string | null
