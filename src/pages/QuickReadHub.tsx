@@ -21,7 +21,6 @@ interface Chapter {
   id: string;
   chapter_number: number;
   title: string;
-  status: string;
   review_status: string | null;
 }
 

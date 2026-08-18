@@ -1,0 +1,1 @@
+ALTER TABLE public.chapters DROP COLUMN status;

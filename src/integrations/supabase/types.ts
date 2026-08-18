@@ -464,7 +464,6 @@ export type Database = {
           review_note: string | null
           review_status: string | null
           seed_content: string | null
-          status: string
           title: string
           triage: string | null
           updated_at: string
@@ -494,7 +493,6 @@ export type Database = {
           review_note?: string | null
           review_status?: string | null
           seed_content?: string | null
-          status?: string
           title: string
           triage?: string | null
           updated_at?: string
@@ -524,7 +522,6 @@ export type Database = {
           review_note?: string | null
           review_status?: string | null
           seed_content?: string | null
-          status?: string
           title?: string
           triage?: string | null
           updated_at?: string
@@ -553,6 +550,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      chapters_status_backup_20260818: {
+        Row: {
+          backed_up_at: string | null
+          book_id: string | null
+          chapter_id: string | null
+          chapter_number: number | null
+          status: string | null
+        }
+        Insert: {
+          backed_up_at?: string | null
+          book_id?: string | null
+          chapter_id?: string | null
+          chapter_number?: number | null
+          status?: string | null
+        }
+        Update: {
+          backed_up_at?: string | null
+          book_id?: string | null
+          chapter_id?: string | null
+          chapter_number?: number | null
+          status?: string | null
+        }
+        Relationships: []
       }
       content_pool: {
         Row: {
