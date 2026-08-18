@@ -753,12 +753,56 @@ const ChapterEditor = () => {
 
   const hasUnsavedRef = useRef(false);
   useEffect(() => { hasUnsavedRef.current = hasUnsavedChanges; }, [hasUnsavedChanges]);
+  const savingRef = useRef(false);
+  useEffect(() => { savingRef.current = saving; }, [saving]);
 
   // Used by ChapterNav arrows
   const flushAndNavigate = async (target: string) => {
     if (hasUnsavedRef.current) await save(true);
     navigate(target);
   };
+
+  // --- Back-navigation / unload guard ----------------------------------
+  // Autosave is debounced, so a back press can outrun it. We push a sentinel
+  // history entry once the chapter goes dirty; the first back press pops the
+  // sentinel (same URL, so the route does not change), we flush the pending
+  // save, then let the real back-navigation continue. The flush is wrapped in
+  // try/finally so a failed save never traps the author on the page.
+  const backGuardRef = useRef(false);
+  useEffect(() => {
+    if (!hasUnsavedChanges || backGuardRef.current) return;
+    backGuardRef.current = true;
+    window.history.pushState({ __chapterEditorGuard: true }, '');
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    const onPop = () => {
+      if (!backGuardRef.current) return;
+      backGuardRef.current = false;
+      const needsFlush = hasUnsavedRef.current || savingRef.current;
+      if (!needsFlush) { window.history.back(); return; }
+      (async () => {
+        try {
+          if (hasUnsavedRef.current) await saveRef.current?.(true);
+        } catch {
+          // Never block the navigation on a failed save.
+        } finally {
+          window.history.back();
+        }
+      })();
+    };
+    const onBeforeUnload = () => {
+      // Best-effort flush for tab close / refresh. No confirmation dialog.
+      if (hasUnsavedRef.current) { try { saveRef.current?.(true); } catch { /* noop */ } }
+    };
+    window.addEventListener('popstate', onPop);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, []);
+
 
   // --- Guided memory prompt gating -------------------------------------
   // Persisted per book in localStorage (no schema change): which milestones
