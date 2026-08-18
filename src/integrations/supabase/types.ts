@@ -464,7 +464,6 @@ export type Database = {
           review_note: string | null
           review_status: string | null
           seed_content: string | null
-          status: string
           title: string
           triage: string | null
           updated_at: string
@@ -494,7 +493,6 @@ export type Database = {
           review_note?: string | null
           review_status?: string | null
           seed_content?: string | null
-          status?: string
           title: string
           triage?: string | null
           updated_at?: string
@@ -524,7 +522,6 @@ export type Database = {
           review_note?: string | null
           review_status?: string | null
           seed_content?: string | null
-          status?: string
           title?: string
           triage?: string | null
           updated_at?: string
