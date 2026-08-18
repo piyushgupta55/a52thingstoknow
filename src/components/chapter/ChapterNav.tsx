@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown, Check, Circle, BookOpen, Camera, Mail } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, ArrowRight, Check, Circle, BookOpen, Camera, Mail } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ChapterInfo {
@@ -150,13 +150,15 @@ const ChapterNav = ({ currentChapter, totalChapters, chapters, onNavigate, memor
         onClick={() => nextChapter && onNavigate(nextChapter.id)}
         disabled={!nextChapter}
         title={nextChapter ? `Next chapter — ${nextChapter.title}` : 'Last chapter'}
-        className={`flex items-center gap-1 pl-2 pr-1.5 py-1 rounded-sm transition-colors ${
-          nextChapter ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/20 cursor-not-allowed'
+        className={`ml-1 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+          nextChapter
+            ? 'border-border bg-background text-foreground hover:bg-muted/60 hover:border-primary/40'
+            : 'border-border/40 text-muted-foreground/40 cursor-not-allowed'
         }`}
         style={{ fontFamily: 'var(--font-body)' }}
       >
-        <span className="text-[0.65rem] uppercase tracking-wider">Next chapter</span>
-        <ChevronRight className="h-4 w-4" />
+        <span>Next chapter</span>
+        <ArrowRight className="h-3.5 w-3.5" />
       </button>
     </div>
   );
