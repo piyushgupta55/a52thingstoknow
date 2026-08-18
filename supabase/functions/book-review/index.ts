@@ -68,9 +68,8 @@ serve(async (req: Request) => {
       });
     }
 
-    // When chapterId is provided we re-scan only that one chapter (regardless
-    // of its current status — the author may have just saved it). Otherwise
-    // scan all completed chapters.
+    // When chapterId is provided we re-scan only that one chapter. Otherwise
+    // scan every chapter in the book (chapters.status is no longer written).
     let chaptersQuery = supabase
       .from("chapters")
       .select("id, chapter_number, title, content, reference_text, chapter_template, status")
@@ -79,9 +78,8 @@ serve(async (req: Request) => {
 
     if (chapterId) {
       chaptersQuery = chaptersQuery.eq("id", chapterId);
-    } else {
-      chaptersQuery = chaptersQuery.eq("status", "complete");
     }
+
 
     const { data: chapters } = await chaptersQuery;
 
