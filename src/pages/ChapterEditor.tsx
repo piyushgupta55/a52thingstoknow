@@ -94,13 +94,6 @@ interface MemoryRow {
 // Photo chapter designation is now loaded from database (chapter_templates.is_photo_chapter)
 // instead of being hardcoded
 
-// Chapter indicators follow the review decision, not chapters.status.
-const getChapterIndicatorStatus = (ch: { review_status?: string | null }) => {
-  if (ch.review_status === 'keep') return 'complete';
-  if (ch.review_status === 'rewrite') return 'in_progress';
-  return 'not_started';
-};
-
 interface ReviewIssue { id: string; type: string; snippet: string; message: string }
 
 const ChapterEditor = () => {
