@@ -6,7 +6,8 @@ interface ChapterInfo {
   id: string;
   chapter_number: number;
   title: string;
-  status: string;
+  /** 'keep' | 'rewrite' | null — the author's review choice. */
+  review_status?: string | null;
   is_photo_chapter?: boolean;
   has_photo?: boolean;
 }
@@ -21,17 +22,17 @@ interface Props {
   onNavigateAncestry?: () => void;
 }
 
-const StatusIndicator = ({ status }: { status: string }) => {
-  if (status === 'complete') {
+const StatusIndicator = ({ status }: { status?: string | null }) => {
+  if (status === 'keep') {
     return (
-      <div className="flex items-center justify-center h-4 w-4 flex-shrink-0">
+      <div className="flex items-center justify-center h-4 w-4 flex-shrink-0" title="Kept">
         <Check className="h-3.5 w-3.5 text-teal-500" />
       </div>
     );
   }
-  if (status === 'in_progress') {
+  if (status === 'rewrite') {
     return (
-      <div className="flex items-center justify-center h-4 w-4 flex-shrink-0">
+      <div className="flex items-center justify-center h-4 w-4 flex-shrink-0" title="Needs editing">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <circle cx="7" cy="7" r="6" stroke="#C9A84C" strokeWidth="1.5" fill="none" />
           <path d="M7 1 A6 6 0 0 1 7 13" fill="#C9A84C" />
@@ -39,9 +40,9 @@ const StatusIndicator = ({ status }: { status: string }) => {
       </div>
     );
   }
-  // not_started / default
+  // undecided
   return (
-    <div className="flex items-center justify-center h-4 w-4 flex-shrink-0">
+    <div className="flex items-center justify-center h-4 w-4 flex-shrink-0" title="Not decided yet">
       <Circle className="h-3 w-3 text-muted-foreground/25" />
     </div>
   );
@@ -104,7 +105,7 @@ const ChapterNav = ({ currentChapter, totalChapters, chapters, onNavigate, memor
                       : 'text-foreground/70 hover:bg-muted/50'
                   }`}
                 >
-                  <StatusIndicator status={ch.status} />
+                  <StatusIndicator status={ch.review_status} />
                   {isLetterCh ? (
                     <Mail className="h-3 w-3 text-primary/60 flex-shrink-0" />
                   ) : (
@@ -137,7 +138,7 @@ const ChapterNav = ({ currentChapter, totalChapters, chapters, onNavigate, memor
                 onClick={() => { onNavigateAncestry(); setDropdownOpen(false); }}
                 className="w-full text-left px-3 py-2 flex items-center gap-2 text-[0.75rem] text-foreground/70 hover:bg-muted/50 border-t border-[hsl(var(--devotional-border))] transition-colors"
               >
-                <StatusIndicator status={ancestryStatus || 'not_started'} />
+                <StatusIndicator status={ancestryStatus} />
                 <BookOpen className="h-3 w-3 text-primary/60 flex-shrink-0" />
                 <span className="truncate flex-1">Where You Come From</span>
               </button>

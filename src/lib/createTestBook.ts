@@ -25,7 +25,7 @@ export const createTestBook = async (userId: string) => {
     book_id: book.id,
     chapter_number: 0,
     title: 'Letter from the Author',
-    status: 'complete',
+    review_status: null,
     chapter_template: 'letter',
     is_photo_chapter: false,
     photo_urls: [],
@@ -43,7 +43,7 @@ export const createTestBook = async (userId: string) => {
       is_photo_chapter: false,
       photo_urls: [],
       photo_layout: 'top',
-      status: 'complete',
+      review_status: null,
       content: `
         <p>Wisdom begins with listening, not speaking. In a world filled with endless noise, the quiet mind becomes a sanctuary for truth. When we take the time to pause and reflect on the moments that define our lives, we discover that the most profound lessons are often found in the quietest spaces.</p>
         <p>To build a life of meaning, one must cultivate patience. Patience is not merely the ability to wait, but the attitude we maintain while waiting. It is the understanding that growth takes time, like a seed developing under the dark soil before it breaks through to the light. We cannot rush the seasons of our lives, and attempting to do so only leads to frustration and missed opportunities.</p>
@@ -61,7 +61,7 @@ export const createTestBook = async (userId: string) => {
       is_photo_chapter: true,
       photo_urls: ['https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1000&auto=format&fit=crop'],
       photo_layout: 'top',
-      status: 'complete',
+      review_status: null,
       content: `
         <p>There is a unique clarity that comes from standing on the peak of a mountain, looking out over the vast expanse below. The challenges that seemed so large from the valley suddenly appear small and manageable. Nature has a way of restoring our perspective if we are willing to step away and listen.</p>
         <p>When we align our path with the natural rhythms of life, we find a sense of peace that no material success can replicate. Let the mountains teach you strength, and let the rivers teach you flow.</p>
@@ -79,7 +79,7 @@ export const createTestBook = async (userId: string) => {
       is_photo_chapter: true,
       photo_urls: ['https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop'],
       photo_layout: 'top',
-      status: 'complete',
+      review_status: null,
       content: `
         <p>Standing tall amidst the storm is not about being rigid; it is about having roots that run deep enough to hold you steady while the branches bend. The trees in the forest survive high winds because they grow together, their root systems intertwining beneath the soil to form a support network that cannot be broken by any single gust.</p>
         <p>In our own lives, we need that same interconnectedness. We cannot walk this path alone, nor were we ever meant to. The relationships we build, the love we share, and the communities we foster are the roots that sustain us through the storms of life. Nourish those roots, for they are your true strength.</p>

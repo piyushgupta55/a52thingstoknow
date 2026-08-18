@@ -258,13 +258,12 @@ const faqSections: FaqSection[] = [
       {
         q: 'How long is each chapter?',
         aText:
-          "Each chapter is designed to fit neatly on two pages. That keeps the book clean and readable, and it means there's a limit to how much text fits. If a chapter runs too long, you'll be told when you try to mark it complete (see Marking Chapters Complete).",
+          "Each chapter is designed to fit neatly on two pages. That keeps the book clean and readable, and it means there's a limit to how much text fits. If a chapter runs too long, the editor tells you right away so you can trim it.",
         a: (
           <p>
             Each chapter is designed to fit neatly on <strong>two pages</strong>. That keeps the
             book clean and readable, and it means there's a limit to how much text fits. If a
-            chapter runs too long, you'll be told when you try to mark it complete (see{' '}
-            <em>Marking Chapters Complete</em>).
+            chapter runs too long, the editor tells you right away so you can trim it.
           </p>
         ),
       },
@@ -499,12 +498,12 @@ const faqSections: FaqSection[] = [
       {
         q: 'Do I need to resize my photos?',
         aText:
-          'No — photos are sized to fit the page automatically. Just pick one you love. (Note: a photo-layout chapter will not let you mark it complete until you either add a photo or switch it to the Classic layout.)',
+          'No — photos are sized to fit the page automatically. Just pick one you love. (Note: a photo-layout chapter stays in Photos & Decisions until you either add a photo or switch it to the Classic layout.)',
         a: (
           <p>
             No — photos are <strong>sized to fit the page automatically</strong>. Just pick one you
-            love. (Note: a photo-layout chapter won't let you mark it complete until you either add
-            a photo or switch it to the <strong>Classic</strong> layout.)
+            love. (Note: a photo-layout chapter stays in <strong>Photos &amp; Decisions</strong>{' '}
+            until you either add a photo or switch it to the <strong>Classic</strong> layout.)
           </p>
         ),
       },
@@ -643,7 +642,7 @@ const faqSections: FaqSection[] = [
       {
         q: 'How do I see what my book looks like?',
         aText:
-          '1. On your book dashboard, click the book cover (it says "Click to preview your book"). 2. Page through the spreads with the ◀ / ▶ arrows (or your arrow keys). 3. Click ✕ to return. Note: only completed chapters show in the preview — chapters still in progress are hidden until you mark them complete.',
+          '1. On your book dashboard, click the book cover (it says "Click to preview your book"). 2. Page through the spreads with the ◀ / ▶ arrows (or your arrow keys). 3. Click ✕ to return. Every chapter is in the book from day one, so the preview always shows the whole thing.',
         a: (
           <>
             <ol className="list-decimal pl-6 mt-2 space-y-1">
@@ -660,8 +659,8 @@ const faqSections: FaqSection[] = [
               </li>
             </ol>
             <p className="mt-3">
-              Note: only <strong>completed</strong> chapters show in the preview — chapters still in
-              progress are hidden until you mark them complete.
+              Every chapter is in your book from day one, so the preview always shows the whole
+              book — including anything you've flagged as <strong>Needs editing</strong>.
             </p>
           </>
         ),
@@ -669,12 +668,12 @@ const faqSections: FaqSection[] = [
       {
         q: 'Can I download a copy to look at?',
         aText:
-          'Yes. On the dashboard, click Generate Test PDF in Quick Actions. It prepares the file and downloads book-test.pdf. As with the preview, it includes your opening Letter plus any chapters marked complete.',
+          'Yes. On the dashboard, click Generate Test PDF in Quick Actions. It prepares the file and downloads book-test.pdf. As with the preview, it includes your opening Letter plus all 52 chapters.',
         a: (
           <p>
             Yes. On the dashboard, click <strong>Generate Test PDF</strong> in Quick Actions. It
             prepares the file and downloads <strong>book-test.pdf</strong>. As with the preview, it
-            includes your opening Letter plus any chapters marked complete.
+            includes your opening Letter plus all 52 chapters.
           </p>
         ),
       },
@@ -692,55 +691,55 @@ const faqSections: FaqSection[] = [
     ],
   },
   {
-    title: 'Marking Chapters Complete',
+    title: 'Saving and Reviewing Chapters',
     questions: [
       {
-        q: 'How do I mark a chapter done?',
+        q: 'How do I save a chapter?',
         aText:
-          "1. In the chapter toolbar (top right), click Mark Complete (green check). 2. It saves first, then checks three things: the chapter fits its two pages, both pages have some content, and any photo layout actually has a photo. 3. If all's well, the chapter is marked complete and you're moved to the next one. 4. If something's off, you'll see a short note explaining why — Layout Overflow (too long — trim a little), Missing Page Content (a page is empty), or Photo required — and the chapter stays in progress until you fix it.",
+          "You don't have to. Your changes save automatically a moment after you stop typing — text, photos, and layout alike. There's nothing to click and nothing to remember.",
         a: (
-          <ol className="list-decimal pl-6 mt-2 space-y-1">
-            <li>
-              In the chapter toolbar (top right), click <strong>Mark Complete</strong> (green
-              check).
-            </li>
-            <li>
-              It saves first, then checks three things: the chapter fits its two pages, both pages
-              have some content, and any photo layout actually has a photo.
-            </li>
-            <li>
-              If all's well, the chapter is marked complete and you're moved to the next one.
-            </li>
-            <li>
-              If something's off, you'll see a short note explaining why —{' '}
-              <strong>Layout Overflow</strong> (too long — trim a little),{' '}
-              <strong>Missing Page Content</strong> (a page is empty), or{' '}
-              <strong>Photo required</strong> — and the chapter stays in progress until you fix it.
-            </li>
-          </ol>
+          <p>
+            You don't have to. Your changes <strong>save automatically</strong> a moment after you
+            stop typing — text, photos, and layout alike. There's nothing to click and nothing to
+            remember.
+          </p>
         ),
       },
       {
-        q: 'Changed something after marking it done?',
+        q: 'What do Keep and Needs editing mean?',
         aText:
-          "Open it and click Unmark Complete to edit again. Then make your changes, click Save Draft, and Mark Complete when you're ready.",
+          "Every chapter is already written and ready to print. As you read through, you tell us how you feel about each one: Keep this one leaves it as it is, and Needs editing flags it so it shows up in your Needs editing list with any note you leave. Editing a chapter and saving resolves the flag automatically.",
         a: (
-          <p>
-            Open it and click <strong>Unmark Complete</strong> to edit again. Then make your
-            changes, click <strong>Save Draft</strong>, and <strong>Mark Complete</strong> when
-            you're ready.
-          </p>
+          <>
+            <p>
+              Every chapter is already written and ready to print. As you read through, you tell us
+              how you feel about each one:
+            </p>
+            <ul className="list-disc pl-6 mt-2 space-y-1">
+              <li>
+                <strong>Keep this one</strong> — leaves the chapter exactly as it is.
+              </li>
+              <li>
+                <strong>Needs editing</strong> — flags it, along with any note you leave, so it
+                shows up in your <strong>Needs editing</strong> list on the dashboard.
+              </li>
+            </ul>
+            <p className="mt-3">
+              Editing a flagged chapter and letting it save clears the flag automatically.
+            </p>
+          </>
         ),
       },
       {
         q: 'When is the whole book finished?',
         aText:
-          "There's no single \"book done\" button. Your dashboard shows a progress bar — \"N of 52 chapters complete\" — that fills in as you go. When you're happy with it, use Review My Book to do a final look-through.",
+          "Your book is print-ready from day one — all 52 chapters are already written. The dashboard only counts what's still open: chapters you flagged as Needs editing, missing photos, and decisions to make. When that list is empty, you're done.",
         a: (
           <p>
-            There's no single "book done" button. Your dashboard shows a progress bar — "
-            <strong>N of 52 chapters complete</strong>" — that fills in as you go. When you're happy
-            with it, use <strong>Review My Book</strong> to do a final look-through.
+            Your book is <strong>print-ready from day one</strong> — all 52 chapters are already
+            written. The dashboard only counts what's still open: chapters you flagged as{' '}
+            <strong>Needs editing</strong>, missing photos, and decisions to make. When that list is
+            empty, you're done.
           </p>
         ),
       },
@@ -810,14 +809,15 @@ const faqSections: FaqSection[] = [
         ),
       },
       {
-        q: "Why won't a chapter mark complete?",
+        q: "Why is a chapter still showing as open?",
         aText:
-          "It's one of three things: it's too long (trim it), a page is empty (add a little content), or it's a photo chapter with no photo (add one, or switch to the Classic layout).",
+          "It's one of three things: you flagged it as Needs editing (open it, make your change, and it clears), it's a photo chapter with no photo yet (add one, or switch to the Classic layout), or there's a decision waiting on you.",
         a: (
           <p>
-            It's one of three things: it's too long (<strong>trim it</strong>), a page is empty (
-            <strong>add a little content</strong>), or it's a photo chapter with no photo (
-            <strong>add one, or switch to the Classic layout</strong>).
+            It's one of three things: you flagged it as <strong>Needs editing</strong> (open it,
+            make your change, and it clears), it's a photo chapter with no photo yet (
+            <strong>add one, or switch to the Classic layout</strong>), or there's a decision
+            waiting on you.
           </p>
         ),
       },

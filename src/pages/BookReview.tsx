@@ -195,7 +195,7 @@ const BookReview = () => {
                 Review My Book
               </h1>
               <p className="text-muted-foreground mt-1">
-                We scan every completed chapter for typos, name mismatches, cut-off sentences, spacing issues, and empty pages.
+                We scan every chapter for typos, name mismatches, cut-off sentences, spacing issues, and empty pages.
               </p>
             </div>
             {!loading && (
@@ -250,9 +250,9 @@ const BookReview = () => {
                   <div className="flex items-start gap-3">
                     <BookOpen className="h-6 w-6 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="font-semibold text-foreground">No completed chapters yet</p>
+                      <p className="font-semibold text-foreground">Nothing to scan yet</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Mark chapters as complete to include them in the review.
+                        Add some writing to your chapters — then we'll check them for you.
                       </p>
                     </div>
                   </div>
@@ -262,7 +262,7 @@ const BookReview = () => {
                     <div>
                       <p className="font-semibold text-foreground">Your book looks great — no issues found!</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        We scanned {chaptersScanned} completed chapter{chaptersScanned === 1 ? '' : 's'}.
+                        We scanned {chaptersScanned} chapter{chaptersScanned === 1 ? '' : 's'}.
                       </p>
                     </div>
                   </div>
@@ -274,7 +274,7 @@ const BookReview = () => {
                         {issueCount} issue{issueCount === 1 ? '' : 's'} found across {chaptersWithIssues} chapter{chaptersWithIssues === 1 ? '' : 's'}
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Scanned {chaptersScanned} completed chapter{chaptersScanned === 1 ? '' : 's'}. Tap "Fix It" to open the chapter with every flag highlighted — we'll re-check it automatically when you return.
+                        Scanned {chaptersScanned} chapter{chaptersScanned === 1 ? '' : 's'}. Tap "Fix It" to open the chapter with every flag highlighted — we'll re-check it automatically when you return.
                       </p>
                     </div>
                   </div>

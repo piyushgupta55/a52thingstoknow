@@ -94,13 +94,6 @@ interface MemoryRow {
 // Photo chapter designation is now loaded from database (chapter_templates.is_photo_chapter)
 // instead of being hardcoded
 
-// Chapter indicators follow the review decision, not chapters.status.
-const getChapterIndicatorStatus = (ch: { review_status?: string | null }) => {
-  if (ch.review_status === 'keep') return 'complete';
-  if (ch.review_status === 'rewrite') return 'in_progress';
-  return 'not_started';
-};
-
 interface ReviewIssue { id: string; type: string; snippet: string; message: string }
 
 const ChapterEditor = () => {
@@ -495,7 +488,7 @@ const ChapterEditor = () => {
   const siblingChapters = allChapters.filter(c => c.id !== chapterId);
   const chaptersForNav = allChapters.map(ch => ({
     ...ch,
-    status: getChapterIndicatorStatus(ch),
+    review_status: ch.review_status ?? null,
     is_photo_chapter:
       photoChapterNums.has(ch.chapter_number) ||
       ch.chapter_template === 'photo_top' ||
@@ -1371,7 +1364,7 @@ const ChapterEditor = () => {
               chapters={chaptersForNav}
               onNavigate={handleChapterNavigate}
               memoryCountsByChapter={memoryCountsByChapter}
-              ancestryStatus={ancestryStatus}
+              ancestryStatus={ancestryStatus === 'complete' ? 'keep' : ancestryStatus === 'in_progress' ? 'rewrite' : null}
               onNavigateAncestry={() => void flushAndNavigate(`/book/${bookId}/ancestry`)}
             />
 

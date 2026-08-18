@@ -12,7 +12,8 @@ export interface ChapterLike {
   id: string;
   chapter_number: number;
   title: string;
-  status: string;
+  /** @deprecated chapters.status is no longer written; use review_status. */
+  status?: string;
   photo_urls: string[] | null;
   content: string | null;
   seed_content?: string | null;
@@ -43,8 +44,6 @@ export function rewardUnresolved(c: ChapterLike): boolean {
 
 // Belongs to the Photos & Decisions bin (visible while unresolved and not yet complete).
 export function inPhotosDecisionsBin(c: ChapterLike): boolean {
-  if (c.status === 'complete') return false;
-  if (!c.review_status) return false; // hasn't been through the read-through yet
   return photoUnresolved(c) || rewardUnresolved(c);
 }
 
@@ -65,13 +64,14 @@ export function binWaitingOn(c: ChapterLike): 'photo' | 'reward' | 'both' | null
 
 // Regular piles: exclude photo/reward chapters (they live in the bin).
 export function inKeptPile(c: ChapterLike): boolean {
-  return c.review_status === 'keep' && c.status !== 'complete' && !isPhotoOrRewardChapter(c);
+  return c.review_status === 'keep' && !isPhotoOrRewardChapter(c);
 }
-export function inAddPile(c: ChapterLike): boolean {
-  return c.review_status === 'add' && c.status !== 'complete' && !isPhotoOrRewardChapter(c);
+/** @deprecated The "To add to" pile is retired; 'add' was migrated to 'rewrite'. */
+export function inAddPile(_c: ChapterLike): boolean {
+  return false;
 }
 export function inRewritePile(c: ChapterLike): boolean {
-  return c.review_status === 'rewrite' && c.status !== 'complete' && !isPhotoOrRewardChapter(c);
+  return c.review_status === 'rewrite' && !isPhotoOrRewardChapter(c);
 }
 
 // Can this chapter be safely marked complete right now?

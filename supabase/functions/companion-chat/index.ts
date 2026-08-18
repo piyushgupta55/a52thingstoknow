@@ -162,7 +162,7 @@ ${liveContent || "(empty)"}
       .from("chapters")
       .select("id", { count: "exact", head: true })
       .eq("book_id", bookId)
-      .eq("status", "complete");
+      .not("review_status", "is", null);
 
     const { count: totalCount } = await supabase
       .from("chapters")
@@ -174,7 +174,7 @@ ${liveContent || "(empty)"}
 SESSION
 - Recipient: ${book?.recipient_name || "their child"} (${book?.recipient_gender || "unknown"})
 - Author relationship: ${book?.author_label || book?.relationship || "parent"}
-- Progress: ${completedCount || 0} of ${totalCount || 53} chapters complete
+- Progress: ${completedCount || 0} of ${totalCount || 53} chapters reviewed (kept or flagged for editing)
 ${chapterContext}`;
 
     const systemPrompt = STATIC_IDENTITY + dynamicContext;
