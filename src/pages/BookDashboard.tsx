@@ -619,15 +619,6 @@ const BookDashboard = () => {
           </button>
 
 
-          {/* AI Questions */}
-          <div className="bg-card rounded-xl border border-border p-5 shadow-sm opacity-50">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="h-5 w-5 text-muted-foreground" />
-              <h3 className="text-sm font-semibold text-muted-foreground">AI Questions</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">Coming soon</p>
-            <Badge variant="secondary" className="mt-2 text-[0.65rem]">Planned</Badge>
-          </div>
         </div>
 
         {/* How It Works */}
