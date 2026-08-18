@@ -103,7 +103,7 @@ serve(async (req) => {
     if (chapterId) {
       const { data: ch } = await supabase
         .from("chapters")
-        .select("title, chapter_number, chapter_template, content, reference_text, status, bible_verse_text, quote_text")
+        .select("title, chapter_number, chapter_template, content, reference_text, bible_verse_text, quote_text")
         .eq("id", chapterId)
         .single();
 
@@ -130,7 +130,7 @@ CURRENT CHAPTER
 - Title: "${ch.title}" (Letter)
 - Template: ${templateLabel}
 - Word budget: ${budget} (currently ${totalWords} — ${budgetStatus})
-- Status: ${ch.status}${noteContext}
+${noteContext}
 
 CHAPTER TEXT (verbatim — use field "wisdom_content" to edit this):
 """
@@ -142,7 +142,7 @@ CURRENT CHAPTER
 - Title: "${ch.title}" (Chapter ${ch.chapter_number})
 - Template: ${templateLabel}
 - Word budget: ${budget} (currently ${totalWords} — ${budgetStatus})
-- Status: ${ch.status}${noteContext}
+${noteContext}
 
 SECTION 1 — WISDOM BODY (reference_text field — the main pre-written text shown in italic; use field "reference_text" to edit this):
 """

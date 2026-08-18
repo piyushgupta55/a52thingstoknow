@@ -57,7 +57,6 @@ interface ChapterData {
   quote_attribution: string | null;
   content: string | null;
   photo_urls: string[];
-  status: string;
   verse_id: string | null;
   quote_id: string | null;
   chapter_template: string;

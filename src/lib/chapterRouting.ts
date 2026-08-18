@@ -12,8 +12,6 @@ export interface ChapterLike {
   id: string;
   chapter_number: number;
   title: string;
-  /** @deprecated chapters.status is no longer written; use review_status. */
-  status?: string;
   photo_urls: string[] | null;
   content: string | null;
   seed_content?: string | null;

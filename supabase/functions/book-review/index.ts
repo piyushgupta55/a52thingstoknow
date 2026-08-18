@@ -69,10 +69,10 @@ serve(async (req: Request) => {
     }
 
     // When chapterId is provided we re-scan only that one chapter. Otherwise
-    // scan every chapter in the book (chapters.status is no longer written).
+    // scan every chapter in the book.
     let chaptersQuery = supabase
       .from("chapters")
-      .select("id, chapter_number, title, content, reference_text, chapter_template, status")
+      .select("id, chapter_number, title, content, reference_text, chapter_template")
       .eq("book_id", bookId)
       .order("chapter_number");
 

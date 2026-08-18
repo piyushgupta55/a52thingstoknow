@@ -42,7 +42,6 @@ interface Chapter {
   id: string;
   chapter_number: number;
   title: string;
-  status: string;
   chapter_template: string;
   photo_urls: string[];
   is_photo_chapter: boolean;

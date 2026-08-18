@@ -31,7 +31,6 @@ interface Chapter {
   id: string;
   chapter_number: number;
   title: string;
-  status: string;
   content: string | null;
   reference_text: string | null;
   bible_verse_text: string | null;

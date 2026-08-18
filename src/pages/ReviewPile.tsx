@@ -10,7 +10,6 @@ interface Chapter {
   id: string;
   chapter_number: number;
   title: string;
-  status: string;
   photo_urls: string[] | null;
   content: string | null;
   seed_content: string | null;

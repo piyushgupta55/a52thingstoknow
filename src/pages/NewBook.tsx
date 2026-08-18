@@ -75,7 +75,6 @@ const NewBook = () => {
         chapter_number: 0,
         title: 'Letter from the Author',
         reference_text: null,
-        status: 'not_started',
         chapter_template: 'letter',
         is_photo_chapter: false,
         photo_urls: [],
@@ -116,8 +115,7 @@ const NewBook = () => {
           is_photo_chapter: t.is_photo_chapter || false,
           photo_urls: [],
           photo_layout: 'top',
-          status: 'not_started',
-          content: seededContent,
+            content: seededContent,
           seed_content: seededContent,
           reference_text: null,
         };
