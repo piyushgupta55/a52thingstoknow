@@ -426,16 +426,9 @@ const MemoryCaptureOverlay = ({
                     fontFamily: 'var(--font-body)',
                   }}
                 >
-                  Would you like to add another memory?
+                  Would you like to save another? They'll wait in your memories — you can drop them into any chapter later.
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setStage('family')}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Done for now
-                  </button>
+                <div className="flex items-center justify-end gap-2">
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setStage('family')}>No, I'm done</Button>
                     <Button onClick={handleAnotherYes}>Yes, add another</Button>
