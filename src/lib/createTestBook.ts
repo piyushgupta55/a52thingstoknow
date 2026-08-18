@@ -25,7 +25,7 @@ export const createTestBook = async (userId: string) => {
     book_id: book.id,
     chapter_number: 0,
     title: 'Letter from the Author',
-      review_status: null,
+    review_status: null,
     chapter_template: 'letter',
     is_photo_chapter: false,
     photo_urls: [],
