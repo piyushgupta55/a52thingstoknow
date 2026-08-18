@@ -696,12 +696,12 @@ const faqSections: FaqSection[] = [
       {
         q: 'How do I save a chapter?',
         aText:
-          "You don't have to. Your changes save automatically a moment after you stop typing — text, photos, and layout alike. There's no Save or Mark Complete button to remember.",
+          "You don't have to. Your changes save automatically a moment after you stop typing — text, photos, and layout alike. There's nothing to click and nothing to remember.",
         a: (
           <p>
             You don't have to. Your changes <strong>save automatically</strong> a moment after you
-            stop typing — text, photos, and layout alike. There's no Save or Mark Complete button
-            to remember.
+            stop typing — text, photos, and layout alike. There's nothing to click and nothing to
+            remember.
           </p>
         ),
       },
