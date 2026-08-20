@@ -184,6 +184,14 @@ const ReviewPile = () => {
 
         {loading ? (
           <p className="text-muted-foreground">Loading…</p>
+        ) : loadError ? (
+          <div className="bg-card rounded-xl border border-destructive/40 p-8 text-center">
+            <p className="font-heading text-base font-semibold text-foreground mb-1">We couldn’t load this basket</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Something went wrong fetching your chapters, so this list may be incomplete. ({loadError})
+            </p>
+            <Button variant="outline" onClick={() => window.location.reload()}>Try again</Button>
+          </div>
         ) : list.length === 0 ? (
           <div className="bg-card rounded-xl border border-border p-8 text-center">
             <p className="text-muted-foreground">
