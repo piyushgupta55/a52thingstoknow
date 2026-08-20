@@ -41,7 +41,7 @@ const QuickReadHub = () => {
         supabase.from('books').select('recipient_name').eq('id', bookId).single(),
         supabase
           .from('chapters')
-          .select('id, chapter_number, title, status, review_status')
+          .select('id, chapter_number, title, review_status')
           .eq('book_id', bookId)
           .gt('chapter_number', 0)
           .order('chapter_number'),

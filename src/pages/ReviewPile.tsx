@@ -45,28 +45,43 @@ const ReviewPile = () => {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [memoryChapters, setMemoryChapters] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // "short" was the old name for the Photos & Decisions basket.
   const pile = rawPile === 'short' ? 'photos' : rawPile;
 
   useEffect(() => {
     if (!bookId) return;
+    let cancelled = false;
     (async () => {
-      const [{ data: chapData }, { data: memData }, inviteChapters] = await Promise.all([
-        supabase
-          .from('chapters')
-          .select('id, chapter_number, title, status, photo_urls, content, seed_content, reference_text, review_status, review_note, is_photo_chapter, photo_declined, reading_reward_decision')
-          .eq('book_id', bookId)
-          .gt('chapter_number', 0)
-          .order('chapter_number'),
-        supabase.from('memories').select('id, chapter_id').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
-        fetchMemoryInviteChapters(),
-      ]);
-      setChapters((chapData as Chapter[]) || []);
-      setMemories((memData as Memory[]) || []);
-      setMemoryChapters(inviteChapters);
-      setLoading(false);
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const [{ data: chapData, error: chapError }, { data: memData, error: memError }, inviteChapters] = await Promise.all([
+          supabase
+            .from('chapters')
+            .select('id, chapter_number, title, photo_urls, content, seed_content, reference_text, review_status, review_note, is_photo_chapter, photo_declined, reading_reward_decision')
+            .eq('book_id', bookId)
+            .gt('chapter_number', 0)
+            .order('chapter_number'),
+          supabase.from('memories').select('id, chapter_id').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
+          fetchMemoryInviteChapters(),
+        ]);
+        if (cancelled) return;
+        if (chapError || memError) {
+          setLoadError((chapError || memError)?.message || 'Could not load this basket.');
+        } else {
+          setChapters((chapData as Chapter[]) || []);
+          setMemories((memData as Memory[]) || []);
+          setMemoryChapters(inviteChapters);
+        }
+      } catch (e: any) {
+        if (!cancelled) setLoadError(e?.message || 'Could not load this basket.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
+    return () => { cancelled = true; };
   }, [bookId]);
 
   const meta = pile && PILE_META[pile] ? PILE_META[pile] : null;
@@ -169,6 +184,14 @@ const ReviewPile = () => {
 
         {loading ? (
           <p className="text-muted-foreground">Loading…</p>
+        ) : loadError ? (
+          <div className="bg-card rounded-xl border border-destructive/40 p-8 text-center">
+            <p className="font-heading text-base font-semibold text-foreground mb-1">We couldn’t load this basket</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Something went wrong fetching your chapters, so this list may be incomplete. ({loadError})
+            </p>
+            <Button variant="outline" onClick={() => window.location.reload()}>Try again</Button>
+          </div>
         ) : list.length === 0 ? (
           <div className="bg-card rounded-xl border border-border p-8 text-center">
             <p className="text-muted-foreground">
