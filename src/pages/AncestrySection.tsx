@@ -76,6 +76,7 @@ const AncestrySection = () => {
         content: content.trim() ? content : null,
         pdf_url: pdfUrl,
         pdf_filename: pdfFilename,
+        upload_mime_type: pdfUrl ? uploadMimeType : null,
         status,
       };
       if (ancestryId) {
