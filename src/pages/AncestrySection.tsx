@@ -11,6 +11,7 @@ import { countWords } from '@/lib/page2Status';
 
 const MAX_WORDS = 300;
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
 const AncestrySection = () => {
   const { bookId } = useParams<{ bookId: string }>();
