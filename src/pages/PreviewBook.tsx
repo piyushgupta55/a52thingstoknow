@@ -53,7 +53,7 @@ const PreviewBook = () => {
   const [authorName, setAuthorName] = useState('');
   const [memories, setMemories] = useState<Memory[]>([]);
   const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; pdf_filename: string | null; upload_mime_type: string | null } | null>(null);
-  const [familyHistory, setFamilyHistory] = useState<{ content: string | null } | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
   const [showLeftPageFade, setShowLeftPageFade] = useState(false);
