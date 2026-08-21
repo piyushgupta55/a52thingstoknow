@@ -214,8 +214,12 @@ const ReviewPile = () => {
                     className={`w-full text-left group px-4 py-4 flex items-center justify-between gap-4 hover:bg-muted/40 transition-colors ${done ? 'opacity-60' : ''}`}
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm text-muted-foreground">Chapter {c.chapter_number}</div>
-                      <div className="font-heading text-base font-semibold text-foreground truncate">{c.title}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {c.chapter_number === 0 ? 'Opening' : `Chapter ${c.chapter_number}`}
+                      </div>
+                      <div className="font-heading text-base font-semibold text-foreground truncate">
+                        {c.chapter_number === 0 ? 'Letter from the Author' : c.title}
+                      </div>
                       <div className="text-xs text-muted-foreground mt-0.5 truncate">
                         {done || waitingFor(c)}
                       </div>
