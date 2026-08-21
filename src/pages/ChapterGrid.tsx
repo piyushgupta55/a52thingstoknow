@@ -133,7 +133,40 @@ const ChapterGrid = () => {
               </button>
             );
           })}
+
+          {[
+            { key: 'ancestry', label: 'Where You Come From', status: ancestryStatus, path: `/book/${bookId}/ancestry` },
+            { key: 'family-history', label: 'Family History', status: familyHistoryStatus, path: `/book/${bookId}/family-history` },
+          ].map(section => {
+            const isComplete = section.status === 'complete';
+            const isInProgress = section.status === 'in_progress';
+            return (
+              <button
+                key={section.key}
+                onClick={() => navigate(section.path)}
+                className="bg-muted/30 border border-dashed border-primary/30 rounded-lg p-4 text-left hover:shadow-md hover:border-primary/60 transition-all group"
+              >
+                <div className="text-xs text-primary/70 mb-1 uppercase tracking-wider">Optional section</div>
+                <div className="font-medium text-foreground text-sm truncate group-hover:text-primary transition-colors">
+                  {section.label}
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {isComplete ? (
+                    <Badge className="text-[0.65rem] bg-primary/10 text-primary hover:bg-primary/10 border-transparent">Complete</Badge>
+                  ) : isInProgress ? (
+                    <Badge className="text-[0.65rem] bg-accent/15 text-accent-foreground hover:bg-accent/15 border-transparent">In progress</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[0.65rem] text-muted-foreground">Not started</Badge>
+                  )}
+                </div>
+                <p className="mt-1.5 text-[0.7rem] italic text-muted-foreground">
+                  Two-page section at the back of the book
+                </p>
+              </button>
+            );
+          })}
         </div>
+
       </div>
     </div>
   );
