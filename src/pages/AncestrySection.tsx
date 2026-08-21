@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
-import { ArrowLeft, FileUp, X, Save, FileText } from 'lucide-react';
+import { ArrowLeft, FileUp, X, Save, FileText, Image as ImageIcon } from 'lucide-react';
 import { countWords } from '@/lib/page2Status';
 
 const MAX_WORDS = 300;
