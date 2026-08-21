@@ -84,7 +84,7 @@ const App = () => (
             <Route path="/invite/:token" element={<MemoryInvite />} />
             <Route path="/help" element={<ProtectedRoute><HelpFaq /></ProtectedRoute>} />
             <Route path="/book/:bookId/ancestry" element={<ProtectedRoute><AncestrySection /></ProtectedRoute>} />
-            <Route path="/book/:bookId/family-history" element={<ProtectedRoute><FamilyHistorySection /></ProtectedRoute>} />
+            <Route path="/book/:bookId/family-history" element={<ProtectedRoute><MergedBackMatterRedirect /></ProtectedRoute>} />
             <Route path="/book/:bookId/library" element={<ProtectedRoute><ChapterLibrary /></ProtectedRoute>} />
             <Route path="/book/:bookId/review" element={<ProtectedRoute><BookReview /></ProtectedRoute>} />
             <Route path="/book/:bookId/quick-read" element={<ProtectedRoute><QuickReadHub /></ProtectedRoute>} />

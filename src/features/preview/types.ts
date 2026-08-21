@@ -53,7 +53,6 @@ export type SpreadDef =
   | { type: 'letter' }
   | { type: 'epigraph' }
   | { type: 'chapter'; chapter: Chapter }
-  | { type: 'ancestry' }
-  | { type: 'family_history' };
+  | { type: 'ancestry' };
 
 export type SpreadRender = [React.ReactNode, React.ReactNode, string | undefined, boolean, React.ReactNode | null];
