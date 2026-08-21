@@ -91,9 +91,6 @@ const PreviewBook = () => {
   const ancestryPdfUrl = ancestryIsImage ? null : ancestry?.pdf_url || null;
   const hasAncestry = ancestryText.length > 0 || !!ancestry?.pdf_url;
 
-  const familyHistoryText = (familyHistory?.content || '').trim();
-  const hasFamilyHistory = familyHistoryText.length > 0;
-
   const spreads: SpreadDef[] = [];
   spreads.push({ type: 'title' });
   spreads.push({ type: 'toc' });
@@ -101,7 +98,6 @@ const PreviewBook = () => {
   spreads.push({ type: 'epigraph' });
   visibleChapters.forEach(ch => spreads.push({ type: 'chapter', chapter: ch }));
   if (hasAncestry) spreads.push({ type: 'ancestry' });
-  if (hasFamilyHistory) spreads.push({ type: 'family_history' });
 
   // Page numbers are derived from the actual paginated spread list:
   // each spread occupies two pages (left = index * 2, right = left + 1).

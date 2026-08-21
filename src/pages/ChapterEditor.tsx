@@ -1373,8 +1373,6 @@ const ChapterEditor = () => {
               memoryCountsByChapter={memoryCountsByChapter}
               ancestryStatus={ancestryStatus === 'complete' ? 'keep' : ancestryStatus === 'in_progress' ? 'rewrite' : null}
               onNavigateAncestry={() => void flushAndNavigate(`/book/${bookId}/ancestry`)}
-              familyHistoryStatus={familyHistoryStatus === 'complete' ? 'keep' : familyHistoryStatus === 'in_progress' ? 'rewrite' : null}
-              onNavigateFamilyHistory={() => void flushAndNavigate(`/book/${bookId}/family-history`)}
             />
 
             <div className="flex items-center rounded-sm overflow-hidden border border-[hsl(var(--devotional-border))] flex-shrink-0" style={{ fontFamily: 'var(--font-body)' }}>
