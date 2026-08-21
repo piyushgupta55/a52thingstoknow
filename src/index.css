@@ -219,6 +219,20 @@
   display: block;
 }
 
+.ancestry-image {
+  width: 100%;
+  max-width: 100%;
+  height: var(--ancestry-image-block-height);
+  max-height: var(--ancestry-image-block-height);
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  margin: 0 auto;
+  border-radius: 2px;
+}
+
+
+
 .quote-wrapper {
   margin: 1.3em 0;
   padding-left: 1.5em;
