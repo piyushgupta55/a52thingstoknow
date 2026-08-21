@@ -69,7 +69,7 @@ export function inAddPile(_c: ChapterLike): boolean {
   return false;
 }
 export function inRewritePile(c: ChapterLike): boolean {
-  return c.review_status === 'rewrite' && !isPhotoOrRewardChapter(c);
+  return c.review_status === 'rewrite';
 }
 
 // Can this chapter be safely marked complete right now?
