@@ -43,6 +43,7 @@ const AncestrySection = () => {
         setContent(ancestryData.content || '');
         setPdfUrl(ancestryData.pdf_url || null);
         setPdfFilename(ancestryData.pdf_filename || null);
+        setUploadMimeType((ancestryData as any).upload_mime_type || null);
       }
       setLoading(false);
     })();
