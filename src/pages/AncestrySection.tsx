@@ -190,19 +190,28 @@ const AncestrySection = () => {
         </div>
 
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-heading text-lg font-semibold text-foreground mb-3">Option 2 — Upload a PDF</h2>
+          <h2 className="font-heading text-lg font-semibold text-foreground mb-1">Option 2 — Upload a page</h2>
+          <p className="text-sm text-muted-foreground mb-3">
+            Upload a JPEG or PNG — a family tree, a scanned photo or document — and it appears on the page itself,
+            with your writing alongside it. A PDF is accepted too, but it is printed at the back of the book rather
+            than on this page.
+          </p>
 
           {pdfUrl ? (
             <div className="flex items-center justify-between gap-3 p-3 border border-border rounded-md bg-muted/30">
               <div className="flex items-center gap-2 min-w-0">
-                <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                {isImageUpload ? (
+                  <ImageIcon className="h-4 w-4 text-primary flex-shrink-0" />
+                ) : (
+                  <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                )}
                 <a
                   href={pdfUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-foreground hover:underline truncate"
                 >
-                  {pdfFilename || 'Uploaded PDF'}
+                  {pdfFilename || (isImageUpload ? 'Uploaded image' : 'Uploaded PDF')}
                 </a>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -211,7 +220,7 @@ const AncestrySection = () => {
                 </Button>
                 <button
                   onClick={handleRemovePdf}
-                  aria-label="Remove PDF"
+                  aria-label="Remove upload"
                   className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 >
                   <X className="h-4 w-4" />
@@ -221,15 +230,22 @@ const AncestrySection = () => {
           ) : (
             <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-2">
               <FileUp className="h-4 w-4" />
-              {uploading ? 'Uploading…' : 'Upload a PDF (from Ancestry, Canva, FamilySearch, etc.)'}
+              {uploading ? 'Uploading…' : 'Upload an image or PDF'}
             </Button>
           )}
-          <p className="text-xs text-muted-foreground mt-2">PDF only · Max 10MB</p>
+          {pdfUrl && (
+            <p className="text-xs text-muted-foreground mt-2 italic">
+              {isImageUpload
+                ? 'This image appears on the "Where You Come From" page.'
+                : 'This PDF is printed at the back of the book, not on this page.'}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground mt-2">JPEG, PNG or PDF · Max 10MB</p>
 
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/pdf"
+            accept="image/jpeg,image/png,application/pdf"
             className="hidden"
             onChange={handleUpload}
           />
@@ -237,7 +253,7 @@ const AncestrySection = () => {
 
         {textPriorityNotice && (
           <p className="text-xs text-muted-foreground italic mb-4">
-            Note: when both are provided, the written text takes priority and the PDF is ignored in the printed book.
+            Note: your written text appears on the page. The attached PDF is printed at the back of the book.
           </p>
         )}
 
