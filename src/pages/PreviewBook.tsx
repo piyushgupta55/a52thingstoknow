@@ -128,12 +128,11 @@ const PreviewBook = () => {
     const load = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = toBookGender(bookData?.recipient_gender);
-      const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }, { data: fhData }] = await Promise.all([
+      const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content').eq('gender', tplGender),
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
         supabase.from('book_ancestry').select('content, pdf_url, pdf_filename, upload_mime_type').eq('book_id', bookId).maybeSingle(),
-        supabase.from('book_family_history').select('content').eq('book_id', bookId).maybeSingle(),
       ]);
       if (bookData && bookData.recipient_name) {
         bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -143,7 +142,6 @@ const PreviewBook = () => {
       setTemplates(tplData || []);
       setMemories(memData || []);
       setAncestry(ancData || null);
-      setFamilyHistory(fhData || null);
       if (bookData?.user_id) {
         const { data: userData } = await supabase.auth.getUser();
         const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();

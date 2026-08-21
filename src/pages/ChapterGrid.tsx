@@ -33,7 +33,6 @@ const ChapterGrid = () => {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memoryCounts, setMemoryCounts] = useState<Record<string, number>>({});
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
-  const [familyHistoryStatus, setFamilyHistoryStatus] = useState<string>('not_started');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
