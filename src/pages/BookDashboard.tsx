@@ -857,26 +857,6 @@ const BookDashboard = () => {
                     </button>
                   );
                 })()}
-
-                {(() => {
-                  const isComplete = familyHistoryStatus === 'complete';
-                  const isInProgress = familyHistoryStatus === 'in_progress';
-                  return (
-                    <button
-                      onClick={() => navigate(`/book/${bookId}/family-history`)}
-                      disabled={reorderMode}
-                      className={`flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors hover:bg-muted/50 text-primary hover:text-primary ${reorderMode ? 'opacity-50' : ''}`}
-                    >
-                      <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
-                      <span className={`truncate underline-offset-2 hover:underline ${isComplete ? 'font-medium' : ''}`}>Family History</span>
-                      {isComplete && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
-                      {isInProgress && <PenLine className="h-3.5 w-3.5 text-accent ml-auto flex-shrink-0" />}
-                      {!isComplete && !isInProgress && (
-                        <span className="text-[0.65rem] italic text-muted-foreground ml-auto flex-shrink-0">not started</span>
-                      )}
-                    </button>
-                  );
-                })()}
               </div>
               {reorderMode && (
                 <p className="text-[0.65rem] italic text-muted-foreground/60 mt-3">
