@@ -9,7 +9,7 @@ import Navbar from '@/components/Navbar';
 import { ArrowLeft, FileUp, X, Save, FileText, Image as ImageIcon } from 'lucide-react';
 import { countWords } from '@/lib/page2Status';
 
-const MAX_WORDS = 300;
+const MAX_WORDS = 450;
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
@@ -169,9 +169,9 @@ const AncestrySection = () => {
         </h1>
         <p className="text-muted-foreground mb-8 leading-relaxed">
           This is your family's story — where you come from, who came before you, and the thread that connects it
-          all to {recipientName || 'you'}. Write as much or as little as you want. This page belongs to your family.
-          You have space for approximately 300 words, and you can add an image — a family tree, a scanned photo or
-          document — that appears right on the page beside your words.
+          all to {recipientName || 'you'}. Write as much or as little as you want. This two-page section at the back
+          of the book belongs to your family. You have space for approximately 450 words, and you can add an image —
+          a family tree, a scanned photo or document — that appears right on the page beside your words.
         </p>
 
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6">
