@@ -61,6 +61,23 @@
   display: block;
 }
 
+/* Ancestry ("Where You Come From") uploaded image. Sits alone beneath the
+   title block, so it is sized near the full text height of the page.
+   Keep in sync with --ancestry-image-block-height in src/index.css and
+   ANCESTRY_IMAGE_BLOCK_HEIGHT_IN in src/features/preview/geometry.ts. */
+.ancestry-image {
+  width: 100%;
+  max-width: 100%;
+  height: 6in;
+  max-height: 6in;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  margin: 0 auto;
+  border-radius: 2px;
+}
+
+
 /* Chapter Content Page (Page 2) */
 .vertical-photo-top {
   width: 100%;
