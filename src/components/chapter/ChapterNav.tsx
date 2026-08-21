@@ -20,6 +20,8 @@ interface Props {
   memoryCountsByChapter?: Record<string, number>;
   ancestryStatus?: string;
   onNavigateAncestry?: () => void;
+  familyHistoryStatus?: string;
+  onNavigateFamilyHistory?: () => void;
 }
 
 const StatusIndicator = ({ status }: { status?: string | null }) => {
@@ -48,7 +50,7 @@ const StatusIndicator = ({ status }: { status?: string | null }) => {
   );
 };
 
-const ChapterNav = ({ currentChapter, totalChapters, chapters, onNavigate, memoryCountsByChapter = {}, ancestryStatus, onNavigateAncestry }: Props) => {
+const ChapterNav = ({ currentChapter, totalChapters, chapters, onNavigate, memoryCountsByChapter = {}, ancestryStatus, onNavigateAncestry, familyHistoryStatus, onNavigateFamilyHistory }: Props) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -141,6 +143,17 @@ const ChapterNav = ({ currentChapter, totalChapters, chapters, onNavigate, memor
                 <StatusIndicator status={ancestryStatus} />
                 <BookOpen className="h-3 w-3 text-primary/60 flex-shrink-0" />
                 <span className="truncate flex-1">Where You Come From</span>
+              </button>
+            )}
+
+            {onNavigateFamilyHistory && (
+              <button
+                onClick={() => { onNavigateFamilyHistory(); setDropdownOpen(false); }}
+                className="w-full text-left px-3 py-2 flex items-center gap-2 text-[0.75rem] text-foreground/70 hover:bg-muted/50 transition-colors"
+              >
+                <StatusIndicator status={familyHistoryStatus} />
+                <BookOpen className="h-3 w-3 text-primary/60 flex-shrink-0" />
+                <span className="truncate flex-1">Family History</span>
               </button>
             )}
           </div>

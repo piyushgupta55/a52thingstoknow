@@ -32,18 +32,24 @@ const ChapterGrid = () => {
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memoryCounts, setMemoryCounts] = useState<Record<string, number>>({});
+  const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
+  const [familyHistoryStatus, setFamilyHistoryStatus] = useState<string>('not_started');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!bookId) return;
     const fetchData = async () => {
-      const [{ data: bookData }, { data: chapData }, { data: memData }] = await Promise.all([
+      const [{ data: bookData }, { data: chapData }, { data: memData }, { data: ancData }, { data: fhData }] = await Promise.all([
         supabase.from('books').select('*').eq('id', bookId).single(),
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('memories').select('chapter_id').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
+        supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle(),
+        supabase.from('book_family_history').select('status').eq('book_id', bookId).maybeSingle(),
       ]);
       setBook(bookData);
       setChapters((chapData as any) || []);
+      setAncestryStatus((ancData as any)?.status || 'not_started');
+      setFamilyHistoryStatus((fhData as any)?.status || 'not_started');
       const counts: Record<string, number> = {};
       (memData || []).forEach((m: any) => {
         if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1;
@@ -127,7 +133,40 @@ const ChapterGrid = () => {
               </button>
             );
           })}
+
+          {[
+            { key: 'ancestry', label: 'Where You Come From', status: ancestryStatus, path: `/book/${bookId}/ancestry` },
+            { key: 'family-history', label: 'Family History', status: familyHistoryStatus, path: `/book/${bookId}/family-history` },
+          ].map(section => {
+            const isComplete = section.status === 'complete';
+            const isInProgress = section.status === 'in_progress';
+            return (
+              <button
+                key={section.key}
+                onClick={() => navigate(section.path)}
+                className="bg-muted/30 border border-dashed border-primary/30 rounded-lg p-4 text-left hover:shadow-md hover:border-primary/60 transition-all group"
+              >
+                <div className="text-xs text-primary/70 mb-1 uppercase tracking-wider">Optional section</div>
+                <div className="font-medium text-foreground text-sm truncate group-hover:text-primary transition-colors">
+                  {section.label}
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {isComplete ? (
+                    <Badge className="text-[0.65rem] bg-primary/10 text-primary hover:bg-primary/10 border-transparent">Complete</Badge>
+                  ) : isInProgress ? (
+                    <Badge className="text-[0.65rem] bg-accent/15 text-accent-foreground hover:bg-accent/15 border-transparent">In progress</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[0.65rem] text-muted-foreground">Not started</Badge>
+                  )}
+                </div>
+                <p className="mt-1.5 text-[0.7rem] italic text-muted-foreground">
+                  Two-page section at the back of the book
+                </p>
+              </button>
+            );
+          })}
         </div>
+
       </div>
     </div>
   );
