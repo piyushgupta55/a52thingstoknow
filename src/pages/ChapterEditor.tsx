@@ -150,6 +150,7 @@ const ChapterEditor = () => {
   const [referenceText, setReferenceText] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
+  const [familyHistoryStatus, setFamilyHistoryStatus] = useState<string>('not_started');
   const [recipientGender, setRecipientGender] = useState('');
   const [authorLabel, setAuthorLabel] = useState('');
   const [authorName, setAuthorName] = useState('');
