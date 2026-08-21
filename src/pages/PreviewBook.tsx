@@ -28,6 +28,7 @@ import {
   PREVIEW_SPREAD_HEIGHT,
   PREVIEW_SPINE_WIDTH,
   PREVIEW_SPREAD_WIDTH,
+  PREVIEW_ANCESTRY_IMAGE_HEIGHT,
 } from '@/features/preview/geometry';
 import type { Book, Chapter, ChapterTemplate, Memory, SpreadDef, SpreadRender } from '@/features/preview/types';
 import { getPhotoImageStyle, parsePhotoRenderLayout } from '@/features/photoRendering';
