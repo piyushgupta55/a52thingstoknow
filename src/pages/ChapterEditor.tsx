@@ -436,9 +436,13 @@ const ChapterEditor = () => {
         const { data: profileData } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
         setAuthorName(profileData?.display_name || '');
       }
-      // Load ancestry status for the chapter dropdown
-      const { data: ancData } = await supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle();
+      // Load back-matter section statuses for the chapter dropdown
+      const [{ data: ancData }, { data: fhData }] = await Promise.all([
+        supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle(),
+        supabase.from('book_family_history').select('status').eq('book_id', bookId).maybeSingle(),
+      ]);
       setAncestryStatus(ancData?.status || 'not_started');
+      setFamilyHistoryStatus(fhData?.status || 'not_started');
       if (memoriesData) {
         const rows = memoriesData as MemoryRow[];
         const counts: Record<string, number> = {};
