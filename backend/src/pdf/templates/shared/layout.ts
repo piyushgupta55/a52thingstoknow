@@ -404,22 +404,30 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     }
   }
 
-  if (bookData.ancestryText || bookData.ancestryPdfUrl) {
+  if (bookData.ancestryText || bookData.ancestryPdfUrl || bookData.ancestryImageUrl) {
+    const ancestryImageHtml = bookData.ancestryImageUrl
+      ? `<img src="${bookData.ancestryImageUrl}" class="ancestry-image" />`
+      : '';
     chaptersHtml += `
-      <!-- Page 1: Where You Come From -->
+      <!-- Page 1: Where You Come From (title + uploaded image) -->
       <div class="page chapter-content-page page-p1" data-chapter="ancestry">
         <div class="chapter-header">
           <h2 class="chapter-title">Where You Come From</h2>
         </div>
-        ${bookData.ancestryText ? `
+        ${ancestryImageHtml}
+        ${!ancestryImageHtml && bookData.ancestryText ? `
         <div class="wisdom-text chapter-opening">
           ${formatContent(bookData.ancestryText, true)}
         </div>
         ` : ''}
       </div>
-      <!-- Page 2: Overflow target -->
+      <!-- Page 2: Text (or overflow target) -->
       <div class="page chapter-content-page page-p2" data-chapter="ancestry">
-        <div class="wisdom-text"></div>
+        ${ancestryImageHtml && bookData.ancestryText ? `
+        <div class="wisdom-text">
+          ${formatContent(bookData.ancestryText, true)}
+        </div>
+        ` : '<div class="wisdom-text"></div>'}
       </div>
     `;
   }
