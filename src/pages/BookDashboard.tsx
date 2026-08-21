@@ -596,28 +596,50 @@ const BookDashboard = () => {
           </div>
 
           {/* Family */}
-          <button
-            onClick={() => navigate(`/book/${bookId}/memories`)}
-            className="text-left bg-card rounded-xl border border-border p-5 shadow-sm hover:border-primary/40 hover:shadow-md transition-all"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <Heart className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Family</h3>
-              {familyStats.unseen > 0 && (
-                <Badge className="ml-auto text-[0.65rem] bg-primary text-primary-foreground">{familyStats.unseen} new</Badge>
-              )}
-            </div>
-            <div className="space-y-1.5 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Send className="h-3.5 w-3.5 text-muted-foreground/60" />
-                <span><span className="font-semibold text-foreground">{familyStats.sent}</span> invites sent</span>
+          <div className="text-left bg-card rounded-xl border border-border p-5 shadow-sm hover:border-primary/40 hover:shadow-md transition-all">
+            <button onClick={() => navigate(`/book/${bookId}/memories`)} className="w-full text-left">
+              <div className="flex items-center gap-2 mb-3">
+                <Heart className="h-5 w-5 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">Family</h3>
+                {familyStats.unseen > 0 && (
+                  <Badge className="ml-auto text-[0.65rem] bg-primary text-primary-foreground">{familyStats.unseen} new</Badge>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Inbox className="h-3.5 w-3.5 text-muted-foreground/60" />
-                <span><span className="font-semibold text-foreground">{familyStats.responded}</span> contributions received</span>
+              <div className="space-y-1.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Send className="h-3.5 w-3.5 text-muted-foreground/60" />
+                  <span><span className="font-semibold text-foreground">{familyStats.sent}</span> invites sent</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Inbox className="h-3.5 w-3.5 text-muted-foreground/60" />
+                  <span><span className="font-semibold text-foreground">{familyStats.responded}</span> contributions received</span>
+                </div>
               </div>
+            </button>
+
+            <div className="mt-4 pt-3 border-t border-border">
+              <p className="text-[0.7rem] italic text-muted-foreground/80 mb-2">
+                Optional two-page sections at the back of the book, where you can write about the family and add a family tree.
+              </p>
+              {[
+                { label: 'Where You Come From', status: ancestryStatus, path: `/book/${bookId}/ancestry` },
+                { label: 'Family History', status: familyHistoryStatus, path: `/book/${bookId}/family-history` },
+              ].map(section => (
+                <button
+                  key={section.label}
+                  onClick={() => navigate(section.path)}
+                  className="flex items-center gap-2 w-full text-left py-1.5 px-2 -mx-2 rounded-md text-sm text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
+                  <span className="truncate underline-offset-2 hover:underline">{section.label}</span>
+                  <span className="ml-auto text-[0.65rem] text-muted-foreground flex-shrink-0">
+                    {section.status === 'complete' ? 'Complete' : section.status === 'in_progress' ? 'In progress' : 'Not started'}
+                  </span>
+                </button>
+              ))}
             </div>
-          </button>
+          </div>
+
 
 
         </div>
