@@ -85,9 +85,7 @@ const BookDashboard = () => {
   const [photoTemplates, setPhotoTemplates] = useState<ChapterTemplate[]>([]);
   const [authorName, setAuthorName] = useState('');
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
-  const [familyHistoryStatus, setFamilyHistoryStatus] = useState<string>('not_started');
   const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; upload_mime_type?: string | null } | null>(null);
-  const [familyHistory, setFamilyHistory] = useState<{ content: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
@@ -125,7 +123,7 @@ const BookDashboard = () => {
         ancestryText: ancestry?.content || undefined,
         ancestryPdfUrl: ancestry?.upload_mime_type?.startsWith('image/') ? undefined : ancestry?.pdf_url || undefined,
         ancestryImageUrl: ancestry?.upload_mime_type?.startsWith('image/') ? ancestry?.pdf_url || undefined : undefined,
-        familyHistoryText: familyHistory?.content || undefined,
+        
         chapters: chapters
           .sort((a, b) => a.chapter_number - b.chapter_number)
           .map((ch: any) => ({
@@ -261,20 +259,15 @@ const BookDashboard = () => {
     const fetchData = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = toBookGender(bookData?.recipient_gender);
-      const [{ data: chapData }, { data: memData }, { data: tplData }, { data: ancData }, { data: fhData }] = await Promise.all([
+      const [{ data: chapData }, { data: memData }, { data: tplData }, { data: ancData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('memories').select('*').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content').eq('gender', tplGender),
         supabase.from('book_ancestry').select('status, content, pdf_url, upload_mime_type').eq('book_id', bookId).maybeSingle(),
-        supabase.from('book_family_history').select('status, content').eq('book_id', bookId).maybeSingle(),
       ]);
       if (ancData) {
         setAncestryStatus(ancData.status || 'not_started');
         setAncestry(ancData);
-      }
-      if (fhData) {
-        setFamilyHistoryStatus(fhData.status || 'not_started');
-        setFamilyHistory(fhData);
       }
       if (bookData && bookData.recipient_name) {
         bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -619,24 +612,18 @@ const BookDashboard = () => {
 
             <div className="mt-4 pt-3 border-t border-border">
               <p className="text-[0.7rem] italic text-muted-foreground/80 mb-2">
-                Optional two-page sections at the back of the book, where you can write about the family and add a family tree.
+                An optional two-page section at the back of the book, where you can write about the family and add a family tree.
               </p>
-              {[
-                { label: 'Where You Come From', status: ancestryStatus, path: `/book/${bookId}/ancestry` },
-                { label: 'Family History', status: familyHistoryStatus, path: `/book/${bookId}/family-history` },
-              ].map(section => (
-                <button
-                  key={section.label}
-                  onClick={() => navigate(section.path)}
-                  className="flex items-center gap-2 w-full text-left py-1.5 px-2 -mx-2 rounded-md text-sm text-foreground hover:bg-muted/50 transition-colors"
-                >
-                  <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
-                  <span className="truncate underline-offset-2 hover:underline">{section.label}</span>
-                  <span className="ml-auto text-[0.65rem] text-muted-foreground flex-shrink-0">
-                    {section.status === 'complete' ? 'Complete' : section.status === 'in_progress' ? 'In progress' : 'Not started'}
-                  </span>
-                </button>
-              ))}
+              <button
+                onClick={() => navigate(`/book/${bookId}/ancestry`)}
+                className="flex items-center gap-2 w-full text-left py-1.5 px-2 -mx-2 rounded-md text-sm text-foreground hover:bg-muted/50 transition-colors"
+              >
+                <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
+                <span className="truncate underline-offset-2 hover:underline">Where You Come From</span>
+                <span className="ml-auto text-[0.65rem] text-muted-foreground flex-shrink-0">
+                  {ancestryStatus === 'complete' ? 'Complete' : ancestryStatus === 'in_progress' ? 'In progress' : 'Not started'}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -862,26 +849,6 @@ const BookDashboard = () => {
                     >
                       <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
                       <span className={`truncate underline-offset-2 hover:underline ${isComplete ? 'font-medium' : ''}`}>Where You Come From</span>
-                      {isComplete && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
-                      {isInProgress && <PenLine className="h-3.5 w-3.5 text-accent ml-auto flex-shrink-0" />}
-                      {!isComplete && !isInProgress && (
-                        <span className="text-[0.65rem] italic text-muted-foreground ml-auto flex-shrink-0">not started</span>
-                      )}
-                    </button>
-                  );
-                })()}
-
-                {(() => {
-                  const isComplete = familyHistoryStatus === 'complete';
-                  const isInProgress = familyHistoryStatus === 'in_progress';
-                  return (
-                    <button
-                      onClick={() => navigate(`/book/${bookId}/family-history`)}
-                      disabled={reorderMode}
-                      className={`flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors hover:bg-muted/50 text-primary hover:text-primary ${reorderMode ? 'opacity-50' : ''}`}
-                    >
-                      <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
-                      <span className={`truncate underline-offset-2 hover:underline ${isComplete ? 'font-medium' : ''}`}>Family History</span>
                       {isComplete && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
                       {isInProgress && <PenLine className="h-3.5 w-3.5 text-accent ml-auto flex-shrink-0" />}
                       {!isComplete && !isInProgress && (

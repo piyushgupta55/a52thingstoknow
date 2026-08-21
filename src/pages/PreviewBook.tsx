@@ -53,7 +53,7 @@ const PreviewBook = () => {
   const [authorName, setAuthorName] = useState('');
   const [memories, setMemories] = useState<Memory[]>([]);
   const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; pdf_filename: string | null; upload_mime_type: string | null } | null>(null);
-  const [familyHistory, setFamilyHistory] = useState<{ content: string | null } | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
   const [showLeftPageFade, setShowLeftPageFade] = useState(false);
@@ -91,9 +91,6 @@ const PreviewBook = () => {
   const ancestryPdfUrl = ancestryIsImage ? null : ancestry?.pdf_url || null;
   const hasAncestry = ancestryText.length > 0 || !!ancestry?.pdf_url;
 
-  const familyHistoryText = (familyHistory?.content || '').trim();
-  const hasFamilyHistory = familyHistoryText.length > 0;
-
   const spreads: SpreadDef[] = [];
   spreads.push({ type: 'title' });
   spreads.push({ type: 'toc' });
@@ -101,7 +98,6 @@ const PreviewBook = () => {
   spreads.push({ type: 'epigraph' });
   visibleChapters.forEach(ch => spreads.push({ type: 'chapter', chapter: ch }));
   if (hasAncestry) spreads.push({ type: 'ancestry' });
-  if (hasFamilyHistory) spreads.push({ type: 'family_history' });
 
   // Page numbers are derived from the actual paginated spread list:
   // each spread occupies two pages (left = index * 2, right = left + 1).
@@ -132,12 +128,11 @@ const PreviewBook = () => {
     const load = async () => {
       const { data: bookData } = await supabase.from('books').select('*').eq('id', bookId).single();
       const tplGender = toBookGender(bookData?.recipient_gender);
-      const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }, { data: fhData }] = await Promise.all([
+      const [{ data: chapData }, { data: tplData }, { data: memData }, { data: ancData }] = await Promise.all([
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content').eq('gender', tplGender),
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
         supabase.from('book_ancestry').select('content, pdf_url, pdf_filename, upload_mime_type').eq('book_id', bookId).maybeSingle(),
-        supabase.from('book_family_history').select('content').eq('book_id', bookId).maybeSingle(),
       ]);
       if (bookData && bookData.recipient_name) {
         bookData.recipient_name = bookData.recipient_name.trim().split(/\s+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -147,7 +142,6 @@ const PreviewBook = () => {
       setTemplates(tplData || []);
       setMemories(memData || []);
       setAncestry(ancData || null);
-      setFamilyHistory(fhData || null);
       if (bookData?.user_id) {
         const { data: userData } = await supabase.auth.getUser();
         const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
@@ -351,7 +345,7 @@ const PreviewBook = () => {
       ancestryText: ancestryText || undefined,
       ancestryPdfUrl: ancestryPdfUrl || undefined,
       ancestryImageUrl: ancestryImageUrl || undefined,
-      familyHistoryText: familyHistoryText || undefined,
+      
     };
 
     const loadExactPreview = async () => {
@@ -1085,8 +1079,6 @@ const PreviewBook = () => {
     const letterPageNum = exactChapterPageMap.get('0') ?? rightPageOfSpread(letterSpreadIndex);
     const ancestryPageNum =
       exactChapterPageMap.get('ancestry') ?? leftPageOfSpread(spreadIndexOf(s => s.type === 'ancestry'));
-    const familyHistoryPageNum =
-      exactChapterPageMap.get('family_history') ?? leftPageOfSpread(spreadIndexOf(s => s.type === 'family_history'));
 
     const leaderStyle: React.CSSProperties = {
       flexGrow: 1,
@@ -1177,7 +1169,7 @@ const PreviewBook = () => {
               renderEntry(ch.id, getChapterTitle(ch), chapterPageMap.get(ch.id), ch.chapter_number, photoNums.has(ch.chapter_number)),
             )}
             {hasAncestry && renderEntry('ancestry', 'Where You Come From', ancestryPageNum)}
-            {hasFamilyHistory && renderEntry('family_history', 'Family History', familyHistoryPageNum)}
+            
           </div>
         </div>
         <PageNum num={rightPageNum} />
@@ -1534,64 +1526,6 @@ const PreviewBook = () => {
     return [left, right, undefined];
   };
 
-  const renderFamilyHistorySpread = (): [React.ReactNode, React.ReactNode, string | undefined] => {
-    // Split paragraphs roughly in half across the two-page spread.
-    const paragraphs = familyHistoryText.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
-    const totalWords = paragraphs.reduce((sum, p) => sum + p.split(/\s+/).filter(Boolean).length, 0);
-    const half = totalWords / 2;
-    let running = 0;
-    let splitIdx = paragraphs.length;
-    for (let i = 0; i < paragraphs.length; i++) {
-      running += paragraphs[i].split(/\s+/).filter(Boolean).length;
-      if (running >= half) { splitIdx = i + 1; break; }
-    }
-    const leftParas = paragraphs.slice(0, splitIdx);
-    const rightParas = paragraphs.slice(splitIdx);
-
-    const paraStyle: React.CSSProperties = {
-      fontFamily: SERIF,
-      fontSize: '12px',
-      color: '#2D3748',
-      lineHeight: 1.8,
-      marginBottom: '1em',
-      textAlign: 'justify',
-      textJustify: 'inter-word',
-      hyphens: 'auto',
-      WebkitHyphens: 'auto',
-    };
-
-    const left = (
-      <div className="flex flex-col h-full">
-        <p className="text-center uppercase tracking-[0.25em] mb-1" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
-          Our Family Story
-        </p>
-        <h2 className="text-center font-bold mb-2" style={{ fontFamily: SERIF, fontSize: '20px', color: '#2D3748' }}>
-          Family History
-        </h2>
-        <div className="w-8 mx-auto mb-4" style={{ height: '1px', background: GOLD }} />
-        <div className="flex-1 overflow-hidden pr-1">
-          {leftParas.map((para, i) => (
-            <p key={i} style={paraStyle}>{renderWithLineBreaks(para)}</p>
-          ))}
-        </div>
-        <PageNum num={leftPageNum} />
-      </div>
-    );
-
-    const right = (
-      <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-hidden pr-1">
-          {rightParas.map((para, i) => (
-            <p key={i} style={paraStyle}>{renderWithLineBreaks(para)}</p>
-          ))}
-        </div>
-        <PageNum num={rightPageNum} />
-      </div>
-    );
-
-    return [left, right, undefined];
-  };
-
   const getCurrentSpreadContent = (): SpreadRender => {
     const spread = spreads[clampedSpread];
     if (!spread) return [null, null, undefined, false, null];
@@ -1600,7 +1534,6 @@ const PreviewBook = () => {
     if (spread.type === 'letter') return [...renderLetterSpread(), false, null];
     if (spread.type === 'epigraph') return [...renderEpigraphSpread(), false, null];
     if (spread.type === 'ancestry') return [...renderAncestrySpread(), false, null];
-    if (spread.type === 'family_history') return [...renderFamilyHistorySpread(), false, null];
     return renderChapterSpread(spread.chapter, clampedSpread);
   };
 

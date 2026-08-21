@@ -33,23 +33,20 @@ const ChapterGrid = () => {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memoryCounts, setMemoryCounts] = useState<Record<string, number>>({});
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
-  const [familyHistoryStatus, setFamilyHistoryStatus] = useState<string>('not_started');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!bookId) return;
     const fetchData = async () => {
-      const [{ data: bookData }, { data: chapData }, { data: memData }, { data: ancData }, { data: fhData }] = await Promise.all([
+      const [{ data: bookData }, { data: chapData }, { data: memData }, { data: ancData }] = await Promise.all([
         supabase.from('books').select('*').eq('id', bookId).single(),
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('memories').select('chapter_id').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
         supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle(),
-        supabase.from('book_family_history').select('status').eq('book_id', bookId).maybeSingle(),
       ]);
       setBook(bookData);
       setChapters((chapData as any) || []);
       setAncestryStatus((ancData as any)?.status || 'not_started');
-      setFamilyHistoryStatus((fhData as any)?.status || 'not_started');
       const counts: Record<string, number> = {};
       (memData || []).forEach((m: any) => {
         if (m.chapter_id) counts[m.chapter_id] = (counts[m.chapter_id] || 0) + 1;
@@ -136,7 +133,7 @@ const ChapterGrid = () => {
 
           {[
             { key: 'ancestry', label: 'Where You Come From', status: ancestryStatus, path: `/book/${bookId}/ancestry` },
-            { key: 'family-history', label: 'Family History', status: familyHistoryStatus, path: `/book/${bookId}/family-history` },
+            
           ].map(section => {
             const isComplete = section.status === 'complete';
             const isInProgress = section.status === 'in_progress';
