@@ -85,9 +85,7 @@ const BookDashboard = () => {
   const [photoTemplates, setPhotoTemplates] = useState<ChapterTemplate[]>([]);
   const [authorName, setAuthorName] = useState('');
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
-  const [familyHistoryStatus, setFamilyHistoryStatus] = useState<string>('not_started');
   const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; upload_mime_type?: string | null } | null>(null);
-  const [familyHistory, setFamilyHistory] = useState<{ content: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);

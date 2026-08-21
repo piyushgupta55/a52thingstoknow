@@ -133,7 +133,7 @@ const ChapterGrid = () => {
 
           {[
             { key: 'ancestry', label: 'Where You Come From', status: ancestryStatus, path: `/book/${bookId}/ancestry` },
-            { key: 'family-history', label: 'Family History', status: familyHistoryStatus, path: `/book/${bookId}/family-history` },
+            
           ].map(section => {
             const isComplete = section.status === 'complete';
             const isInProgress = section.status === 'in_progress';
