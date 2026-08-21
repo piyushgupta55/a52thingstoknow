@@ -62,7 +62,7 @@ const ReviewPile = () => {
             .from('chapters')
             .select('id, chapter_number, title, photo_urls, content, seed_content, reference_text, review_status, review_note, is_photo_chapter, photo_declined, reading_reward_decision')
             .eq('book_id', bookId)
-            .gt('chapter_number', 0)
+            .gte('chapter_number', 0)
             .order('chapter_number'),
           supabase.from('memories').select('id, chapter_id').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
           fetchMemoryInviteChapters(),
