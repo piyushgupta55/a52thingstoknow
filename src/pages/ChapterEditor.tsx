@@ -776,6 +776,10 @@ const ChapterEditor = () => {
       (async () => {
         try {
           if (hasUnsavedRef.current) await saveRef.current?.(true);
+          // A save already in flight: let it settle (bounded) before leaving.
+          for (let i = 0; savingRef.current && i < 40; i++) {
+            await new Promise(r => setTimeout(r, 50));
+          }
         } catch {
           // Never block the navigation on a failed save.
         } finally {
