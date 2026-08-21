@@ -150,7 +150,8 @@ const AncestrySection = () => {
     );
   }
 
-  const textPriorityNotice = content.trim().length > 0 && pdfUrl;
+  const isImageUpload = !!pdfUrl && !!uploadMimeType?.startsWith('image/');
+  const textPriorityNotice = content.trim().length > 0 && !!pdfUrl && !isImageUpload;
 
   return (
     <div className="min-h-screen bg-background">
