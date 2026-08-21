@@ -91,19 +91,21 @@ const ReviewPile = () => {
 
   const list = useMemo(() => {
     if (!meta) return [] as Chapter[];
+    // Only the "Needs editing" basket includes the Letter (chapter 0).
+    const numbered = chapters.filter(c => c.chapter_number > 0);
     switch (pile) {
       case 'rewrite':
         return chapters.filter(c => c.review_status === 'rewrite');
       case 'photos':
         // Pre-populated: every photo chapter plus the reading-reward chapter.
-        return chapters.filter(c => c.is_photo_chapter || hasReward(c));
+        return numbered.filter(c => c.is_photo_chapter || hasReward(c));
       case 'memories':
         // Pre-populated: the curated memory-invitation chapters.
-        return chapters.filter(c => memoryChapters.includes(c.chapter_number));
+        return numbered.filter(c => memoryChapters.includes(c.chapter_number));
       case 'kept':
-        return chapters.filter(c => c.review_status !== 'rewrite');
+        return numbered.filter(c => c.review_status !== 'rewrite');
       case 'notyet':
-        return chapters.filter(c => !c.review_status);
+        return numbered.filter(c => !c.review_status);
       default:
         return [];
     }
