@@ -1434,7 +1434,7 @@ const PreviewBook = () => {
 
     const left = (
       <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-hidden flex flex-col items-center justify-center text-center px-4">
+        <div className={`flex flex-col items-center text-center px-4 ${ancestryImageUrl ? 'flex-none pt-2' : 'flex-1 overflow-hidden justify-center'}`}>
           <p className="uppercase tracking-[0.25em] mb-2" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
             A Final Page
           </p>
@@ -1443,10 +1443,22 @@ const PreviewBook = () => {
             Where You Come From
           </h2>
           <div className="w-8 mt-4" style={{ height: '1px', background: GOLD }} />
-          <p className="italic mt-6 px-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280', lineHeight: 1.7 }}>
-            The story of your family — where you come from, who came before you, and the thread that connects it all to you.
-          </p>
+          {!ancestryImageUrl && (
+            <p className="italic mt-6 px-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280', lineHeight: 1.7 }}>
+              The story of your family — where you come from, who came before you, and the thread that connects it all to you.
+            </p>
+          )}
         </div>
+        {ancestryImageUrl && (
+          <div className="flex-1 flex items-center justify-center overflow-hidden px-2 pt-4">
+            <img
+              src={ancestryImageUrl}
+              alt="Family history upload"
+              className="ancestry-image"
+              style={{ maxHeight: `${PREVIEW_ANCESTRY_IMAGE_HEIGHT}px`, height: 'auto', maxWidth: '100%', objectFit: 'contain' }}
+            />
+          </div>
+        )}
         <PageNum num={leftPageNum} />
       </div>
     );
@@ -1460,16 +1472,16 @@ const PreviewBook = () => {
                 {renderWithLineBreaks(para)}
               </p>
             ))
-          ) : ancestry?.pdf_url ? (
+          ) : ancestryPdfUrl ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <p className="italic mb-3" style={{ fontFamily: SERIF, fontSize: '12px', color: '#6B7280' }}>
                 Family history attached as PDF
               </p>
               <p style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF' }}>
-                {ancestry.pdf_filename || 'Ancestry document'}
+                {ancestry?.pdf_filename || 'Ancestry document'}
               </p>
               <p className="mt-4 text-xs italic" style={{ fontFamily: SERIF, color: '#B8B3A8' }}>
-                (The attached PDF will be printed in the final book.)
+                (The attached PDF will be printed at the back of the final book.)
               </p>
             </div>
           ) : null}
