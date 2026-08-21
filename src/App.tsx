@@ -25,7 +25,7 @@ import MemoryManager from "./pages/MemoryManager";
 import MemoryInvite from "./pages/MemoryInvite";
 import HelpFaq from "./pages/HelpFaq";
 import AncestrySection from "./pages/AncestrySection";
-import FamilyHistorySection from "./pages/FamilyHistorySection";
+
 import ChapterLibrary from "./pages/ChapterLibrary";
 import BookReview from "./pages/BookReview";
 import QuickRead from "./pages/QuickRead";
@@ -47,6 +47,13 @@ const queryClient = new QueryClient();
 const RetiredReadThrough = () => {
   const { bookId } = useParams<{ bookId: string }>();
   return <Navigate to={`/book/${bookId}/overview`} replace />;
+};
+
+// "Family History" was merged into the single back-matter section,
+// "Where You Come From". Old links redirect there.
+const MergedBackMatterRedirect = () => {
+  const { bookId } = useParams<{ bookId: string }>();
+  return <Navigate to={`/book/${bookId}/ancestry`} replace />;
 };
 
 const App = () => (
