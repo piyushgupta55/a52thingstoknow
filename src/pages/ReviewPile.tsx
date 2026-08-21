@@ -62,7 +62,7 @@ const ReviewPile = () => {
             .from('chapters')
             .select('id, chapter_number, title, photo_urls, content, seed_content, reference_text, review_status, review_note, is_photo_chapter, photo_declined, reading_reward_decision')
             .eq('book_id', bookId)
-            .gt('chapter_number', 0)
+            .gte('chapter_number', 0)
             .order('chapter_number'),
           supabase.from('memories').select('id, chapter_id').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
           fetchMemoryInviteChapters(),
@@ -91,19 +91,21 @@ const ReviewPile = () => {
 
   const list = useMemo(() => {
     if (!meta) return [] as Chapter[];
+    // Only the "Needs editing" basket includes the Letter (chapter 0).
+    const numbered = chapters.filter(c => c.chapter_number > 0);
     switch (pile) {
       case 'rewrite':
         return chapters.filter(c => c.review_status === 'rewrite');
       case 'photos':
         // Pre-populated: every photo chapter plus the reading-reward chapter.
-        return chapters.filter(c => c.is_photo_chapter || hasReward(c));
+        return numbered.filter(c => c.is_photo_chapter || hasReward(c));
       case 'memories':
         // Pre-populated: the curated memory-invitation chapters.
-        return chapters.filter(c => memoryChapters.includes(c.chapter_number));
+        return numbered.filter(c => memoryChapters.includes(c.chapter_number));
       case 'kept':
-        return chapters.filter(c => c.review_status !== 'rewrite');
+        return numbered.filter(c => c.review_status !== 'rewrite');
       case 'notyet':
-        return chapters.filter(c => !c.review_status);
+        return numbered.filter(c => !c.review_status);
       default:
         return [];
     }
@@ -212,8 +214,12 @@ const ReviewPile = () => {
                     className={`w-full text-left group px-4 py-4 flex items-center justify-between gap-4 hover:bg-muted/40 transition-colors ${done ? 'opacity-60' : ''}`}
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm text-muted-foreground">Chapter {c.chapter_number}</div>
-                      <div className="font-heading text-base font-semibold text-foreground truncate">{c.title}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {c.chapter_number === 0 ? 'Opening' : `Chapter ${c.chapter_number}`}
+                      </div>
+                      <div className="font-heading text-base font-semibold text-foreground truncate">
+                        {c.chapter_number === 0 ? 'Letter from the Author' : c.title}
+                      </div>
                       <div className="text-xs text-muted-foreground mt-0.5 truncate">
                         {done || waitingFor(c)}
                       </div>

@@ -341,7 +341,8 @@ const BookDashboard = () => {
 
   // Read-through tallies. Everything is kept by default; Add/Replace are optional marks.
   
-  const reviewRewrite = numberedChapters.filter(c => c.review_status === 'rewrite').length;
+  // Needs editing includes the Letter from the Author (chapter 0).
+  const reviewRewrite = chapters.filter(c => c.review_status === 'rewrite').length;
   const readCount = numberedChapters.filter(c => !!(c as any).read_at).length;
   const notReviewed = numberedChapters.length - readCount;
   const reviewedCount = readCount;
@@ -370,7 +371,7 @@ const BookDashboard = () => {
   const openRewardDecisions = numberedChapters.filter(c =>
     /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`) && !c.reading_reward_decision
   ).length;
-  const flaggedChapters = numberedChapters.filter(
+  const flaggedChapters = chapters.filter(
     c => c.review_status === 'rewrite'
   ).length;
 
