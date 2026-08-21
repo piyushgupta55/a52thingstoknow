@@ -20,6 +20,8 @@ interface Props {
   memoryCountsByChapter?: Record<string, number>;
   ancestryStatus?: string;
   onNavigateAncestry?: () => void;
+  familyHistoryStatus?: string;
+  onNavigateFamilyHistory?: () => void;
 }
 
 const StatusIndicator = ({ status }: { status?: string | null }) => {
