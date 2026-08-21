@@ -51,7 +51,7 @@ const PreviewBook = () => {
   const [templates, setTemplates] = useState<ChapterTemplate[]>([]);
   const [authorName, setAuthorName] = useState('');
   const [memories, setMemories] = useState<Memory[]>([]);
-  const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; pdf_filename: string | null } | null>(null);
+  const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; pdf_filename: string | null; upload_mime_type: string | null } | null>(null);
   const [familyHistory, setFamilyHistory] = useState<{ content: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
@@ -85,6 +85,9 @@ const PreviewBook = () => {
     .replace(/<\/?[^>]+(>|$)/g, '')
     .replace(/\n\n+/g, '\n\n')
     .trim();
+  const ancestryIsImage = !!ancestry?.pdf_url && !!ancestry?.upload_mime_type?.startsWith('image/');
+  const ancestryImageUrl = ancestryIsImage ? ancestry!.pdf_url : null;
+  const ancestryPdfUrl = ancestryIsImage ? null : ancestry?.pdf_url || null;
   const hasAncestry = ancestryText.length > 0 || !!ancestry?.pdf_url;
 
   const familyHistoryText = (familyHistory?.content || '').trim();
@@ -132,7 +135,7 @@ const PreviewBook = () => {
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content').eq('gender', tplGender),
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
-        supabase.from('book_ancestry').select('content, pdf_url, pdf_filename').eq('book_id', bookId).maybeSingle(),
+        supabase.from('book_ancestry').select('content, pdf_url, pdf_filename, upload_mime_type').eq('book_id', bookId).maybeSingle(),
         supabase.from('book_family_history').select('content').eq('book_id', bookId).maybeSingle(),
       ]);
       if (bookData && bookData.recipient_name) {
@@ -345,7 +348,8 @@ const PreviewBook = () => {
       recipientName: book.recipient_name,
       chapters: payloadChapters,
       ancestryText: ancestryText || undefined,
-      ancestryPdfUrl: ancestry?.pdf_url || undefined,
+      ancestryPdfUrl: ancestryPdfUrl || undefined,
+      ancestryImageUrl: ancestryImageUrl || undefined,
       familyHistoryText: familyHistoryText || undefined,
     };
 
@@ -372,7 +376,7 @@ const PreviewBook = () => {
     };
 
     loadExactPreview();
-  }, [loading, book, chapters, memories, authorName, ancestryText, ancestry?.pdf_url]);
+  }, [loading, book, chapters, memories, authorName, ancestryText, ancestryPdfUrl, ancestryImageUrl]);
 
   useEffect(() => {
     if (!exactPreviewHtml) return;
