@@ -86,7 +86,7 @@ const BookDashboard = () => {
   const [authorName, setAuthorName] = useState('');
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
   const [familyHistoryStatus, setFamilyHistoryStatus] = useState<string>('not_started');
-  const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null } | null>(null);
+  const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; upload_mime_type?: string | null } | null>(null);
   const [familyHistory, setFamilyHistory] = useState<{ content: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -123,7 +123,8 @@ const BookDashboard = () => {
         recipientName: book?.recipient_name || '',
         author: book?.from_label || authorName || 'The Author',
         ancestryText: ancestry?.content || undefined,
-        ancestryPdfUrl: ancestry?.pdf_url || undefined,
+        ancestryPdfUrl: ancestry?.upload_mime_type?.startsWith('image/') ? undefined : ancestry?.pdf_url || undefined,
+        ancestryImageUrl: ancestry?.upload_mime_type?.startsWith('image/') ? ancestry?.pdf_url || undefined : undefined,
         familyHistoryText: familyHistory?.content || undefined,
         chapters: chapters
           .sort((a, b) => a.chapter_number - b.chapter_number)
@@ -264,7 +265,7 @@ const BookDashboard = () => {
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('memories').select('*').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content').eq('gender', tplGender),
-        supabase.from('book_ancestry').select('status, content, pdf_url').eq('book_id', bookId).maybeSingle(),
+        supabase.from('book_ancestry').select('status, content, pdf_url, upload_mime_type').eq('book_id', bookId).maybeSingle(),
         supabase.from('book_family_history').select('status, content').eq('book_id', bookId).maybeSingle(),
       ]);
       if (ancData) {
