@@ -194,7 +194,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
   }
 
   let ancestryStartPage = currentContentPageNum;
-  if (bookData.ancestryText || bookData.ancestryPdfUrl) {
+  if (bookData.ancestryText || bookData.ancestryPdfUrl || bookData.ancestryImageUrl) {
     const displayAncestryPageNum = actualChapterPages ? (actualChapterPages['ancestry'] ?? ancestryStartPage) : ancestryStartPage;
     tocItemsHtml += `
       <div class="toc-item">
