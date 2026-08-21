@@ -420,24 +420,6 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     `;
   }
 
-  if (bookData.familyHistoryText) {
-    chaptersHtml += `
-      <!-- Page 1: Family History -->
-      <div class="page chapter-content-page page-p1" data-chapter="family_history">
-        <div class="chapter-header">
-          <h2 class="chapter-title">Family History</h2>
-        </div>
-        <div class="wisdom-text chapter-opening">
-          ${formatContent(bookData.familyHistoryText, true)}
-        </div>
-      </div>
-      <!-- Page 2: Overflow target -->
-      <div class="page chapter-content-page page-p2" data-chapter="family_history">
-        <div class="wisdom-text"></div>
-      </div>
-    `;
-  }
-
   const blankPageHtml = `
     <!-- Page 3: Blank Spacer Page (Recto / Right page) to align Proverbs Page to Verso -->
     <div class="page blank-page" data-chapter="spacer" style="background: white;"></div>
