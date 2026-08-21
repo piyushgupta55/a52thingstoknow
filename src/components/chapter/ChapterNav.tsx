@@ -50,7 +50,7 @@ const StatusIndicator = ({ status }: { status?: string | null }) => {
   );
 };
 
-const ChapterNav = ({ currentChapter, totalChapters, chapters, onNavigate, memoryCountsByChapter = {}, ancestryStatus, onNavigateAncestry }: Props) => {
+const ChapterNav = ({ currentChapter, totalChapters, chapters, onNavigate, memoryCountsByChapter = {}, ancestryStatus, onNavigateAncestry, familyHistoryStatus, onNavigateFamilyHistory }: Props) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
