@@ -60,10 +60,6 @@ export function binWaitingOn(c: ChapterLike): 'photo' | 'reward' | 'both' | null
   return null;
 }
 
-// Regular piles: exclude photo/reward chapters (they live in the bin).
-export function inKeptPile(c: ChapterLike): boolean {
-  return c.review_status === 'keep' && !isPhotoOrRewardChapter(c);
-}
 /** @deprecated The "To add to" pile is retired; 'add' was migrated to 'rewrite'. */
 export function inAddPile(_c: ChapterLike): boolean {
   return false;
