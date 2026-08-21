@@ -18,9 +18,12 @@ export interface BookData {
     quote_text?: string | null;
     quote_attribution?: string | null;
   }>;
+  /**
+   * "Where You Come From" — the single two-page back-matter section.
+   * (The former separate "Family History" section was merged into this one.)
+   */
   ancestryText?: string | null;
   ancestryPdfUrl?: string | null;
   /** JPEG/PNG upload rendered inline on the left page of the ancestry spread. */
   ancestryImageUrl?: string | null;
-  familyHistoryText?: string | null;
 }

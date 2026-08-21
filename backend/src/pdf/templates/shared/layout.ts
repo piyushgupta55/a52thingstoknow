@@ -206,18 +206,6 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
     currentContentPageNum += 2;
   }
 
-  let familyHistoryStartPage = currentContentPageNum;
-  if (bookData.familyHistoryText) {
-    const displayFhPageNum = actualChapterPages ? (actualChapterPages['family_history'] ?? familyHistoryStartPage) : familyHistoryStartPage;
-    tocItemsHtml += `
-      <div class="toc-item">
-        <span class="toc-chapter-title">Family History</span>
-        <span class="toc-leader"></span>
-        <span class="toc-page-number" data-toc-chapter="family_history">${displayFhPageNum}</span>
-      </div>
-    `;
-    currentContentPageNum += 2;
-  }
 
   const tocHtml = `
     <div class="page toc-page">
