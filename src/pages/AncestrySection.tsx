@@ -98,14 +98,19 @@ const AncestrySection = () => {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user || !bookId) return;
-    if (file.type !== 'application/pdf') {
-      toast({ title: 'PDF only', description: 'Please upload a PDF file.', variant: 'destructive' });
+    if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
+      toast({
+        title: 'Unsupported file',
+        description: 'Please upload a JPEG or PNG image, or a PDF.',
+        variant: 'destructive',
+      });
       return;
     }
     if (file.size > MAX_PDF_BYTES) {
       toast({ title: 'File too large', description: 'Maximum file size is 10MB.', variant: 'destructive' });
       return;
     }
+    const isImage = file.type.startsWith('image/');
     setUploading(true);
     try {
       const path = `${user.id}/${bookId}/${Date.now()}-${file.name}`;
@@ -114,7 +119,13 @@ const AncestrySection = () => {
       const { data: pub } = supabase.storage.from('ancestry-pdfs').getPublicUrl(path);
       setPdfUrl(pub.publicUrl);
       setPdfFilename(file.name);
-      toast({ title: 'PDF uploaded', description: 'Remember to save your changes.' });
+      setUploadMimeType(file.type);
+      toast({
+        title: isImage ? 'Image uploaded' : 'PDF uploaded',
+        description: isImage
+          ? 'It will appear on the page. Remember to save your changes.'
+          : 'It will be printed at the back of the book. Remember to save your changes.',
+      });
     } catch (e: any) {
       toast({ title: 'Upload failed', description: e.message, variant: 'destructive' });
     } finally {
@@ -126,7 +137,9 @@ const AncestrySection = () => {
   const handleRemovePdf = () => {
     setPdfUrl(null);
     setPdfFilename(null);
+    setUploadMimeType(null);
   };
+
 
   if (loading) {
     return (
