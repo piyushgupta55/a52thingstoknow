@@ -347,7 +347,7 @@ const PreviewBook = () => {
       ancestryText: ancestryText || undefined,
       ancestryPdfUrl: ancestryPdfUrl || undefined,
       ancestryImageUrl: ancestryImageUrl || undefined,
-      familyHistoryText: familyHistoryText || undefined,
+      
     };
 
     const loadExactPreview = async () => {
@@ -1081,8 +1081,6 @@ const PreviewBook = () => {
     const letterPageNum = exactChapterPageMap.get('0') ?? rightPageOfSpread(letterSpreadIndex);
     const ancestryPageNum =
       exactChapterPageMap.get('ancestry') ?? leftPageOfSpread(spreadIndexOf(s => s.type === 'ancestry'));
-    const familyHistoryPageNum =
-      exactChapterPageMap.get('family_history') ?? leftPageOfSpread(spreadIndexOf(s => s.type === 'family_history'));
 
     const leaderStyle: React.CSSProperties = {
       flexGrow: 1,
@@ -1173,7 +1171,7 @@ const PreviewBook = () => {
               renderEntry(ch.id, getChapterTitle(ch), chapterPageMap.get(ch.id), ch.chapter_number, photoNums.has(ch.chapter_number)),
             )}
             {hasAncestry && renderEntry('ancestry', 'Where You Come From', ancestryPageNum)}
-            {hasFamilyHistory && renderEntry('family_history', 'Family History', familyHistoryPageNum)}
+            
           </div>
         </div>
         <PageNum num={rightPageNum} />
