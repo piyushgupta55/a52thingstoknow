@@ -1,0 +1,1 @@
+ALTER TABLE public.book_ancestry ADD COLUMN IF NOT EXISTS upload_mime_type text;

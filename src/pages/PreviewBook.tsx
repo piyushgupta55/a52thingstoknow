@@ -28,6 +28,7 @@ import {
   PREVIEW_SPREAD_HEIGHT,
   PREVIEW_SPINE_WIDTH,
   PREVIEW_SPREAD_WIDTH,
+  PREVIEW_ANCESTRY_IMAGE_HEIGHT,
 } from '@/features/preview/geometry';
 import type { Book, Chapter, ChapterTemplate, Memory, SpreadDef, SpreadRender } from '@/features/preview/types';
 import { getPhotoImageStyle, parsePhotoRenderLayout } from '@/features/photoRendering';
@@ -51,7 +52,7 @@ const PreviewBook = () => {
   const [templates, setTemplates] = useState<ChapterTemplate[]>([]);
   const [authorName, setAuthorName] = useState('');
   const [memories, setMemories] = useState<Memory[]>([]);
-  const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; pdf_filename: string | null } | null>(null);
+  const [ancestry, setAncestry] = useState<{ content: string | null; pdf_url: string | null; pdf_filename: string | null; upload_mime_type: string | null } | null>(null);
   const [familyHistory, setFamilyHistory] = useState<{ content: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentSpread, setCurrentSpread] = useState(0);
@@ -85,6 +86,9 @@ const PreviewBook = () => {
     .replace(/<\/?[^>]+(>|$)/g, '')
     .replace(/\n\n+/g, '\n\n')
     .trim();
+  const ancestryIsImage = !!ancestry?.pdf_url && !!ancestry?.upload_mime_type?.startsWith('image/');
+  const ancestryImageUrl = ancestryIsImage ? ancestry!.pdf_url : null;
+  const ancestryPdfUrl = ancestryIsImage ? null : ancestry?.pdf_url || null;
   const hasAncestry = ancestryText.length > 0 || !!ancestry?.pdf_url;
 
   const familyHistoryText = (familyHistory?.content || '').trim();
@@ -132,7 +136,7 @@ const PreviewBook = () => {
         supabase.from('chapters').select('*').eq('book_id', bookId).order('chapter_number'),
         supabase.from('chapter_templates').select('chapter_number, title, is_photo_chapter, reference_content').eq('gender', tplGender),
         supabase.from('memories').select('id, chapter_id, contributor_name, memory_text').eq('book_id', bookId).or('entry_type.is.null,entry_type.eq.memory'),
-        supabase.from('book_ancestry').select('content, pdf_url, pdf_filename').eq('book_id', bookId).maybeSingle(),
+        supabase.from('book_ancestry').select('content, pdf_url, pdf_filename, upload_mime_type').eq('book_id', bookId).maybeSingle(),
         supabase.from('book_family_history').select('content').eq('book_id', bookId).maybeSingle(),
       ]);
       if (bookData && bookData.recipient_name) {
@@ -345,7 +349,8 @@ const PreviewBook = () => {
       recipientName: book.recipient_name,
       chapters: payloadChapters,
       ancestryText: ancestryText || undefined,
-      ancestryPdfUrl: ancestry?.pdf_url || undefined,
+      ancestryPdfUrl: ancestryPdfUrl || undefined,
+      ancestryImageUrl: ancestryImageUrl || undefined,
       familyHistoryText: familyHistoryText || undefined,
     };
 
@@ -372,7 +377,7 @@ const PreviewBook = () => {
     };
 
     loadExactPreview();
-  }, [loading, book, chapters, memories, authorName, ancestryText, ancestry?.pdf_url]);
+  }, [loading, book, chapters, memories, authorName, ancestryText, ancestryPdfUrl, ancestryImageUrl]);
 
   useEffect(() => {
     if (!exactPreviewHtml) return;
@@ -1430,7 +1435,7 @@ const PreviewBook = () => {
 
     const left = (
       <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-hidden flex flex-col items-center justify-center text-center px-4">
+        <div className={`flex flex-col items-center text-center px-4 ${ancestryImageUrl ? 'flex-none pt-2' : 'flex-1 overflow-hidden justify-center'}`}>
           <p className="uppercase tracking-[0.25em] mb-2" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
             A Final Page
           </p>
@@ -1439,10 +1444,22 @@ const PreviewBook = () => {
             Where You Come From
           </h2>
           <div className="w-8 mt-4" style={{ height: '1px', background: GOLD }} />
-          <p className="italic mt-6 px-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280', lineHeight: 1.7 }}>
-            The story of your family — where you come from, who came before you, and the thread that connects it all to you.
-          </p>
+          {!ancestryImageUrl && (
+            <p className="italic mt-6 px-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280', lineHeight: 1.7 }}>
+              The story of your family — where you come from, who came before you, and the thread that connects it all to you.
+            </p>
+          )}
         </div>
+        {ancestryImageUrl && (
+          <div className="flex-1 flex items-center justify-center overflow-hidden px-2 pt-4">
+            <img
+              src={ancestryImageUrl}
+              alt="Family history upload"
+              className="ancestry-image"
+              style={{ maxHeight: `${PREVIEW_ANCESTRY_IMAGE_HEIGHT}px`, height: 'auto', maxWidth: '100%', objectFit: 'contain' }}
+            />
+          </div>
+        )}
         <PageNum num={leftPageNum} />
       </div>
     );
@@ -1456,16 +1473,16 @@ const PreviewBook = () => {
                 {renderWithLineBreaks(para)}
               </p>
             ))
-          ) : ancestry?.pdf_url ? (
+          ) : ancestryPdfUrl ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <p className="italic mb-3" style={{ fontFamily: SERIF, fontSize: '12px', color: '#6B7280' }}>
                 Family history attached as PDF
               </p>
               <p style={{ fontFamily: SERIF, fontSize: '11px', color: '#9CA3AF' }}>
-                {ancestry.pdf_filename || 'Ancestry document'}
+                {ancestry?.pdf_filename || 'Ancestry document'}
               </p>
               <p className="mt-4 text-xs italic" style={{ fontFamily: SERIF, color: '#B8B3A8' }}>
-                (The attached PDF will be printed in the final book.)
+                (The attached PDF will be printed at the back of the final book.)
               </p>
             </div>
           ) : null}

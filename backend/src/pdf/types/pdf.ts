@@ -20,5 +20,7 @@ export interface BookData {
   }>;
   ancestryText?: string | null;
   ancestryPdfUrl?: string | null;
+  /** JPEG/PNG upload rendered inline on the left page of the ancestry spread. */
+  ancestryImageUrl?: string | null;
   familyHistoryText?: string | null;
 }

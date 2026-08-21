@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
-import { ArrowLeft, FileUp, X, Save, FileText } from 'lucide-react';
+import { ArrowLeft, FileUp, X, Save, FileText, Image as ImageIcon } from 'lucide-react';
 import { countWords } from '@/lib/page2Status';
 
 const MAX_WORDS = 300;
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
 const AncestrySection = () => {
   const { bookId } = useParams<{ bookId: string }>();
@@ -22,6 +23,7 @@ const AncestrySection = () => {
   const [content, setContent] = useState('');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
+  const [uploadMimeType, setUploadMimeType] = useState<string | null>(null);
   const [ancestryId, setAncestryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,6 +43,7 @@ const AncestrySection = () => {
         setContent(ancestryData.content || '');
         setPdfUrl(ancestryData.pdf_url || null);
         setPdfFilename(ancestryData.pdf_filename || null);
+        setUploadMimeType((ancestryData as any).upload_mime_type || null);
       }
       setLoading(false);
     })();
@@ -73,6 +76,7 @@ const AncestrySection = () => {
         content: content.trim() ? content : null,
         pdf_url: pdfUrl,
         pdf_filename: pdfFilename,
+        upload_mime_type: pdfUrl ? uploadMimeType : null,
         status,
       };
       if (ancestryId) {
@@ -94,14 +98,19 @@ const AncestrySection = () => {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user || !bookId) return;
-    if (file.type !== 'application/pdf') {
-      toast({ title: 'PDF only', description: 'Please upload a PDF file.', variant: 'destructive' });
+    if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
+      toast({
+        title: 'Unsupported file',
+        description: 'Please upload a JPEG or PNG image, or a PDF.',
+        variant: 'destructive',
+      });
       return;
     }
     if (file.size > MAX_PDF_BYTES) {
       toast({ title: 'File too large', description: 'Maximum file size is 10MB.', variant: 'destructive' });
       return;
     }
+    const isImage = file.type.startsWith('image/');
     setUploading(true);
     try {
       const path = `${user.id}/${bookId}/${Date.now()}-${file.name}`;
@@ -110,7 +119,13 @@ const AncestrySection = () => {
       const { data: pub } = supabase.storage.from('ancestry-pdfs').getPublicUrl(path);
       setPdfUrl(pub.publicUrl);
       setPdfFilename(file.name);
-      toast({ title: 'PDF uploaded', description: 'Remember to save your changes.' });
+      setUploadMimeType(file.type);
+      toast({
+        title: isImage ? 'Image uploaded' : 'PDF uploaded',
+        description: isImage
+          ? 'It will appear on the page. Remember to save your changes.'
+          : 'It will be printed at the back of the book. Remember to save your changes.',
+      });
     } catch (e: any) {
       toast({ title: 'Upload failed', description: e.message, variant: 'destructive' });
     } finally {
@@ -122,7 +137,9 @@ const AncestrySection = () => {
   const handleRemovePdf = () => {
     setPdfUrl(null);
     setPdfFilename(null);
+    setUploadMimeType(null);
   };
+
 
   if (loading) {
     return (
@@ -133,7 +150,8 @@ const AncestrySection = () => {
     );
   }
 
-  const textPriorityNotice = content.trim().length > 0 && pdfUrl;
+  const isImageUpload = !!pdfUrl && !!uploadMimeType?.startsWith('image/');
+  const textPriorityNotice = content.trim().length > 0 && !!pdfUrl && !isImageUpload;
 
   return (
     <div className="min-h-screen bg-background">
@@ -152,7 +170,8 @@ const AncestrySection = () => {
         <p className="text-muted-foreground mb-8 leading-relaxed">
           This is your family's story — where you come from, who came before you, and the thread that connects it
           all to {recipientName || 'you'}. Write as much or as little as you want. This page belongs to your family.
-          You have space for approximately 300 words, or you can upload a PDF from Ancestry, FamilySearch, or Canva instead.
+          You have space for approximately 300 words, and you can add an image — a family tree, a scanned photo or
+          document — that appears right on the page beside your words.
         </p>
 
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6">
@@ -172,19 +191,28 @@ const AncestrySection = () => {
         </div>
 
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-heading text-lg font-semibold text-foreground mb-3">Option 2 — Upload a PDF</h2>
+          <h2 className="font-heading text-lg font-semibold text-foreground mb-1">Option 2 — Upload a page</h2>
+          <p className="text-sm text-muted-foreground mb-3">
+            Upload a JPEG or PNG — a family tree, a scanned photo or document — and it appears on the page itself,
+            with your writing alongside it. A PDF is accepted too, but it is printed at the back of the book rather
+            than on this page.
+          </p>
 
           {pdfUrl ? (
             <div className="flex items-center justify-between gap-3 p-3 border border-border rounded-md bg-muted/30">
               <div className="flex items-center gap-2 min-w-0">
-                <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                {isImageUpload ? (
+                  <ImageIcon className="h-4 w-4 text-primary flex-shrink-0" />
+                ) : (
+                  <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                )}
                 <a
                   href={pdfUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-foreground hover:underline truncate"
                 >
-                  {pdfFilename || 'Uploaded PDF'}
+                  {pdfFilename || (isImageUpload ? 'Uploaded image' : 'Uploaded PDF')}
                 </a>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -193,7 +221,7 @@ const AncestrySection = () => {
                 </Button>
                 <button
                   onClick={handleRemovePdf}
-                  aria-label="Remove PDF"
+                  aria-label="Remove upload"
                   className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 >
                   <X className="h-4 w-4" />
@@ -203,15 +231,22 @@ const AncestrySection = () => {
           ) : (
             <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="gap-2">
               <FileUp className="h-4 w-4" />
-              {uploading ? 'Uploading…' : 'Upload a PDF (from Ancestry, Canva, FamilySearch, etc.)'}
+              {uploading ? 'Uploading…' : 'Upload an image or PDF'}
             </Button>
           )}
-          <p className="text-xs text-muted-foreground mt-2">PDF only · Max 10MB</p>
+          {pdfUrl && (
+            <p className="text-xs text-muted-foreground mt-2 italic">
+              {isImageUpload
+                ? 'This image appears on the "Where You Come From" page.'
+                : 'This PDF is printed at the back of the book, not on this page.'}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground mt-2">JPEG, PNG or PDF · Max 10MB</p>
 
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/pdf"
+            accept="image/jpeg,image/png,application/pdf"
             className="hidden"
             onChange={handleUpload}
           />
@@ -219,7 +254,7 @@ const AncestrySection = () => {
 
         {textPriorityNotice && (
           <p className="text-xs text-muted-foreground italic mb-4">
-            Note: when both are provided, the written text takes priority and the PDF is ignored in the printed book.
+            Note: your written text appears on the page. The attached PDF is printed at the back of the book.
           </p>
         )}
 
