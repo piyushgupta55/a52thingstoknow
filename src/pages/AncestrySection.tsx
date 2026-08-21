@@ -23,6 +23,7 @@ const AncestrySection = () => {
   const [content, setContent] = useState('');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
+  const [uploadMimeType, setUploadMimeType] = useState<string | null>(null);
   const [ancestryId, setAncestryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
