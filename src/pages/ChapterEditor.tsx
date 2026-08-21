@@ -150,7 +150,6 @@ const ChapterEditor = () => {
   const [referenceText, setReferenceText] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [ancestryStatus, setAncestryStatus] = useState<string>('not_started');
-  const [familyHistoryStatus, setFamilyHistoryStatus] = useState<string>('not_started');
   const [recipientGender, setRecipientGender] = useState('');
   const [authorLabel, setAuthorLabel] = useState('');
   const [authorName, setAuthorName] = useState('');
@@ -437,13 +436,13 @@ const ChapterEditor = () => {
         const { data: profileData } = await supabase.from('profiles').select('display_name').eq('user_id', bookData.user_id).single();
         setAuthorName(profileData?.display_name || '');
       }
-      // Load back-matter section statuses for the chapter dropdown
-      const [{ data: ancData }, { data: fhData }] = await Promise.all([
-        supabase.from('book_ancestry').select('status').eq('book_id', bookId).maybeSingle(),
-        supabase.from('book_family_history').select('status').eq('book_id', bookId).maybeSingle(),
-      ]);
+      // Load the back-matter section status for the chapter dropdown
+      const { data: ancData } = await supabase
+        .from('book_ancestry')
+        .select('status')
+        .eq('book_id', bookId)
+        .maybeSingle();
       setAncestryStatus(ancData?.status || 'not_started');
-      setFamilyHistoryStatus(fhData?.status || 'not_started');
       if (memoriesData) {
         const rows = memoriesData as MemoryRow[];
         const counts: Record<string, number> = {};
