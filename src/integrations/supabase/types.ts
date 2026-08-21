@@ -84,6 +84,7 @@ export type Database = {
           pdf_url: string | null
           status: string
           updated_at: string
+          upload_mime_type: string | null
         }
         Insert: {
           book_id: string
@@ -94,6 +95,7 @@ export type Database = {
           pdf_url?: string | null
           status?: string
           updated_at?: string
+          upload_mime_type?: string | null
         }
         Update: {
           book_id?: string
@@ -104,6 +106,7 @@ export type Database = {
           pdf_url?: string | null
           status?: string
           updated_at?: string
+          upload_mime_type?: string | null
         }
         Relationships: []
       }
