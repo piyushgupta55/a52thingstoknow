@@ -15,7 +15,7 @@ interface Issue {
   chapter_id: string;
   chapter_number: number;
   chapter_title: string;
-  type: 'typo' | 'name_mismatch' | 'cut_off' | 'double_space' | 'empty_page_2' | 'missing_punctuation';
+  type: 'typo' | 'name_mismatch' | 'cut_off' | 'double_space' | 'empty_page_2' | 'missing_punctuation' | 'reads_oddly';
   snippet: string;
   message: string;
 }
@@ -27,7 +27,9 @@ const TYPE_LABEL: Record<Issue['type'], string> = {
   cut_off: 'Cut-off sentence',
   double_space: 'Extra spacing',
   empty_page_2: 'Empty Page 2',
+  reads_oddly: 'Worth a look',
 };
+
 
 const cacheKey = (bookId: string) => `bookReview:${bookId}`;
 const chapterIssuesKey = (chapterId: string) => `bookReview:chapterIssues:${chapterId}`;
