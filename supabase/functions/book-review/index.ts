@@ -118,13 +118,6 @@ const ALWAYS_MISSPELLED = [
   "reccommend", "rythm", "supress", "tommorow", "truely", "wierd",
 ];
 
-// Homophone pairs an author genuinely confuses. Detected deterministically,
-// then confirmed one-by-one by a narrowly-scoped AI pass so correct uses stay silent.
-const HOMOPHONES = [
-  "your", "you're", "its", "it's", "their", "they're",
-  "whose", "who's", "then", "than", "too", "lose", "loose",
-  "were", "we're",
-];
 
 const escapeRe = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
