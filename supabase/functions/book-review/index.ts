@@ -32,6 +32,63 @@ type Issue = {
 const wordCount = (s: string): number =>
   s ? s.replace(/[—–]/g, " ").trim().split(/\s+/).filter(Boolean).length : 0;
 
+// Sentence-final punctuation. Colons and semicolons are valid endings
+// (they introduce lists), so they count as terminated sentences.
+const SENTENCE_END = /[.!?…:;]/;
+
+// Return the whole sentence(s) surrounding [start, end) in `text`, so excerpts
+// never begin or end mid-sentence (or mid-word).
+const sentenceWindow = (text: string, start: number, end: number, maxLen = 300): string => {
+  if (!text) return "";
+  const s = Math.max(0, Math.min(start, text.length));
+  const e = Math.max(s, Math.min(end, text.length));
+
+  // Walk backwards to the end of the previous sentence / paragraph break.
+  let from = 0;
+  for (let i = s - 1; i >= 0; i--) {
+    const c = text[i];
+    if (c === "\n" || (SENTENCE_END.test(c) && /\s/.test(text[i + 1] ?? " "))) {
+      from = i + 1;
+      break;
+    }
+  }
+  // Walk forwards to the end of the sentence containing the match.
+  let to = text.length;
+  for (let i = e; i < text.length; i++) {
+    const c = text[i];
+    if (c === "\n") { to = i; break; }
+    if (SENTENCE_END.test(c) && /\s|$/.test(text[i + 1] ?? "")) {
+      // include trailing closing quotes/brackets
+      let j = i + 1;
+      while (j < text.length && /["')\]”’»]/.test(text[j])) j++;
+      to = j;
+      break;
+    }
+  }
+  let out = text.slice(from, to).trim();
+  if (out.length > maxLen) {
+    // Still too long: trim on a word boundary rather than mid-word.
+    out = out.slice(0, maxLen).replace(/\s+\S*$/, "") + "…";
+  }
+  return out;
+};
+
+// Locate an AI-supplied snippet in the real text and widen it to whole sentences.
+const widenSnippet = (text: string, snippet: string): string => {
+  const s = (snippet || "").trim();
+  if (!s) return "";
+  if (!text) return s;
+  let idx = text.indexOf(s);
+  if (idx < 0) {
+    // Try a shortened probe in case the model paraphrased the tail.
+    const probe = s.slice(0, 40);
+    idx = probe ? text.indexOf(probe) : -1;
+  }
+  if (idx < 0) return s.slice(0, 300);
+  return sentenceWindow(text, idx, idx + s.length);
+};
+
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
