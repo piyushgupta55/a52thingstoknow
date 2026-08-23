@@ -32,6 +32,63 @@ type Issue = {
 const wordCount = (s: string): number =>
   s ? s.replace(/[—–]/g, " ").trim().split(/\s+/).filter(Boolean).length : 0;
 
+// Sentence-final punctuation. Colons and semicolons are valid endings
+// (they introduce lists), so they count as terminated sentences.
+const SENTENCE_END = /[.!?…:;]/;
+
+// Return the whole sentence(s) surrounding [start, end) in `text`, so excerpts
+// never begin or end mid-sentence (or mid-word).
+const sentenceWindow = (text: string, start: number, end: number, maxLen = 300): string => {
+  if (!text) return "";
+  const s = Math.max(0, Math.min(start, text.length));
+  const e = Math.max(s, Math.min(end, text.length));
+
+  // Walk backwards to the end of the previous sentence / paragraph break.
+  let from = 0;
+  for (let i = s - 1; i >= 0; i--) {
+    const c = text[i];
+    if (c === "\n" || (SENTENCE_END.test(c) && /\s/.test(text[i + 1] ?? " "))) {
+      from = i + 1;
+      break;
+    }
+  }
+  // Walk forwards to the end of the sentence containing the match.
+  let to = text.length;
+  for (let i = e; i < text.length; i++) {
+    const c = text[i];
+    if (c === "\n") { to = i; break; }
+    if (SENTENCE_END.test(c) && /\s|$/.test(text[i + 1] ?? "")) {
+      // include trailing closing quotes/brackets
+      let j = i + 1;
+      while (j < text.length && /["')\]”’»]/.test(text[j])) j++;
+      to = j;
+      break;
+    }
+  }
+  let out = text.slice(from, to).trim();
+  if (out.length > maxLen) {
+    // Still too long: trim on a word boundary rather than mid-word.
+    out = out.slice(0, maxLen).replace(/\s+\S*$/, "") + "…";
+  }
+  return out;
+};
+
+// Locate an AI-supplied snippet in the real text and widen it to whole sentences.
+const widenSnippet = (text: string, snippet: string): string => {
+  const s = (snippet || "").trim();
+  if (!s) return "";
+  if (!text) return s;
+  let idx = text.indexOf(s);
+  if (idx < 0) {
+    // Try a shortened probe in case the model paraphrased the tail.
+    const probe = s.slice(0, 40);
+    idx = probe ? text.indexOf(probe) : -1;
+  }
+  if (idx < 0) return s.slice(0, 300);
+  return sentenceWindow(text, idx, idx + s.length);
+};
+
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -110,12 +167,15 @@ serve(async (req: Request) => {
       }
 
       // Double / extra spaces (within a line)
-      const doubleSpaceMatches = combined.match(/[^\n]*?  +[^\n]*/g) || [];
+      const dsRe = /[^\n]  +[^\n]/g;
       const seen = new Set<string>();
-      for (const m of doubleSpaceMatches.slice(0, 3)) {
-        const snip = m.trim().slice(0, 140);
-        if (seen.has(snip)) continue;
+      let dsMatch: RegExpExecArray | null;
+      let dsCount = 0;
+      while ((dsMatch = dsRe.exec(combined)) !== null && dsCount < 3) {
+        const snip = sentenceWindow(combined, dsMatch.index, dsMatch.index + dsMatch[0].length);
+        if (!snip || seen.has(snip)) continue;
         seen.add(snip);
+        dsCount++;
         issues.push({
           id: mkId(),
           chapter_id: ch.id,
@@ -136,8 +196,11 @@ serve(async (req: Request) => {
         // Strip trailing closing quotes/brackets to find the real terminal char
         const stripped = para.replace(/[)\]"'”’»]+$/u, "");
         const last = stripped.slice(-1);
-        if (!/[.!?…]/.test(last)) {
-          const snip = para.slice(-140);
+        if (!SENTENCE_END.test(last)) {
+          const idx = combined.indexOf(para);
+          const snip = idx >= 0
+            ? sentenceWindow(combined, Math.max(idx, idx + para.length - 1), idx + para.length)
+            : para.slice(-200);
           if (punctSeen.has(snip)) continue;
           punctSeen.add(snip);
           issues.push({
@@ -147,11 +210,12 @@ serve(async (req: Request) => {
             chapter_title: ch.title,
             type: "missing_punctuation",
             snippet: snip,
-            message: "This sentence appears to be missing ending punctuation (period, question mark, or exclamation point).",
+            message: "This sentence appears to be missing ending punctuation.",
           });
           if (punctSeen.size >= 5) break;
         }
       }
+
     }
 
     // AI checks (typos, name mismatches, cut-off sentences)
@@ -169,12 +233,13 @@ serve(async (req: Request) => {
 Scan each chapter and report ONLY these issue types:
 - "typo": clear spelling errors or obvious misspellings (NOT stylistic preferences).
 - "name_mismatch": a first name of a person appears that is clearly NOT "${recipientName}" and is being used as if addressing the recipient (e.g., "I hope you remember this, Sarah" when the recipient is "${recipientName}"). Ignore names of other people that are clearly being referenced as third parties (grandparents, friends, historical figures). Only flag when the wrong name appears to be used in place of the recipient's name.
-- "cut_off": a sentence that appears truncated mid-thought (e.g., ends abruptly without punctuation or trails off).
+- "cut_off": a sentence in the FULL chapter text that is genuinely truncated mid-thought (trails off, ends mid-word, or stops without any terminal punctuation). The text you receive is complete and untruncated — never assume an excerpt was cut. A sentence ending in a period, question mark, exclamation point, ellipsis, colon or semicolon is NOT cut off; colons and semicolons legitimately introduce lists.
 
-Do NOT flag: style, grammar choices, capitalization preferences, double spaces, empty sections, comma placement, oxford commas.
+Do NOT flag: style, grammar choices, capitalization preferences, double spaces, empty sections, comma placement, oxford commas, or sentences ending in a colon or semicolon.
 
 Return STRICT JSON only with this shape:
-{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch|cut_off", "snippet": "<short verbatim excerpt up to 140 chars>", "message": "<one short sentence describing the issue>" } ] }
+{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch|cut_off", "snippet": "<verbatim excerpt: one complete sentence from the text, never cut mid-word>", "message": "<one short sentence describing the issue>" } ] }
+
 
 If no issues, return { "issues": [] }. Never invent issues.`;
 
@@ -209,16 +274,25 @@ If no issues, return { "issues": [] }. Never invent issues.`;
             if (!ch) continue;
             const type = ["typo", "name_mismatch", "cut_off"].includes(ai.type) ? ai.type : null;
             if (!type) continue;
+            const fullText = `${ch.reference_text || ""}\n\n${ch.content || ""}`.trim();
+            const snippet = widenSnippet(fullText, String(ai.snippet || ""));
+            // Verify cut_off against the real text: if the sentence terminates
+            // properly there, the model was reacting to a truncated excerpt.
+            if (type === "cut_off") {
+              const stripped = snippet.replace(/[)\]"'”’»]+$/u, "").trim();
+              if (SENTENCE_END.test(stripped.slice(-1))) continue;
+            }
             issues.push({
               id: mkId(),
               chapter_id: ch.id,
               chapter_number: ch.chapter_number,
               chapter_title: ch.title,
               type,
-              snippet: String(ai.snippet || "").slice(0, 200),
+              snippet,
               message: String(ai.message || "").slice(0, 240),
             });
           }
+
         } else {
           console.error("AI gateway error:", resp.status, await resp.text());
         }
