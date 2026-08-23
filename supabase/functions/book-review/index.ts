@@ -489,60 +489,6 @@ If no issues, return { "issues": [] }. Never invent issues.`;
       }
     }
 
-    // Homophone confirmation: sentences containing a candidate word are checked
-    // one question at a time — "is the wrong form used here?" — so correct
-    // everyday uses of "your", "then", "its" etc. stay silent.
-    if (LOVABLE_API_KEY && homophoneCandidates.length > 0) {
-      const seenPair = new Set<string>();
-      const batch = homophoneCandidates.filter((c) => {
-        const k = `${c.ch.id}|${c.word.toLowerCase()}|${c.snippet}`;
-        if (seenPair.has(k)) return false;
-        seenPair.add(k);
-        return true;
-      }).slice(0, 150);
-
-      try {
-        const hr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              {
-                role: "system",
-                content:
-                  `Each item is a sentence and one word appearing in it from a homophone set (your/you're, its/it's, their/they're, whose/who's, then/than, too/to, lose/loose, were/we're). Answer one question per item: is the WRONG form of that word used in that sentence? Judge grammar only — ignore style, tone, capitalization, punctuation, idioms and second-person address. If the word is used correctly, say nothing. When unsure, treat it as correct. Return STRICT JSON with the 0-based indexes of items where the wrong form is used: { "wrong": [<index>] }`,
-              },
-              {
-                role: "user",
-                content: JSON.stringify(batch.map((c) => ({ word: c.word, sentence: c.snippet }))),
-              },
-            ],
-            response_format: { type: "json_object" },
-          }),
-        });
-        if (hr.ok) {
-          const hd = await hr.json();
-          const hp = JSON.parse(hd?.choices?.[0]?.message?.content || "{}");
-          const idxs = Array.isArray(hp.wrong) ? hp.wrong : [];
-          for (const i of idxs) {
-            const c = batch[i];
-            if (!c) continue;
-            issues.push({
-              id: mkId(),
-              chapter_id: c.ch.id,
-              chapter_number: c.ch.chapter_number,
-              chapter_title: c.ch.title,
-              type: "typo",
-              snippet: c.snippet,
-              message: `"${c.word}" looks like the wrong form here.`,
-            });
-          }
-        }
-      } catch (e) {
-        console.error("Homophone check failed:", e);
-      }
-    }
 
     // One problem, one flag: drop later issues whose excerpt overlaps an
     // earlier one in the same chapter.
