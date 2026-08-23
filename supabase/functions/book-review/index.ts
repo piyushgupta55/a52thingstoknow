@@ -29,8 +29,15 @@ type Issue = {
   message: string;
 };
 
+// Editor markers (<mark>…</mark> Reading Rewards, <review>…</review> spans) are
+// structural, not prose — strip the wrappers everywhere before any check so a
+// sentence ending in a tag isn't mis-read and tags never leak into excerpts.
+const stripMarkers = (s: string): string =>
+  (s || "").replace(/<\/?mark\b[^>]*>/gi, "").replace(/<\/?review\b[^>]*>/gi, "");
+
 const wordCount = (s: string): number =>
   s ? s.replace(/[—–]/g, " ").trim().split(/\s+/).filter(Boolean).length : 0;
+
 
 // Sentence-final punctuation. Colons and semicolons are valid endings
 // (they introduce lists), so they count as terminated sentences.
@@ -163,13 +170,10 @@ serve(async (req: Request) => {
 
     // Deterministic checks
     for (const ch of completedChapters) {
-      // Reading Reward markers (<mark>…</mark>) are structural, not prose —
-      // strip them so a paragraph ending inside a marker isn't mis-read as
-      // missing its ending punctuation.
-      const stripMarkers = (s: string) => s.replace(/<\/?mark\b[^>]*>/gi, "");
       const ref = stripMarkers((ch.reference_text || "") as string);
       const content = stripMarkers((ch.content || "") as string);
       const combined = joinPages(ref, content);
+
 
 
       // Empty page 2 (content section empty / near-empty)
@@ -237,30 +241,36 @@ serve(async (req: Request) => {
 
     }
 
-    // AI checks (typos, name mismatches, cut-off sentences)
+    // AI checks (misspellings and recipient-name mismatches only)
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (LOVABLE_API_KEY && completedChapters.length > 0) {
       const payload = completedChapters.map((ch: Chapter) => ({
         chapter_id: ch.id,
         chapter_number: ch.chapter_number,
         title: ch.title,
-        text: joinPages(ch.reference_text || "", ch.content || "").trim(),
+        text: stripMarkers(joinPages(ch.reference_text || "", ch.content || "")).trim(),
       }));
 
-      const systemPrompt = `You are a careful proofreader for a personalized printed book written for "${recipientName}".
+      const systemPrompt = `You are a spell-checker for a personalized printed book written for "${recipientName}". You are NOT an editor. You do not improve writing.
 
-Scan each chapter and report ONLY these issue types:
-- "typo": clear spelling errors or obvious misspellings (NOT stylistic preferences).
-- "name_mismatch": a first name of a person appears that is clearly NOT "${recipientName}" and is being used as if addressing the recipient (e.g., "I hope you remember this, Sarah" when the recipient is "${recipientName}"). Ignore names of other people that are clearly being referenced as third parties (grandparents, friends, historical figures). Only flag when the wrong name appears to be used in place of the recipient's name.
-- "cut_off": a sentence in the FULL chapter text that is genuinely truncated mid-thought (trails off, ends mid-word, or stops without any terminal punctuation). The text you receive is complete and untruncated — never assume an excerpt was cut. A sentence ending in a period, question mark, exclamation point, ellipsis, colon or semicolon is NOT cut off; colons and semicolons legitimately introduce lists.
+Report ONLY these two issue types:
+- "typo": a MISSPELLED WORD — a sequence of letters that is not a real English word (or a clearly misspelled proper noun). Example: "recieve", "beleive", "freind".
+- "name_mismatch": a different person's first name is used where the recipient should be addressed (e.g. "I hope you remember this, Sarah" when the recipient is "${recipientName}"). Ignore names of third parties (grandparents, friends, teachers, historical or biblical figures). Only flag when the wrong name is clearly standing in for the recipient's name.
 
-Do NOT flag: style, grammar choices, capitalization preferences, double spaces, empty sections, comma placement, oxford commas, or sentences ending in a colon or semicolon.
+HARD RULES — violating any of these is a failure:
+- If every word in a sentence is spelled correctly, do NOT flag it. No exceptions.
+- Never suggest a rewrite, rephrasing, or "clearer" wording. No grammar, tense, agreement, word-choice, preposition, or phrasing suggestions.
+- Never flag idioms or figurative language ("nursing grudges", "as you think it is", "carry a torch"). Real idioms are correct.
+- Never flag capitalization, consistency, or house-style ("godly" vs "Godly", "Mom" vs "mom"). Never flag punctuation, spacing, or sentence length.
+- Never flag second-person writing. Titles and sentences that address the reader as "you" are intentional — do NOT propose replacing "you" with "${recipientName}".
+- Never flag archaic, poetic, biblical, or regional wording.
+- Returning zero issues is the correct and expected answer for well-written text.
 
 Return STRICT JSON only with this shape:
-{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch|cut_off", "snippet": "<verbatim excerpt: one complete sentence from the text, never cut mid-word>", "message": "<one short sentence describing the issue>" } ] }
-
+{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch", "snippet": "<verbatim excerpt: one complete sentence from the text, never cut mid-word>", "message": "<one short sentence naming the misspelled word or wrong name>" } ] }
 
 If no issues, return { "issues": [] }. Never invent issues.`;
+
 
       const userPrompt = `Recipient name: ${recipientName}\n\nChapters:\n${JSON.stringify(payload)}`;
 
@@ -288,29 +298,80 @@ If no issues, return { "issues": [] }. Never invent issues.`;
           try { parsed = JSON.parse(raw); } catch (_) { parsed = {}; }
           const aiIssues = Array.isArray(parsed.issues) ? parsed.issues : [];
           const chMap = new Map<string, Chapter>(completedChapters.map((c: Chapter) => [c.id, c]));
+          // Collect candidates first; typos get a second, independent
+          // spelling verification before they are allowed through.
+          type Candidate = { ch: Chapter; type: string; snippet: string; message: string; word: string };
+          const candidates: Candidate[] = [];
           for (const ai of aiIssues) {
             const ch = chMap.get(ai.chapter_id);
             if (!ch) continue;
-            const type = ["typo", "name_mismatch", "cut_off"].includes(ai.type) ? ai.type : null;
+            const type = ["typo", "name_mismatch"].includes(ai.type) ? ai.type : null;
             if (!type) continue;
-            const fullText = joinPages(ch.reference_text || "", ch.content || "").trim();
+            const fullText = stripMarkers(joinPages(ch.reference_text || "", ch.content || "")).trim();
             const snippet = widenSnippet(fullText, String(ai.snippet || ""));
-            // Verify cut_off against the real text: if the sentence terminates
-            // properly there, the model was reacting to a truncated excerpt.
-            if (type === "cut_off") {
-              const stripped = snippet.replace(/[)\]"'”’»]+$/u, "").trim();
-              if (SENTENCE_END.test(stripped.slice(-1))) continue;
+            const message = String(ai.message || "").slice(0, 240);
+            // The flagged word must be named in the message AND actually
+            // present in the chapter text — otherwise it's a rewrite
+            // suggestion dressed up as a typo.
+            const quoted = message.match(/["'“‘]([A-Za-z][A-Za-z'’-]*)["'”’]/);
+            const word = quoted ? quoted[1] : "";
+            if (type === "typo") {
+              if (!word) continue;
+              const present = new RegExp(`(^|[^A-Za-z])${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^A-Za-z]|$)`).test(fullText);
+              if (!present) continue;
             }
+            candidates.push({ ch, type, snippet, message, word });
+          }
+
+          // Second pass: keep a "typo" only if the named word is genuinely
+          // not a real English word. Correct spellings used in idioms,
+          // capitalization variants and proper nouns are all real words.
+          const typoWords = [...new Set(candidates.filter((c) => c.type === "typo").map((c) => c.word))];
+          let realWords = new Set<string>();
+          if (typoWords.length > 0) {
+            try {
+              const vr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+                body: JSON.stringify({
+                  model: "google/gemini-2.5-flash",
+                  messages: [
+                    {
+                      role: "system",
+                      content:
+                        `For each candidate, decide only one thing: is it a real, correctly spelled English word, or a legitimate proper noun or name? Ignore capitalization entirely ("Godly" and "godly" are both real). Ignore meaning, style and context. Answer "real" unless the letters do not form a word at all (e.g. "recieve", "freind"). Return STRICT JSON: { "real": ["<words that ARE real>"] }`,
+                    },
+                    { role: "user", content: JSON.stringify(typoWords) },
+                  ],
+                  response_format: { type: "json_object" },
+                }),
+              });
+              if (vr.ok) {
+                const vd = await vr.json();
+                const vp = JSON.parse(vd?.choices?.[0]?.message?.content || "{}");
+                realWords = new Set((Array.isArray(vp.real) ? vp.real : []).map((w: string) => String(w).toLowerCase()));
+              } else {
+                // Verification unavailable: suppress typos rather than risk bad advice.
+                realWords = new Set(typoWords.map((w) => w.toLowerCase()));
+              }
+            } catch (_) {
+              realWords = new Set(typoWords.map((w) => w.toLowerCase()));
+            }
+          }
+
+          for (const c of candidates) {
+            if (c.type === "typo" && realWords.has(c.word.toLowerCase())) continue;
             issues.push({
               id: mkId(),
-              chapter_id: ch.id,
-              chapter_number: ch.chapter_number,
-              chapter_title: ch.title,
-              type,
-              snippet,
-              message: String(ai.message || "").slice(0, 240),
+              chapter_id: c.ch.id,
+              chapter_number: c.ch.chapter_number,
+              chapter_title: c.ch.title,
+              type: c.type as Issue["type"],
+              snippet: c.snippet,
+              message: c.message,
             });
           }
+
 
         } else {
           console.error("AI gateway error:", resp.status, await resp.text());
