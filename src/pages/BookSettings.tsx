@@ -91,6 +91,10 @@ const BookSettings = () => {
     const implied = impliedBookGender(r);
     return implied === null || implied === lockedGender;
   });
+  // Keep whatever the book already stores selectable, even if it predates this list.
+  const allChoices = relationship && !relationshipChoices.includes(relationship as never)
+    ? [relationship, ...relationshipChoices]
+    : relationshipChoices;
 
   return (
     <div className="min-h-screen bg-background">
