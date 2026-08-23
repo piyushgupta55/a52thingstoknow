@@ -178,7 +178,7 @@ const QuickRead = () => {
     const ref = (chapter.reference_text || '').trim();
     const content = (chapter.content || '').trim();
     if (ref || content) {
-      return [ref, content].filter(Boolean).join('\n\n');
+      return mergeRefAndContent(ref, content);
     }
     const tpl = templates.find(t => t.chapter_number === chapter.chapter_number);
     const raw = tpl?.reference_content ?? null;
