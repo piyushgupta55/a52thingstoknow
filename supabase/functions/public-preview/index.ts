@@ -37,8 +37,9 @@ Deno.serve(async (req) => {
     const sample: string[] = ((settingRow?.value ?? {}) as any).website_samples ?? [];
     const wanted = new Set(sample.map(normalizeTitle));
 
-    // Deduplicate by title; prefer female-variant when both exist (arbitrary
-    // stable pick). Templates are keyed by (chapter_number, gender, title).
+    // Marketing samples come only from the two base sets; step variants share
+    // titles and must never be picked here. Deduplicate by title, preferring
+    // female. Templates are keyed by (chapter_number, gender, title).
     const { data: templates } = await supabase
       .from("chapter_templates")
       .select("id, chapter_number, title, gender, bible_verse_text, bible_verse_reference, quote_text, quote_attribution, reference_content, is_photo_chapter")
@@ -48,6 +49,7 @@ Deno.serve(async (req) => {
     for (const t of templates ?? []) {
       const key = normalizeTitle(t.title);
       if (!wanted.has(key)) continue;
+      if (t.gender !== "female" && t.gender !== "male") continue;
       // Prefer female as canonical marketing sample if not already stored.
       if (!byTitle.has(key) || t.gender === "female") byTitle.set(key, t);
     }
