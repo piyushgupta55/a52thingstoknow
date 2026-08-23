@@ -1524,6 +1524,27 @@ const ChapterEditor = () => {
           />
         )}
 
+        {/* Optional-passage chooser — generic; driven entirely by the passage library */}
+        {bookId && chapter && (
+          <PassageVariantCallout
+            bookId={bookId}
+            chapterId={chapter.id}
+            chapterNumber={chapter.chapter_number}
+            gender={toBookGender(recipientGender)}
+            tokenCtx={{ recipientName, recipientGender, authorLabel }}
+            currentText={isLetterChapter ? content : mergedText}
+            onApplyText={(next) => {
+              if (isLetterChapter) {
+                setContent(next);
+                setMergedText(next);
+              } else {
+                setMergedText(next);
+              }
+              setHasUnsavedChanges(true);
+            }}
+          />
+        )}
+
 
         {/* Duplicate warning */}
         {!previewMode && duplicateWarning && (
