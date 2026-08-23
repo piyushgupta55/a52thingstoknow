@@ -54,6 +54,7 @@ const BookReview = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get('mode'); // 'order' | null
+  const orderMode = mode === 'order';
   const forceRescan = searchParams.get('rescan') !== null && searchParams.get('rescan') !== '';
   const rescanChapter = searchParams.get('rescanChapter');
 
@@ -61,6 +62,7 @@ const BookReview = () => {
   const [rescanning, setRescanning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [copyReady, setCopyReady] = useState(false);
   const [chaptersScanned, setChaptersScanned] = useState(0);
 
   // Persist current issues so we can return to the same report after Fix It.
@@ -75,6 +77,8 @@ const BookReview = () => {
   }, [bookId, issues, chaptersScanned, loading]);
 
   // Initial load: cache first, otherwise full scan.
+  // In order mode the scan never blocks the screen — the approval gate renders
+  // immediately and the copy-check row fills in when the scan lands.
   useEffect(() => {
     if (!bookId) return;
     // Targeted re-scan path runs in its own effect; don't load here.
@@ -87,6 +91,7 @@ const BookReview = () => {
           const cached = JSON.parse(raw);
           setIssues(cached.issues || []);
           setChaptersScanned(cached.chaptersScanned || 0);
+          setCopyReady(true);
           setLoading(false);
           return;
         }
@@ -94,20 +99,23 @@ const BookReview = () => {
     }
 
     const run = async () => {
-      setLoading(true);
+      if (!orderMode) setLoading(true);
+      setCopyReady(false);
       setError(null);
       try {
         const data = await callReview(bookId);
         setIssues(data.issues || []);
         setChaptersScanned(data.chaptersScanned || 0);
+        setCopyReady(true);
       } catch (e: any) {
-        setError(e.message || 'Something went wrong');
+        if (!orderMode) setError(e.message || 'Something went wrong');
       } finally {
         setLoading(false);
       }
     };
+    if (orderMode) setLoading(false);
     run();
-  }, [bookId, forceRescan, rescanChapter]);
+  }, [bookId, forceRescan, rescanChapter, orderMode]);
 
   // Targeted re-scan after returning from Fix It on a specific chapter.
   useEffect(() => {
