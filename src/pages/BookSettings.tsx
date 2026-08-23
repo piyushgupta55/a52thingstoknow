@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import { ArrowLeft } from 'lucide-react';
+import { RELATIONSHIP_OPTIONS, impliedBookGender, toBookGender } from '@/lib/genderMap';
 
 const BookSettings = () => {
   const { bookId } = useParams<{ bookId: string }>();
@@ -83,6 +84,14 @@ const BookSettings = () => {
     );
   }
 
+  // Gender is locked after creation, so only offer relationships that agree
+  // with the book version already built.
+  const lockedGender = toBookGender(gender);
+  const relationshipChoices = RELATIONSHIP_OPTIONS.filter(r => {
+    const implied = impliedBookGender(r);
+    return implied === null || implied === lockedGender;
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -107,7 +116,7 @@ const BookSettings = () => {
             <Select value={relationship} onValueChange={setRelationship} required>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Select relationship" /></SelectTrigger>
               <SelectContent>
-                {['Daughter', 'Son', 'Stepdaughter', 'Stepson', 'Granddaughter', 'Grandson', 'Niece', 'Nephew', 'Family Friend'].map(r => (
+                {relationshipChoices.map(r => (
                   <SelectItem key={r} value={r}>{r}</SelectItem>
                 ))}
               </SelectContent>

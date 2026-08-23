@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { toBookGender, type BookGender } from '@/lib/genderMap';
+import { toBookGender, impliedBookGender, GENDER_LABELS, RELATIONSHIP_OPTIONS, type BookGender } from '@/lib/genderMap';
 import { replaceTokens } from '@/lib/tokenReplacer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,15 +26,20 @@ const NewBook = () => {
   const [fromLabel, setFromLabel] = useState('');
   const [authorLabel, setAuthorLabel] = useState('');
 
+  const impliedGender = impliedBookGender(relationship);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || loading) return;
     setLoading(true);
 
     try {
-      // Map UI gender to canonical 'female'/'male' for template lookup
-      const bookGender: BookGender = toBookGender(gender);
+      // The relationship decides the book version whenever it implies one, so
+      // the two fields can never disagree. Otherwise the author picked it.
+      const bookGender: BookGender = impliedBookGender(relationship) ?? toBookGender(gender);
+      const genderLabel = GENDER_LABELS[bookGender];
       const capitalizedRecipientName = recipientName.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
 
       // Fetch chapter templates (single reference_content column, keyed by gender)
       const { data: templates, error: tplError } = await supabase
@@ -52,7 +57,7 @@ const NewBook = () => {
           user_id: user.id,
           recipient_name: capitalizedRecipientName,
           relationship,
-          recipient_gender: gender,
+          recipient_gender: genderLabel,
           gender: bookGender,
           occasion,
           milestone_date: milestoneDate || null,
@@ -92,7 +97,7 @@ const NewBook = () => {
       // Personalization context for seeding chapter content
       const tokenCtx = {
         recipientName: capitalizedRecipientName,
-        recipientGender: gender,
+        recipientGender: genderLabel,
         authorLabel: authorLabel.trim() || null,
       };
 
@@ -161,26 +166,40 @@ const NewBook = () => {
             <Select value={relationship} onValueChange={setRelationship} required>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Select relationship" /></SelectTrigger>
               <SelectContent>
-                {['Daughter', 'Son', 'Stepdaughter', 'Stepson', 'Granddaughter', 'Grandson', 'Niece', 'Nephew', 'Family Friend'].map(r => (
+                {RELATIONSHIP_OPTIONS.map(r => (
                   <SelectItem key={r} value={r}>{r}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div>
-            <Label>Recipient's Gender</Label>
-            <Select value={gender} onValueChange={setGender} required>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select gender" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Girl/Young Woman">Girl / Young Woman</SelectItem>
-                <SelectItem value="Boy/Young Man">Boy / Young Man</SelectItem>
-                <SelectItem value="Stepdaughter">Stepdaughter</SelectItem>
-                <SelectItem value="Stepson">Stepson</SelectItem>
-              </SelectContent>
-
-            </Select>
-          </div>
+          {impliedGender ? (
+            <div>
+              <Label>Book Version</Label>
+              <div className="mt-1 flex items-center h-10 px-3 rounded-md border border-input bg-muted/40 text-sm text-muted-foreground">
+                {GENDER_LABELS[impliedGender]}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Set by your relationship, so the two can never disagree. Change the relationship above to change it.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <Label>Book Version</Label>
+              <Select value={gender} onValueChange={setGender} required>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Select the version to write" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Girl/Young Woman">Girl / Young Woman</SelectItem>
+                  <SelectItem value="Boy/Young Man">Boy / Young Man</SelectItem>
+                  <SelectItem value="Stepdaughter">Stepdaughter (blended family)</SelectItem>
+                  <SelectItem value="Stepson">Stepson (blended family)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Which set of chapters to write. Locked once the book is created.
+              </p>
+            </div>
+          )}
 
           <div>
             <Label>Occasion</Label>
