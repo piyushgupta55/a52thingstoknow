@@ -36,6 +36,8 @@ const PILE_META: Record<string, { title: string; subtitle: string; Icon: typeof 
   notyet:   { title: 'Not yet read',       subtitle: 'chapters you have not read through yet', Icon: Circle },
 };
 
+const hasPassageOpen = (nums: Set<number>, c: Chapter) => nums.has(c.chapter_number);
+
 const hasReward = (c: Chapter) => /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`);
 
 const ReviewPile = () => {
@@ -44,6 +46,8 @@ const ReviewPile = () => {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [memoryChapters, setMemoryChapters] = useState<number[]>([]);
+  const [openPassageChapters, setOpenPassageChapters] = useState<Set<number>>(new Set());
+  const [passageChapters, setPassageChapters] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -98,7 +102,7 @@ const ReviewPile = () => {
         return chapters.filter(c => c.review_status === 'rewrite');
       case 'photos':
         // Pre-populated: every photo chapter plus the reading-reward chapter.
-        return numbered.filter(c => c.is_photo_chapter || hasReward(c));
+        return numbered.filter(c => c.is_photo_chapter || hasReward(c) || passageChapters.has(c.chapter_number));
       case 'memories':
         // Pre-populated: the curated memory-invitation chapters.
         return numbered.filter(c => memoryChapters.includes(c.chapter_number));
@@ -109,13 +113,14 @@ const ReviewPile = () => {
       default:
         return [];
     }
-  }, [chapters, memories, memoryChapters, pile, meta]);
+  }, [chapters, memories, memoryChapters, passageChapters, pile, meta]);
 
   const doneFor = (c: Chapter): string | null => {
     if (pile === 'photos') {
       const photoOk = !c.is_photo_chapter || hasPhoto(c) || !!c.photo_declined;
       const rewardOk = !hasReward(c) || !!c.reading_reward_decision;
-      return photoOk && rewardOk ? 'Handled' : null;
+      const passageOk = !passageChapters.has(c.chapter_number) || !hasPassageOpen(openPassageChapters, c);
+      return photoOk && rewardOk && passageOk ? 'Handled' : null;
     }
     if (pile === 'memories') return chapterMemoryCount(c) > 0 ? 'Memory added' : null;
     return null;
