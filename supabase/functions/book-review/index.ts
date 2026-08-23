@@ -233,12 +233,13 @@ serve(async (req: Request) => {
 Scan each chapter and report ONLY these issue types:
 - "typo": clear spelling errors or obvious misspellings (NOT stylistic preferences).
 - "name_mismatch": a first name of a person appears that is clearly NOT "${recipientName}" and is being used as if addressing the recipient (e.g., "I hope you remember this, Sarah" when the recipient is "${recipientName}"). Ignore names of other people that are clearly being referenced as third parties (grandparents, friends, historical figures). Only flag when the wrong name appears to be used in place of the recipient's name.
-- "cut_off": a sentence that appears truncated mid-thought (e.g., ends abruptly without punctuation or trails off).
+- "cut_off": a sentence in the FULL chapter text that is genuinely truncated mid-thought (trails off, ends mid-word, or stops without any terminal punctuation). The text you receive is complete and untruncated — never assume an excerpt was cut. A sentence ending in a period, question mark, exclamation point, ellipsis, colon or semicolon is NOT cut off; colons and semicolons legitimately introduce lists.
 
-Do NOT flag: style, grammar choices, capitalization preferences, double spaces, empty sections, comma placement, oxford commas.
+Do NOT flag: style, grammar choices, capitalization preferences, double spaces, empty sections, comma placement, oxford commas, or sentences ending in a colon or semicolon.
 
 Return STRICT JSON only with this shape:
-{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch|cut_off", "snippet": "<short verbatim excerpt up to 140 chars>", "message": "<one short sentence describing the issue>" } ] }
+{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch|cut_off", "snippet": "<verbatim excerpt: one complete sentence from the text, never cut mid-word>", "message": "<one short sentence describing the issue>" } ] }
+
 
 If no issues, return { "issues": [] }. Never invent issues.`;
 
