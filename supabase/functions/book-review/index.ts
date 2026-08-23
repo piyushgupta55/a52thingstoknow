@@ -121,9 +121,9 @@ const ALWAYS_MISSPELLED = [
 // Homophone pairs an author genuinely confuses. Detected deterministically,
 // then confirmed one-by-one by a narrowly-scoped AI pass so correct uses stay silent.
 const HOMOPHONES = [
-  "your", "you're", "its", "it's", "their", "there", "they're",
-  "whose", "who's", "then", "than", "to", "too", "lose", "loose",
-  "affect", "effect", "were", "we're", "where",
+  "your", "you're", "its", "it's", "their", "they're",
+  "whose", "who's", "then", "than", "too", "lose", "loose",
+  "were", "we're",
 ];
 
 const escapeRe = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -211,6 +211,10 @@ serve(async (req: Request) => {
     const mkId = () => `iss_${Date.now()}_${++idCounter}`;
 
     const completedChapters = (chapters || []) as Chapter[];
+
+    // Homophone confusions ("you're" for "your") are collected while scanning and
+    // confirmed by a single narrowly-scoped AI pass afterwards.
+    const homophoneCandidates: { ch: Chapter; word: string; snippet: string }[] = [];
 
     // Deterministic checks
     for (const ch of completedChapters) {
