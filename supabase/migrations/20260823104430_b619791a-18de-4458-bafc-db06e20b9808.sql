@@ -1,0 +1,1 @@
+CREATE TABLE public.chapter_templates_backup_20260823 AS SELECT * FROM public.chapter_templates;

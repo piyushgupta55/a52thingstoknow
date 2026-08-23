@@ -442,6 +442,54 @@ export type Database = {
           },
         ]
       }
+      chapter_templates_backup_20260823: {
+        Row: {
+          bible_verse_reference: string | null
+          bible_verse_text: string | null
+          chapter_number: number | null
+          created_at: string | null
+          default_quote_id: string | null
+          default_verse_id: string | null
+          gender: string | null
+          id: string | null
+          is_photo_chapter: boolean | null
+          quote_attribution: string | null
+          quote_text: string | null
+          reference_content: string | null
+          title: string | null
+        }
+        Insert: {
+          bible_verse_reference?: string | null
+          bible_verse_text?: string | null
+          chapter_number?: number | null
+          created_at?: string | null
+          default_quote_id?: string | null
+          default_verse_id?: string | null
+          gender?: string | null
+          id?: string | null
+          is_photo_chapter?: boolean | null
+          quote_attribution?: string | null
+          quote_text?: string | null
+          reference_content?: string | null
+          title?: string | null
+        }
+        Update: {
+          bible_verse_reference?: string | null
+          bible_verse_text?: string | null
+          chapter_number?: number | null
+          created_at?: string | null
+          default_quote_id?: string | null
+          default_verse_id?: string | null
+          gender?: string | null
+          id?: string | null
+          is_photo_chapter?: boolean | null
+          quote_attribution?: string | null
+          quote_text?: string | null
+          reference_content?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       chapters: {
         Row: {
           bible_verse_reference: string | null
