@@ -24,6 +24,8 @@ import PageCanvas from '@/components/chapter/PageCanvas';
 import CompanionBubble from '@/components/chapter/CompanionBubble';
 import MemoryCaptureOverlay from '@/components/chapter/MemoryCaptureOverlay';
 import ReadingRewardCallout from '@/components/chapter/ReadingRewardCallout';
+import PassageVariantCallout from '@/components/chapter/PassageVariantCallout';
+
 import { type CompanionEdit } from '@/hooks/useCompanionChat';
 import {
   ISSUE_LABEL,
