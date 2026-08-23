@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import { isFeminine, toBookGender } from '@/lib/genderMap';
 
 const sizeFromText = (text: string): 'small' | 'medium' | 'full' => {
   const sentences = text.trim().split(/[.!?]+\s+/).filter(Boolean).length;
@@ -15,13 +16,8 @@ const sizeFromText = (text: string): 'small' | 'medium' | 'full' => {
   return 'full';
 };
 
-const pronounFromGender = (gender?: string): 'him' | 'her' | 'them' => {
-  if (!gender) return 'them';
-  const g = gender.toLowerCase();
-  if (g.includes('girl') || g.includes('woman') || g === 'female') return 'her';
-  if (g.includes('boy') || g.includes('man') || g === 'male') return 'him';
-  return 'them';
-};
+const pronounFromGender = (gender?: string): 'him' | 'her' =>
+  isFeminine(toBookGender(gender)) ? 'her' : 'him';
 
 interface Props {
   open: boolean;
