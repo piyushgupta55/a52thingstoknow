@@ -8,6 +8,7 @@ import {
   Sparkles, AlertCircle, CheckCircle2, ArrowRight, Loader2, BookOpen, ShoppingCart,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import PrePrintGate from '@/components/review/PrePrintGate';
 
 interface Issue {
   id: string;
