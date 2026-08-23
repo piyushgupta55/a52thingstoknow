@@ -241,7 +241,8 @@ serve(async (req: Request) => {
 
     }
 
-    // AI checks (misspellings and recipient-name mismatches only)
+    // AI checks (misspellings, recipient-name mismatches, and a deliberately
+    // conservative "reads oddly" grammar flag that never proposes wording)
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (LOVABLE_API_KEY && completedChapters.length > 0) {
       const payload = completedChapters.map((ch: Chapter) => ({
@@ -251,25 +252,27 @@ serve(async (req: Request) => {
         text: stripMarkers(joinPages(ch.reference_text || "", ch.content || "")).trim(),
       }));
 
-      const systemPrompt = `You are a spell-checker for a personalized printed book written for "${recipientName}". You are NOT an editor. You do not improve writing.
+      const systemPrompt = `You are a cautious proofreader for a personalized printed book written for "${recipientName}". Your bias is silence: when in doubt, say nothing. A false alarm is far worse than a missed issue, because the author may "fix" correct writing and make the book worse.
 
-Report ONLY these two issue types:
+Report ONLY these issue types:
 - "typo": a MISSPELLED WORD — a sequence of letters that is not a real English word (or a clearly misspelled proper noun). Example: "recieve", "beleive", "freind".
 - "name_mismatch": a different person's first name is used where the recipient should be addressed (e.g. "I hope you remember this, Sarah" when the recipient is "${recipientName}"). Ignore names of third parties (grandparents, friends, teachers, historical or biblical figures). Only flag when the wrong name is clearly standing in for the recipient's name.
+- "reads_oddly": a genuine grammatical error that a careful editor would DEFINITELY correct — a missing or duplicated word, a broken subject-verb agreement, a mangled or unfinished clause. Only flag when the sentence is actually wrong, not merely unusual. If you are less than certain, stay silent.
 
 HARD RULES — violating any of these is a failure:
-- If every word in a sentence is spelled correctly, do NOT flag it. No exceptions.
-- Never suggest a rewrite, rephrasing, or "clearer" wording. No grammar, tense, agreement, word-choice, preposition, or phrasing suggestions.
-- Never flag idioms or figurative language ("nursing grudges", "as you think it is", "carry a torch"). Real idioms are correct.
-- Never flag capitalization, consistency, or house-style ("godly" vs "Godly", "Mom" vs "mom"). Never flag punctuation, spacing, or sentence length.
-- Never flag second-person writing. Titles and sentences that address the reader as "you" are intentional — do NOT propose replacing "you" with "${recipientName}".
+- Never propose replacement text, a rewrite, or "clearer" wording anywhere in your output. Only point at the sentence.
+- Never flag idioms or figurative language ("nursing grudges", "as you think it is", "carry a torch"). Real idioms are correct English.
+- Never flag style, tone, rhythm, sentence length, word choice, preposition choice, or fragments used for effect.
+- Never flag capitalization, consistency, or house-style ("godly" vs "Godly", "Mom" vs "mom"). Never flag punctuation, spacing, commas, or oxford commas.
+- Never flag second-person address. Titles and sentences that speak to the reader as "you" are intentional — never propose replacing "you" with "${recipientName}".
 - Never flag archaic, poetic, biblical, or regional wording.
 - Returning zero issues is the correct and expected answer for well-written text.
 
 Return STRICT JSON only with this shape:
-{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch", "snippet": "<verbatim excerpt: one complete sentence from the text, never cut mid-word>", "message": "<one short sentence naming the misspelled word or wrong name>" } ] }
+{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch|reads_oddly", "snippet": "<verbatim excerpt: one complete sentence from the text, never cut mid-word>", "message": "<one short sentence naming the misspelled word or wrong name; for reads_oddly leave this empty>" } ] }
 
 If no issues, return { "issues": [] }. Never invent issues.`;
+
 
 
       const userPrompt = `Recipient name: ${recipientName}\n\nChapters:\n${JSON.stringify(payload)}`;
@@ -305,11 +308,15 @@ If no issues, return { "issues": [] }. Never invent issues.`;
           for (const ai of aiIssues) {
             const ch = chMap.get(ai.chapter_id);
             if (!ch) continue;
-            const type = ["typo", "name_mismatch"].includes(ai.type) ? ai.type : null;
+            const type = ["typo", "name_mismatch", "reads_oddly"].includes(ai.type) ? ai.type : null;
             if (!type) continue;
             const fullText = stripMarkers(joinPages(ch.reference_text || "", ch.content || "")).trim();
             const snippet = widenSnippet(fullText, String(ai.snippet || ""));
-            const message = String(ai.message || "").slice(0, 240);
+            // "reads oddly" is always phrased as a question and never carries
+            // model-authored wording — the author decides what (if anything) to change.
+            const message = type === "reads_oddly"
+              ? "This sentence reads oddly — worth a look?"
+              : String(ai.message || "").slice(0, 240);
             // The flagged word must be named in the message AND actually
             // present in the chapter text — otherwise it's a rewrite
             // suggestion dressed up as a typo.
@@ -321,6 +328,7 @@ If no issues, return { "issues": [] }. Never invent issues.`;
               if (!present) continue;
             }
             candidates.push({ ch, type, snippet, message, word });
+
           }
 
           // Second pass: keep a "typo" only if the named word is genuinely
@@ -359,8 +367,44 @@ If no issues, return { "issues": [] }. Never invent issues.`;
             }
           }
 
+          // Second opinion for "reads oddly": an independent pass that only
+          // confirms sentences containing an actual grammatical error. Anything
+          // merely unusual, idiomatic or stylistic is dropped.
+          const oddSentences = candidates.filter((c) => c.type === "reads_oddly").map((c) => c.snippet);
+          let confirmedOdd = new Set<string>();
+          if (oddSentences.length > 0) {
+            try {
+              const gr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+                body: JSON.stringify({
+                  model: "google/gemini-2.5-flash",
+                  messages: [
+                    {
+                      role: "system",
+                      content:
+                        `For each sentence, answer one question only: does it contain an outright grammatical ERROR — a missing or duplicated word, broken subject-verb agreement, or a mangled/unfinished clause? Idioms, informal phrasing, fragments for effect, second-person address, capitalization, punctuation and style are NOT errors. If the sentence is grammatical, it is fine. When unsure, say it is fine. Return STRICT JSON with the 0-based indexes of only the sentences containing a real error: { "errors": [<index>] }`,
+                    },
+                    { role: "user", content: JSON.stringify(oddSentences) },
+                  ],
+                  response_format: { type: "json_object" },
+                }),
+              });
+              if (gr.ok) {
+                const gd = await gr.json();
+                const gp = JSON.parse(gd?.choices?.[0]?.message?.content || "{}");
+                const idxs = Array.isArray(gp.errors) ? gp.errors : [];
+                confirmedOdd = new Set(idxs.map((i: number) => oddSentences[i]).filter(Boolean));
+              }
+            } catch (_) {
+              // Verification unavailable: stay silent rather than risk bad advice.
+            }
+          }
+
           for (const c of candidates) {
             if (c.type === "typo" && realWords.has(c.word.toLowerCase())) continue;
+            if (c.type === "reads_oddly" && !confirmedOdd.has(c.snippet)) continue;
+
             issues.push({
               id: mkId(),
               chapter_id: c.ch.id,

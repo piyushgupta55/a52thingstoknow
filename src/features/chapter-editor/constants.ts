@@ -22,4 +22,6 @@ export const ISSUE_LABEL: Record<string, string> = {
   cut_off: 'Cut-off sentence',
   double_space: 'Extra spacing',
   empty_page_2: 'Empty Page 2',
+  reads_oddly: 'Worth a look',
 };
+
