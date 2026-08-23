@@ -163,13 +163,10 @@ serve(async (req: Request) => {
 
     // Deterministic checks
     for (const ch of completedChapters) {
-      // Reading Reward markers (<mark>…</mark>) are structural, not prose —
-      // strip them so a paragraph ending inside a marker isn't mis-read as
-      // missing its ending punctuation.
-      const stripMarkers = (s: string) => s.replace(/<\/?mark\b[^>]*>/gi, "");
       const ref = stripMarkers((ch.reference_text || "") as string);
       const content = stripMarkers((ch.content || "") as string);
       const combined = joinPages(ref, content);
+
 
 
       // Empty page 2 (content section empty / near-empty)
