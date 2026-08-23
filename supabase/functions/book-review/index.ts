@@ -36,6 +36,20 @@ const wordCount = (s: string): number =>
 // (they introduce lists), so they count as terminated sentences.
 const SENTENCE_END = /[.!?…:;]/;
 
+// Page 1 (reference_text) and page 2 (content) are two halves of one flowing
+// chapter. Only insert a paragraph break when page 1 actually ends a sentence;
+// otherwise the two halves belong to the SAME sentence and must join with a
+// single space, or the checks see a manufactured mid-sentence break.
+const joinPages = (ref: string, content: string): string => {
+  const a = (ref || "").replace(/\s+$/, "");
+  const b = (content || "").replace(/^\s+/, "");
+  if (!a) return b;
+  if (!b) return a;
+  const last = a.replace(/[)\]"'”’»]+$/u, "").slice(-1);
+  return a + (SENTENCE_END.test(last) ? "\n\n" : " ") + b;
+};
+
+
 // Return the whole sentence(s) surrounding [start, end) in `text`, so excerpts
 // never begin or end mid-sentence (or mid-word).
 const sentenceWindow = (text: string, start: number, end: number, maxLen = 300): string => {
@@ -155,7 +169,7 @@ serve(async (req: Request) => {
       const stripMarkers = (s: string) => s.replace(/<\/?mark\b[^>]*>/gi, "");
       const ref = stripMarkers((ch.reference_text || "") as string);
       const content = stripMarkers((ch.content || "") as string);
-      const combined = `${ref}\n\n${content}`;
+      const combined = joinPages(ref, content);
 
 
       // Empty page 2 (content section empty / near-empty)
@@ -230,7 +244,7 @@ serve(async (req: Request) => {
         chapter_id: ch.id,
         chapter_number: ch.chapter_number,
         title: ch.title,
-        text: `${ch.reference_text || ""}\n\n${ch.content || ""}`.trim(),
+        text: joinPages(ch.reference_text || "", ch.content || "").trim(),
       }));
 
       const systemPrompt = `You are a careful proofreader for a personalized printed book written for "${recipientName}".
@@ -279,7 +293,7 @@ If no issues, return { "issues": [] }. Never invent issues.`;
             if (!ch) continue;
             const type = ["typo", "name_mismatch", "cut_off"].includes(ai.type) ? ai.type : null;
             if (!type) continue;
-            const fullText = `${ch.reference_text || ""}\n\n${ch.content || ""}`.trim();
+            const fullText = joinPages(ch.reference_text || "", ch.content || "").trim();
             const snippet = widenSnippet(fullText, String(ai.snippet || ""));
             // Verify cut_off against the real text: if the sentence terminates
             // properly there, the model was reacting to a truncated excerpt.
