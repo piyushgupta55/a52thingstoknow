@@ -421,178 +421,175 @@ const BookDashboard = () => {
               : 'Read your book';
           return (
             <div className="bg-card rounded-xl border-2 border-primary p-7 md:p-8 mb-8 shadow-lg ring-4 ring-primary/10">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
-                      {bookTitle}
-                    </h2>
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                      <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
+                        {bookTitle}
+                      </h2>
+                    </div>
+                    <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
+                      All {numberedChapters.length || 52} chapters are written and ready to print — you could give this to {firstName || 'your loved one'} today. Read through it and note anything you'd want different, or open a chapter and change it yourself.
+                    </p>
                   </div>
-                  <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed">
-                    All {numberedChapters.length || 52} chapters are written and ready to print — you could give this to {firstName || 'your loved one'} today. Read through it and note anything you'd want different, or open a chapter and change it yourself.
-                  </p>
-                </div>
-                <div className="md:flex-shrink-0 flex flex-col gap-2 max-w-full">
-                  <Button
-                    size="lg"
-                    className="text-base px-8 py-6 h-auto shadow-md max-w-full"
-                    onClick={() => navigate(reviewPath)}
-                  >
-                    <BookOpen className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="truncate">{buttonLabel}</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="text-sm px-8 h-11 max-w-full"
-                    onClick={() => navigate(`/book/${bookId}/chapters`)}
-                  >
-                    <LayoutGrid className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="truncate">Edit any chapter</span>
-                  </Button>
+                  <div className="md:flex-shrink-0 flex flex-col gap-2 max-w-full">
+                    <Button
+                      size="lg"
+                      className="text-base px-8 py-6 h-auto shadow-md max-w-full"
+                      onClick={() => navigate(reviewPath)}
+                    >
+                      <BookOpen className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">{buttonLabel}</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="text-sm px-8 h-11 max-w-full"
+                      onClick={() => navigate(`/book/${bookId}/chapters`)}
+                    >
+                      <LayoutGrid className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">Edit any chapter</span>
+                    </Button>
+                    <button
+                      onClick={() => setTocExpanded(v => !v)}
+                      className="inline-flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground underline-offset-2 hover:underline mt-1"
+                    >
+                      All chapters — reorder or jump to one
+                      {tocExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
                 </div>
 
+                {tocExpanded && (
+                  <div className="w-full border-t border-primary/10 pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Table of Contents</h4>
+                      <button
+                        onClick={() => { setReorderMode(m => !m); setDragIndex(null); setOverIndex(null); }}
+                        disabled={savingOrder}
+                        className="inline-flex items-center gap-1 text-[0.65rem] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                        title="Drag chapters to reorder"
+                      >
+                        <ArrowUpDown className="h-3 w-3" />
+                        {reorderMode ? 'Done' : 'Reorder'}
+                      </button>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto space-y-1">
+                      {(() => {
+                        const sorted = [...chapters].sort((a, b) => a.chapter_number - b.chapter_number);
+                        const letter = sorted.find(c => c.chapter_number === 0);
+                        const numbered = sorted.filter(c => c.chapter_number > 0);
 
+                        const renderRow = (ch: Chapter, displayNum: number | null, draggable: boolean, idx: number) => {
+                          const isKept = ch.review_status === 'keep';
+                          const isFlagged = ch.review_status === 'rewrite';
+                          const isLetter = displayNum === null;
+                          const isDragging = dragIndex === idx;
+                          const isOver = overIndex === idx && dragIndex !== null && dragIndex !== idx;
+
+                          const inner = (
+                            <>
+                              {reorderMode && !isLetter && (
+                                <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                              )}
+                              {isLetter ? (
+                                <Mail className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
+                              ) : (
+                                <span className="text-xs w-6 text-right flex-shrink-0 tabular-nums">{displayNum}.</span>
+                              )}
+                              <span className="truncate">{ch.title}</span>
+                              {!reorderMode && isKept && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
+                              {!reorderMode && isFlagged && <PenLine className="h-3.5 w-3.5 text-accent ml-auto flex-shrink-0" />}
+                              {!reorderMode && !isKept && !isFlagged && (
+                                <span className="text-[0.65rem] italic text-muted-foreground/40 ml-auto flex-shrink-0">undecided</span>
+                              )}
+                            </>
+                          );
+
+                          const cls = `flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors text-foreground ${reorderMode ? 'bg-muted/20' : 'hover:bg-muted/50'} ${isDragging ? 'opacity-40' : ''} ${isOver ? 'ring-1 ring-primary/40 bg-primary/5' : ''}`;
+
+                          if (reorderMode && draggable) {
+                            return (
+                              <div
+                                key={ch.id}
+                                draggable
+                                onDragStart={() => setDragIndex(idx)}
+                                onDragOver={(e) => { e.preventDefault(); if (overIndex !== idx) setOverIndex(idx); }}
+                                onDragLeave={() => { if (overIndex === idx) setOverIndex(null); }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  if (dragIndex === null || dragIndex === idx) { setDragIndex(null); setOverIndex(null); return; }
+                                  const next = [...numbered];
+                                  const [moved] = next.splice(dragIndex, 1);
+                                  next.splice(idx, 0, moved);
+                                  setDragIndex(null);
+                                  setOverIndex(null);
+                                  const idToNew = new Map(next.map((c, i) => [c.id, i + 1]));
+                                  setChapters(prev => prev.map(c => idToNew.has(c.id) ? { ...c, chapter_number: idToNew.get(c.id)! } : c));
+                                  persistReorder(next);
+                                }}
+                                onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}
+                                className={cls}
+                              >
+                                {inner}
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <button
+                              key={ch.id}
+                              onClick={() => !reorderMode && navigate(`/book/${bookId}/chapter/${ch.id}`)}
+                              disabled={reorderMode}
+                              className={cls}
+                            >
+                              {inner}
+                            </button>
+                          );
+                        };
+
+                        return (
+                          <>
+                            {letter && renderRow(letter, null, false, -1)}
+                            {numbered.map((ch, i) => renderRow(ch, i + 1, true, i))}
+                          </>
+                        );
+                      })()}
+
+                      {(() => {
+                        const isComplete = ancestryStatus === 'complete';
+                        const isInProgress = ancestryStatus === 'in_progress';
+                        return (
+                          <button
+                            onClick={() => navigate(`/book/${bookId}/ancestry`)}
+                            disabled={reorderMode}
+                            className={`flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors hover:bg-muted/50 mt-1 border-t border-border pt-3 text-foreground ${reorderMode ? 'opacity-50' : ''}`}
+                          >
+                            <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
+                            <span className="truncate">Where You Come From</span>
+                            {isComplete && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
+                            {!isComplete && (
+                              <span className="text-[0.65rem] italic text-muted-foreground/40 ml-auto flex-shrink-0">
+                                {isInProgress ? 'in progress' : 'not started'}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })()}
+                    </div>
+                    {reorderMode && (
+                      <p className="text-[0.65rem] italic text-muted-foreground/60 mt-3">
+                        Drag chapters to reorder. Numbers follow position. The Letter stays first.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );
         })()}
-
-        {/* All chapters — editing entry point */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm mb-8">
-          <button
-            onClick={() => setTocExpanded(v => !v)}
-            className="flex items-center justify-between w-full text-left"
-          >
-            <h4 className="text-sm font-semibold text-foreground">All chapters — tap to reorder or jump to one</h4>
-            {tocExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-          </button>
-          {tocExpanded && (
-            <>
-              <div className="flex items-center justify-between mt-4 mb-3">
-                <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Table of Contents</h4>
-                <button
-                  onClick={() => { setReorderMode(m => !m); setDragIndex(null); setOverIndex(null); }}
-                  disabled={savingOrder}
-                  className="inline-flex items-center gap-1 text-[0.65rem] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                  title="Drag chapters to reorder"
-                >
-                  <ArrowUpDown className="h-3 w-3" />
-                  {reorderMode ? 'Done' : 'Reorder'}
-                </button>
-              </div>
-              <div className="max-h-80 overflow-y-auto space-y-1">
-                {(() => {
-                  const sorted = [...chapters].sort((a, b) => a.chapter_number - b.chapter_number);
-                  const letter = sorted.find(c => c.chapter_number === 0);
-                  const numbered = sorted.filter(c => c.chapter_number > 0);
-
-                  const renderRow = (ch: Chapter, displayNum: number | null, draggable: boolean, idx: number) => {
-                    const isKept = ch.review_status === 'keep';
-                    const isFlagged = ch.review_status === 'rewrite';
-                    const isLetter = displayNum === null;
-                    const isDragging = dragIndex === idx;
-                    const isOver = overIndex === idx && dragIndex !== null && dragIndex !== idx;
-
-                    const inner = (
-                      <>
-                        {reorderMode && !isLetter && (
-                          <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0 cursor-grab active:cursor-grabbing" />
-                        )}
-                        {isLetter ? (
-                          <Mail className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
-                        ) : (
-                          <span className="text-xs w-6 text-right flex-shrink-0 tabular-nums">{displayNum}.</span>
-                        )}
-                        <span className="truncate">{ch.title}</span>
-                        {!reorderMode && isKept && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
-                        {!reorderMode && isFlagged && <PenLine className="h-3.5 w-3.5 text-accent ml-auto flex-shrink-0" />}
-                        {!reorderMode && !isKept && !isFlagged && (
-                          <span className="text-[0.65rem] italic text-muted-foreground/40 ml-auto flex-shrink-0">undecided</span>
-                        )}
-                      </>
-                    );
-
-                    const cls = `flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors text-foreground ${reorderMode ? 'bg-muted/20' : 'hover:bg-muted/50'} ${isDragging ? 'opacity-40' : ''} ${isOver ? 'ring-1 ring-primary/40 bg-primary/5' : ''}`;
-
-                    if (reorderMode && draggable) {
-                      return (
-                        <div
-                          key={ch.id}
-                          draggable
-                          onDragStart={() => setDragIndex(idx)}
-                          onDragOver={(e) => { e.preventDefault(); if (overIndex !== idx) setOverIndex(idx); }}
-                          onDragLeave={() => { if (overIndex === idx) setOverIndex(null); }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            if (dragIndex === null || dragIndex === idx) { setDragIndex(null); setOverIndex(null); return; }
-                            const next = [...numbered];
-                            const [moved] = next.splice(dragIndex, 1);
-                            next.splice(idx, 0, moved);
-                            setDragIndex(null);
-                            setOverIndex(null);
-                            const idToNew = new Map(next.map((c, i) => [c.id, i + 1]));
-                            setChapters(prev => prev.map(c => idToNew.has(c.id) ? { ...c, chapter_number: idToNew.get(c.id)! } : c));
-                            persistReorder(next);
-                          }}
-                          onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}
-                          className={cls}
-                        >
-                          {inner}
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <button
-                        key={ch.id}
-                        onClick={() => !reorderMode && navigate(`/book/${bookId}/chapter/${ch.id}`)}
-                        disabled={reorderMode}
-                        className={cls}
-                      >
-                        {inner}
-                      </button>
-                    );
-                  };
-
-                  return (
-                    <>
-                      {letter && renderRow(letter, null, false, -1)}
-                      {numbered.map((ch, i) => renderRow(ch, i + 1, true, i))}
-                    </>
-                  );
-                })()}
-
-                {(() => {
-                  const isComplete = ancestryStatus === 'complete';
-                  const isInProgress = ancestryStatus === 'in_progress';
-                  return (
-                    <button
-                      onClick={() => navigate(`/book/${bookId}/ancestry`)}
-                      disabled={reorderMode}
-                      className={`flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-sm transition-colors hover:bg-muted/50 mt-1 border-t border-border pt-3 text-foreground ${reorderMode ? 'opacity-50' : ''}`}
-                    >
-                      <BookOpen className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
-                      <span className="truncate">Where You Come From</span>
-                      {isComplete && <CheckCircle className="h-3.5 w-3.5 text-primary ml-auto flex-shrink-0" />}
-                      {!isComplete && (
-                        <span className="text-[0.65rem] italic text-muted-foreground/40 ml-auto flex-shrink-0">
-                          {isInProgress ? 'in progress' : 'not started'}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })()}
-              </div>
-              {reorderMode && (
-                <p className="text-[0.65rem] italic text-muted-foreground/60 mt-3">
-                  Drag chapters to reorder. Numbers follow position. The Letter stays first.
-                </p>
-              )}
-            </>
-          )}
-        </div>
 
         {/* What's still open — secondary status + baskets */}
         <div className="bg-card rounded-xl border border-border p-6 mb-8 shadow-sm">
