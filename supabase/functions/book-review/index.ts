@@ -149,9 +149,14 @@ serve(async (req: Request) => {
 
     // Deterministic checks
     for (const ch of completedChapters) {
-      const ref = (ch.reference_text || "") as string;
-      const content = (ch.content || "") as string;
+      // Reading Reward markers (<mark>…</mark>) are structural, not prose —
+      // strip them so a paragraph ending inside a marker isn't mis-read as
+      // missing its ending punctuation.
+      const stripMarkers = (s: string) => s.replace(/<\/?mark\b[^>]*>/gi, "");
+      const ref = stripMarkers((ch.reference_text || "") as string);
+      const content = stripMarkers((ch.content || "") as string);
       const combined = `${ref}\n\n${content}`;
+
 
       // Empty page 2 (content section empty / near-empty)
       if (wordCount(content) < 5) {
