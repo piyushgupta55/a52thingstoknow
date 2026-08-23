@@ -241,30 +241,36 @@ serve(async (req: Request) => {
 
     }
 
-    // AI checks (typos, name mismatches, cut-off sentences)
+    // AI checks (misspellings and recipient-name mismatches only)
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (LOVABLE_API_KEY && completedChapters.length > 0) {
       const payload = completedChapters.map((ch: Chapter) => ({
         chapter_id: ch.id,
         chapter_number: ch.chapter_number,
         title: ch.title,
-        text: joinPages(ch.reference_text || "", ch.content || "").trim(),
+        text: stripMarkers(joinPages(ch.reference_text || "", ch.content || "")).trim(),
       }));
 
-      const systemPrompt = `You are a careful proofreader for a personalized printed book written for "${recipientName}".
+      const systemPrompt = `You are a spell-checker for a personalized printed book written for "${recipientName}". You are NOT an editor. You do not improve writing.
 
-Scan each chapter and report ONLY these issue types:
-- "typo": clear spelling errors or obvious misspellings (NOT stylistic preferences).
-- "name_mismatch": a first name of a person appears that is clearly NOT "${recipientName}" and is being used as if addressing the recipient (e.g., "I hope you remember this, Sarah" when the recipient is "${recipientName}"). Ignore names of other people that are clearly being referenced as third parties (grandparents, friends, historical figures). Only flag when the wrong name appears to be used in place of the recipient's name.
-- "cut_off": a sentence in the FULL chapter text that is genuinely truncated mid-thought (trails off, ends mid-word, or stops without any terminal punctuation). The text you receive is complete and untruncated — never assume an excerpt was cut. A sentence ending in a period, question mark, exclamation point, ellipsis, colon or semicolon is NOT cut off; colons and semicolons legitimately introduce lists.
+Report ONLY these two issue types:
+- "typo": a MISSPELLED WORD — a sequence of letters that is not a real English word (or a clearly misspelled proper noun). Example: "recieve", "beleive", "freind".
+- "name_mismatch": a different person's first name is used where the recipient should be addressed (e.g. "I hope you remember this, Sarah" when the recipient is "${recipientName}"). Ignore names of third parties (grandparents, friends, teachers, historical or biblical figures). Only flag when the wrong name is clearly standing in for the recipient's name.
 
-Do NOT flag: style, grammar choices, capitalization preferences, double spaces, empty sections, comma placement, oxford commas, or sentences ending in a colon or semicolon.
+HARD RULES — violating any of these is a failure:
+- If every word in a sentence is spelled correctly, do NOT flag it. No exceptions.
+- Never suggest a rewrite, rephrasing, or "clearer" wording. No grammar, tense, agreement, word-choice, preposition, or phrasing suggestions.
+- Never flag idioms or figurative language ("nursing grudges", "as you think it is", "carry a torch"). Real idioms are correct.
+- Never flag capitalization, consistency, or house-style ("godly" vs "Godly", "Mom" vs "mom"). Never flag punctuation, spacing, or sentence length.
+- Never flag second-person writing. Titles and sentences that address the reader as "you" are intentional — do NOT propose replacing "you" with "${recipientName}".
+- Never flag archaic, poetic, biblical, or regional wording.
+- Returning zero issues is the correct and expected answer for well-written text.
 
 Return STRICT JSON only with this shape:
-{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch|cut_off", "snippet": "<verbatim excerpt: one complete sentence from the text, never cut mid-word>", "message": "<one short sentence describing the issue>" } ] }
-
+{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch", "snippet": "<verbatim excerpt: one complete sentence from the text, never cut mid-word>", "message": "<one short sentence naming the misspelled word or wrong name>" } ] }
 
 If no issues, return { "issues": [] }. Never invent issues.`;
+
 
       const userPrompt = `Recipient name: ${recipientName}\n\nChapters:\n${JSON.stringify(payload)}`;
 
