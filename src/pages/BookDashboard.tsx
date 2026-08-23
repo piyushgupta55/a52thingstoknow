@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { toBookGender } from '@/lib/genderMap';
+import { fetchOpenPassageChapters } from '@/lib/passageVariants';
 
 import { Button } from '@/components/ui/button';
 import { applyReviewFlags, type ReviewAction } from '@/lib/reviewTags';
@@ -93,6 +94,7 @@ const BookDashboard = () => {
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const [familyStats, setFamilyStats] = useState<{ sent: number; responded: number; unseen: number }>({ sent: 0, responded: 0, unseen: 0 });
   const [memoryInviteChapters, setMemoryInviteChapters] = useState<number[]>([]);
+  const [openPassageChapters, setOpenPassageChapters] = useState<Set<number>>(new Set());
   const [savingOrder, setSavingOrder] = useState(false);
   const [tocExpanded, setTocExpanded] = useState(false);
 
@@ -350,7 +352,8 @@ const BookDashboard = () => {
     const isPhoto = c.is_photo_chapter || photoChapterNums.has(c.chapter_number);
     const needsPhoto = isPhoto && !(c.photo_urls && c.photo_urls.length > 0) && !c.photo_declined;
     const needsReward = hasRewardMark(c) && !c.reading_reward_decision;
-    return needsPhoto || needsReward;
+    const needsPassage = openPassageChapters.has(c.chapter_number);
+    return needsPhoto || needsReward || needsPassage;
   }).length;
   // Memories is its own basket, pre-populated with the curated memory-invitation chapters.
   const memoriesOpen = numberedChapters.filter(
