@@ -410,6 +410,7 @@ export type Database = {
           label: string
           passage_key: string
           sort_order: number
+          template_key: string | null
           updated_at: string
           variant_key: string
         }
@@ -424,6 +425,7 @@ export type Database = {
           label: string
           passage_key: string
           sort_order?: number
+          template_key?: string | null
           updated_at?: string
           variant_key: string
         }
@@ -438,6 +440,7 @@ export type Database = {
           label?: string
           passage_key?: string
           sort_order?: number
+          template_key?: string | null
           updated_at?: string
           variant_key?: string
         }
@@ -492,6 +495,7 @@ export type Database = {
           quote_attribution: string | null
           quote_text: string | null
           reference_content: string | null
+          template_key: string | null
           title: string
         }
         Insert: {
@@ -507,6 +511,7 @@ export type Database = {
           quote_attribution?: string | null
           quote_text?: string | null
           reference_content?: string | null
+          template_key?: string | null
           title: string
         }
         Update: {
@@ -522,6 +527,7 @@ export type Database = {
           quote_attribution?: string | null
           quote_text?: string | null
           reference_content?: string | null
+          template_key?: string | null
           title?: string
         }
         Relationships: [
@@ -614,6 +620,7 @@ export type Database = {
           review_note: string | null
           review_status: string | null
           seed_content: string | null
+          template_key: string | null
           title: string
           triage: string | null
           updated_at: string
@@ -643,6 +650,7 @@ export type Database = {
           review_note?: string | null
           review_status?: string | null
           seed_content?: string | null
+          template_key?: string | null
           title: string
           triage?: string | null
           updated_at?: string
@@ -672,6 +680,7 @@ export type Database = {
           review_note?: string | null
           review_status?: string | null
           seed_content?: string | null
+          template_key?: string | null
           title?: string
           triage?: string | null
           updated_at?: string

@@ -91,6 +91,10 @@ const BookSettings = () => {
     const implied = impliedBookGender(r);
     return implied === null || implied === lockedGender;
   });
+  // Keep whatever the book already stores selectable, even if it predates this list.
+  const allChoices = relationship && !relationshipChoices.includes(relationship as never)
+    ? [relationship, ...relationshipChoices]
+    : relationshipChoices;
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,7 +120,7 @@ const BookSettings = () => {
             <Select value={relationship} onValueChange={setRelationship} required>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Select relationship" /></SelectTrigger>
               <SelectContent>
-                {relationshipChoices.map(r => (
+                {allChoices.map(r => (
                   <SelectItem key={r} value={r}>{r}</SelectItem>
                 ))}
               </SelectContent>

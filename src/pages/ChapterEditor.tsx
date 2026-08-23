@@ -1531,7 +1531,7 @@ const ChapterEditor = () => {
           <PassageVariantCallout
             bookId={bookId}
             chapterId={chapter.id}
-            chapterNumber={chapter.chapter_number}
+            templateKey={(chapter as any).template_key || null}
             gender={toBookGender(recipientGender)}
             tokenCtx={{ recipientName, recipientGender, authorLabel }}
             currentText={isLetterChapter ? content : mergedText}

@@ -21,6 +21,7 @@ interface Chapter {
   is_photo_chapter: boolean | null;
   photo_declined: boolean | null;
   reading_reward_decision: string | null;
+  template_key: string | null;
 }
 
 interface Memory {
@@ -38,7 +39,7 @@ const PILE_META: Record<string, { title: string; subtitle: string; Icon: typeof 
   notyet:   { title: 'Not yet read',       subtitle: 'chapters you have not read through yet', Icon: Circle },
 };
 
-const hasPassageOpen = (nums: Set<number>, c: Chapter) => nums.has(c.chapter_number);
+const hasPassageOpen = (keys: Set<string>, c: Chapter) => !!c.template_key && keys.has(c.template_key);
 
 const hasReward = (c: Chapter) => /<mark\b/i.test(`${c.seed_content || ''}\n${c.content || ''}`);
 
@@ -48,8 +49,8 @@ const ReviewPile = () => {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [memoryChapters, setMemoryChapters] = useState<number[]>([]);
-  const [openPassageChapters, setOpenPassageChapters] = useState<Set<number>>(new Set());
-  const [passageChapters, setPassageChapters] = useState<Set<number>>(new Set());
+  const [openPassageChapters, setOpenPassageChapters] = useState<Set<string>>(new Set());
+  const [passageChapters, setPassageChapters] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -66,7 +67,7 @@ const ReviewPile = () => {
         const [{ data: chapData, error: chapError }, { data: memData, error: memError }, inviteChapters] = await Promise.all([
           supabase
             .from('chapters')
-            .select('id, chapter_number, title, photo_urls, content, seed_content, reference_text, review_status, review_note, is_photo_chapter, photo_declined, reading_reward_decision')
+            .select('id, chapter_number, title, template_key, photo_urls, content, seed_content, reference_text, review_status, review_note, is_photo_chapter, photo_declined, reading_reward_decision')
             .eq('book_id', bookId)
             .gte('chapter_number', 0)
             .order('chapter_number'),
@@ -114,7 +115,7 @@ const ReviewPile = () => {
         return chapters.filter(c => c.review_status === 'rewrite');
       case 'photos':
         // Pre-populated: every photo chapter plus the reading-reward chapter.
-        return numbered.filter(c => c.is_photo_chapter || hasReward(c) || passageChapters.has(c.chapter_number));
+        return numbered.filter(c => c.is_photo_chapter || hasReward(c) || hasPassageOpen(passageChapters, c));
       case 'memories':
         // Pre-populated: the curated memory-invitation chapters.
         return numbered.filter(c => memoryChapters.includes(c.chapter_number));
@@ -131,7 +132,7 @@ const ReviewPile = () => {
     if (pile === 'photos') {
       const photoOk = !c.is_photo_chapter || hasPhoto(c) || !!c.photo_declined;
       const rewardOk = !hasReward(c) || !!c.reading_reward_decision;
-      const passageOk = !passageChapters.has(c.chapter_number) || !hasPassageOpen(openPassageChapters, c);
+      const passageOk = !hasPassageOpen(passageChapters, c) || !hasPassageOpen(openPassageChapters, c);
       return photoOk && rewardOk && passageOk ? 'Handled' : null;
     }
     if (pile === 'memories') return chapterMemoryCount(c) > 0 ? 'Memory added' : null;

@@ -94,7 +94,7 @@ const BookDashboard = () => {
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const [familyStats, setFamilyStats] = useState<{ sent: number; responded: number; unseen: number }>({ sent: 0, responded: 0, unseen: 0 });
   const [memoryInviteChapters, setMemoryInviteChapters] = useState<number[]>([]);
-  const [openPassageChapters, setOpenPassageChapters] = useState<Set<number>>(new Set());
+  const [openPassageChapters, setOpenPassageChapters] = useState<Set<string>>(new Set());
   const [savingOrder, setSavingOrder] = useState(false);
   const [tocExpanded, setTocExpanded] = useState(false);
 
@@ -352,7 +352,7 @@ const BookDashboard = () => {
     const isPhoto = c.is_photo_chapter || photoChapterNums.has(c.chapter_number);
     const needsPhoto = isPhoto && !(c.photo_urls && c.photo_urls.length > 0) && !c.photo_declined;
     const needsReward = hasRewardMark(c) && !c.reading_reward_decision;
-    const needsPassage = openPassageChapters.has(c.chapter_number);
+    const needsPassage = !!(c as any).template_key && openPassageChapters.has((c as any).template_key);
     return needsPhoto || needsReward || needsPassage;
   }).length;
   // Memories is its own basket, pre-populated with the curated memory-invitation chapters.

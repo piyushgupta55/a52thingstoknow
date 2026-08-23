@@ -2,7 +2,7 @@
 //
 // A "passage" is an optional block of chapter text that ships in several
 // author-selectable versions. Versions live in `chapter_passage_variants`
-// (keyed by passage_key + gender + chapter_number), and the author's choice
+// (keyed by passage_key + gender + template_key), and the author's choice
 // lives in `chapter_passage_selections`.
 //
 // Nothing here is specific to any one passage or chapter: adding a second
@@ -17,6 +17,8 @@ export interface PassageVariant {
   passage_key: string;
   gender: string;
   chapter_number: number;
+  /** Stable chapter identity — survives renumbering and reordering. */
+  template_key: string | null;
   variant_key: string;
   label: string;
   explanation: string | null;
@@ -57,14 +59,15 @@ export const personalizeBody = (body: string, ctx: TokenCtx) =>
 export async function fetchPassageGroups(
   chapterId: string,
   gender: string,
-  chapterNumber: number,
+  templateKey: string | null,
 ): Promise<PassageGroup[]> {
+  if (!templateKey) return [];
   const [{ data: variants }, { data: selections }] = await Promise.all([
     supabase
       .from('chapter_passage_variants')
       .select('*')
       .eq('gender', gender)
-      .eq('chapter_number', chapterNumber)
+      .eq('template_key', templateKey)
       .order('sort_order'),
     supabase.from('chapter_passage_selections').select('*').eq('chapter_id', chapterId),
   ]);
@@ -88,25 +91,29 @@ export async function fetchPassageGroups(
   });
 }
 
-/** Chapter numbers that carry any optional passage for this book gender. */
-export async function fetchPassageChapters(gender: string): Promise<Set<number>> {
+/** Template keys that carry any optional passage for this book gender. */
+export async function fetchPassageChapters(gender: string): Promise<Set<string>> {
   const { data } = await supabase
     .from('chapter_passage_variants')
-    .select('chapter_number')
+    .select('template_key')
     .eq('gender', gender);
-  return new Set(((data || []) as { chapter_number: number }[]).map(r => r.chapter_number));
+  return new Set(
+    ((data || []) as { template_key: string | null }[])
+      .map(r => r.template_key)
+      .filter((k): k is string => !!k),
+  );
 }
 
 /**
- * Chapter numbers in this book that carry an optional passage the author has
+ * Template keys in this book that carry an optional passage the author has
  * not looked at yet. Used to pre-populate the Photos & Decisions basket.
  */
 export async function fetchOpenPassageChapters(
   bookId: string,
   gender: string,
-): Promise<Set<number>> {
+): Promise<Set<string>> {
   const [{ data: variants }, { data: selections }] = await Promise.all([
-    supabase.from('chapter_passage_variants').select('chapter_number, passage_key').eq('gender', gender),
+    supabase.from('chapter_passage_variants').select('template_key, passage_key').eq('gender', gender),
     supabase.from('chapter_passage_selections').select('passage_key, seen_at, chapter_id').eq('book_id', bookId),
   ]);
   if (!variants || variants.length === 0) return new Set();
@@ -117,9 +124,9 @@ export async function fetchOpenPassageChapters(
       .map(s => s.passage_key),
   );
 
-  const open = new Set<number>();
-  (variants as { chapter_number: number; passage_key: string }[]).forEach(v => {
-    if (!seenKeys.has(v.passage_key)) open.add(v.chapter_number);
+  const open = new Set<string>();
+  (variants as { template_key: string | null; passage_key: string }[]).forEach(v => {
+    if (v.template_key && !seenKeys.has(v.passage_key)) open.add(v.template_key);
   });
   return open;
 }
