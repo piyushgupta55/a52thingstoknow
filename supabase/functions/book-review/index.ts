@@ -301,16 +301,11 @@ If no issues, return { "issues": [] }. Never invent issues.`;
           for (const ai of aiIssues) {
             const ch = chMap.get(ai.chapter_id);
             if (!ch) continue;
-            const type = ["typo", "name_mismatch", "cut_off"].includes(ai.type) ? ai.type : null;
+            const type = ["typo", "name_mismatch"].includes(ai.type) ? ai.type : null;
             if (!type) continue;
-            const fullText = joinPages(ch.reference_text || "", ch.content || "").trim();
+            const fullText = stripMarkers(joinPages(ch.reference_text || "", ch.content || "")).trim();
             const snippet = widenSnippet(fullText, String(ai.snippet || ""));
-            // Verify cut_off against the real text: if the sentence terminates
-            // properly there, the model was reacting to a truncated excerpt.
-            if (type === "cut_off") {
-              const stripped = snippet.replace(/[)\]"'”’»]+$/u, "").trim();
-              if (SENTENCE_END.test(stripped.slice(-1))) continue;
-            }
+
             issues.push({
               id: mkId(),
               chapter_id: ch.id,
