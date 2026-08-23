@@ -181,10 +181,6 @@ const BookReview = () => {
     navigate(`/book/${bookId}/chapter/${group.chapter_id}?returnTo=${encodeURIComponent(returnTo)}`);
   };
 
-  const handleOrder = () => {
-    alert('Order flow coming soon.');
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -200,13 +196,15 @@ const BookReview = () => {
             <div>
               <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
                 <Sparkles className="h-6 w-6 text-primary" />
-                Review My Book
+                {orderMode ? 'Before you print' : 'Review My Book'}
               </h1>
               <p className="text-muted-foreground mt-1">
-                We scan every chapter for typos, name mismatches, cut-off sentences, spacing issues, and empty pages.
+                {orderMode
+                  ? "Here's everything still open in your book. None of it has to be finished — this is just so nothing surprises you in print."
+                  : 'We scan every chapter for typos, name mismatches, cut-off sentences, spacing issues, and empty pages.'}
               </p>
             </div>
-            {!loading && (
+            {!loading && !orderMode && (
               <Button
                 variant="outline"
                 size="sm"
