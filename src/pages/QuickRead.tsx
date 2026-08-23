@@ -10,6 +10,7 @@ import { usePreviewSets, isInSet } from '@/lib/previewSets';
 import { Button } from '@/components/ui/button';
 import { Heart, Plus, PenLine, X, ChevronLeft, ChevronRight, Camera, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+import { joinPagesForDisplay } from '@/features/chapter-editor/textSplit';
 
 const SERIF = "'Lora', 'Georgia', 'Times New Roman', serif";
 const CREAM = '#F5F0E8';
@@ -178,7 +179,7 @@ const QuickRead = () => {
     const ref = (chapter.reference_text || '').trim();
     const content = (chapter.content || '').trim();
     if (ref || content) {
-      return mergeRefAndContent(ref, content);
+      return joinPagesForDisplay(ref, content);
     }
     const tpl = templates.find(t => t.chapter_number === chapter.chapter_number);
     const raw = tpl?.reference_content ?? null;
