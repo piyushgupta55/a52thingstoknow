@@ -79,6 +79,7 @@ const NewBook = () => {
         book_id: book.id,
         chapter_number: 0,
         title: 'Letter from the Author',
+        template_key: 'opening-letter',
         reference_text: null,
         chapter_template: 'letter',
         is_photo_chapter: false,
