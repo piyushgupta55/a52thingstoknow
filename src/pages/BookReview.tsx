@@ -337,35 +337,6 @@ const BookReview = () => {
               );})}
             </div>
 
-            {/* Order mode footer */}
-            {mode === 'order' && (
-              <div className="mt-8 sticky bottom-4">
-                <Card className="border-primary/40 shadow-lg">
-                  <CardContent className="py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-foreground flex items-center gap-2">
-                        <ShoppingCart className="h-4 w-4 text-primary" /> Ready to print?
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {issueCount === 0
-                          ? 'No issues found — you\'re good to go.'
-                          : 'Fix the issues above for the cleanest print, or order as-is.'}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      {issueCount > 0 && (
-                        <Button variant="outline" onClick={() => navigate(`/book/${bookId}`)}>
-                          Fix Issues First
-                        </Button>
-                      )}
-                      <Button onClick={handleOrder}>
-                        {issueCount > 0 ? 'Order Anyway' : 'Place Order'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
           </>
         )}
       </div>
