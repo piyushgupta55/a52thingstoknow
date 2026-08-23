@@ -32,9 +32,12 @@ const NewBook = () => {
     setLoading(true);
 
     try {
-      // Map UI gender to canonical 'female'/'male' for template lookup
-      const bookGender: BookGender = toBookGender(gender);
+      // The relationship decides the book version whenever it implies one, so
+      // the two fields can never disagree. Otherwise the author picked it.
+      const bookGender: BookGender = impliedBookGender(relationship) ?? toBookGender(gender);
+      const genderLabel = GENDER_LABELS[bookGender];
       const capitalizedRecipientName = recipientName.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
 
       // Fetch chapter templates (single reference_content column, keyed by gender)
       const { data: templates, error: tplError } = await supabase
