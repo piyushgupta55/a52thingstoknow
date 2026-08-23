@@ -283,6 +283,8 @@ const BookDashboard = () => {
       setMemories(memData || []);
       setPhotoTemplates(tplData || []);
       setMemoryInviteChapters(await fetchMemoryInviteChapters());
+      setOpenPassageChapters(await fetchOpenPassageChapters(bookId, tplGender));
+
 
 
 
