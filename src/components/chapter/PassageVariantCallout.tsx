@@ -16,7 +16,8 @@ import {
 interface Props {
   bookId: string;
   chapterId: string;
-  chapterNumber: number;
+  /** Stable chapter identity from chapters.template_key. */
+  templateKey: string | null;
   /** Book gender key (male | female | stepson | stepdaughter). */
   gender: string;
   tokenCtx: TokenCtx;
@@ -34,7 +35,7 @@ interface Props {
 const PassageVariantCallout = ({
   bookId,
   chapterId,
-  chapterNumber,
+  templateKey,
   gender,
   tokenCtx,
   currentText,
@@ -49,17 +50,17 @@ const PassageVariantCallout = ({
     let cancelled = false;
     if (!chapterId || !gender) return;
     (async () => {
-      const g = await fetchPassageGroups(chapterId, gender, chapterNumber);
+      const g = await fetchPassageGroups(chapterId, gender, templateKey);
       if (!cancelled) setGroups(g);
     })();
     return () => { cancelled = true; };
-  }, [chapterId, gender, chapterNumber]);
+  }, [chapterId, gender, templateKey]);
 
   const ctx = useMemo(() => tokenCtx, [tokenCtx.recipientName, tokenCtx.recipientGender, tokenCtx.authorLabel]);
 
   if (groups.length === 0) return null;
 
-  const refresh = async () => setGroups(await fetchPassageGroups(chapterId, gender, chapterNumber));
+  const refresh = async () => setGroups(await fetchPassageGroups(chapterId, gender, templateKey));
 
   const applyVariant = async (group: PassageGroup, variantKey: string, mode: 'swap' | 'append') => {
     const next = group.variants.find(v => v.variant_key === variantKey);
