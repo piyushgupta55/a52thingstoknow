@@ -226,7 +226,19 @@ const BookReview = () => {
           </div>
         </div>
 
-        {loading && (
+        {orderMode && bookId && (
+          <PrePrintGate
+            bookId={bookId}
+            copyIssues={copyReady ? issues : null}
+            copyLoading={!copyReady && !error}
+            onCleanedUp={() => {
+              try { sessionStorage.removeItem(cacheKey(bookId)); } catch {}
+              setIssues(prev => prev.filter(i => i.type !== 'double_space'));
+            }}
+          />
+        )}
+
+        {!orderMode && loading && (
           <Card>
             <CardContent className="py-16 flex flex-col items-center gap-4 text-center">
               <Loader2 className="h-8 w-8 text-primary animate-spin" />
@@ -238,7 +250,7 @@ const BookReview = () => {
           </Card>
         )}
 
-        {!loading && error && (
+        {!orderMode && !loading && error && (
           <Card>
             <CardContent className="py-10 text-center">
               <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-3" />
@@ -249,7 +261,7 @@ const BookReview = () => {
           </Card>
         )}
 
-        {!loading && !error && (
+        {!orderMode && !loading && !error && (
           <>
             {/* Summary */}
             <Card className="mb-6">
