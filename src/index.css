@@ -56,7 +56,7 @@
        since it sits alone under the title block. Keep in sync with
        ANCESTRY_IMAGE_BLOCK_HEIGHT_IN in src/features/preview/geometry.ts
        and .ancestry-image in backend/src/pdf/styles/layout.css. */
-    --ancestry-image-block-height: 6in;
+    --ancestry-image-block-height: 6.6in;
 
     --devotional-bg: 40 33% 97%;
     --devotional-accent: 40 45% 65%;
