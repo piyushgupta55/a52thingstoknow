@@ -145,6 +145,41 @@ export type Database = {
           },
         ]
       }
+      book_print_approvals: {
+        Row: {
+          approved_at: string
+          book_id: string
+          created_at: string
+          id: string
+          snapshot: Json
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string
+          book_id: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          user_id: string
+        }
+        Update: {
+          approved_at?: string
+          book_id?: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_print_approvals_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_purchases: {
         Row: {
           amount_paid_cents: number

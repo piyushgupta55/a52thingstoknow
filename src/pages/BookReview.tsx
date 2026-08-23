@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Sparkles, AlertCircle, CheckCircle2, ArrowRight, Loader2, BookOpen, ShoppingCart,
+  Sparkles, AlertCircle, CheckCircle2, ArrowRight, Loader2, BookOpen,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import PrePrintGate from '@/components/review/PrePrintGate';
 
 interface Issue {
   id: string;
@@ -54,6 +55,7 @@ const BookReview = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get('mode'); // 'order' | null
+  const orderMode = mode === 'order';
   const forceRescan = searchParams.get('rescan') !== null && searchParams.get('rescan') !== '';
   const rescanChapter = searchParams.get('rescanChapter');
 
@@ -61,6 +63,7 @@ const BookReview = () => {
   const [rescanning, setRescanning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [copyReady, setCopyReady] = useState(false);
   const [chaptersScanned, setChaptersScanned] = useState(0);
 
   // Persist current issues so we can return to the same report after Fix It.
@@ -75,6 +78,8 @@ const BookReview = () => {
   }, [bookId, issues, chaptersScanned, loading]);
 
   // Initial load: cache first, otherwise full scan.
+  // In order mode the scan never blocks the screen — the approval gate renders
+  // immediately and the copy-check row fills in when the scan lands.
   useEffect(() => {
     if (!bookId) return;
     // Targeted re-scan path runs in its own effect; don't load here.
@@ -87,6 +92,7 @@ const BookReview = () => {
           const cached = JSON.parse(raw);
           setIssues(cached.issues || []);
           setChaptersScanned(cached.chaptersScanned || 0);
+          setCopyReady(true);
           setLoading(false);
           return;
         }
@@ -94,20 +100,23 @@ const BookReview = () => {
     }
 
     const run = async () => {
-      setLoading(true);
+      if (!orderMode) setLoading(true);
+      setCopyReady(false);
       setError(null);
       try {
         const data = await callReview(bookId);
         setIssues(data.issues || []);
         setChaptersScanned(data.chaptersScanned || 0);
+        setCopyReady(true);
       } catch (e: any) {
-        setError(e.message || 'Something went wrong');
+        if (!orderMode) setError(e.message || 'Something went wrong');
       } finally {
         setLoading(false);
       }
     };
+    if (orderMode) setLoading(false);
     run();
-  }, [bookId, forceRescan, rescanChapter]);
+  }, [bookId, forceRescan, rescanChapter, orderMode]);
 
   // Targeted re-scan after returning from Fix It on a specific chapter.
   useEffect(() => {
@@ -173,10 +182,6 @@ const BookReview = () => {
     navigate(`/book/${bookId}/chapter/${group.chapter_id}?returnTo=${encodeURIComponent(returnTo)}`);
   };
 
-  const handleOrder = () => {
-    alert('Order flow coming soon.');
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -192,13 +197,15 @@ const BookReview = () => {
             <div>
               <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
                 <Sparkles className="h-6 w-6 text-primary" />
-                Review My Book
+                {orderMode ? 'Before you print' : 'Review My Book'}
               </h1>
               <p className="text-muted-foreground mt-1">
-                We scan every chapter for typos, name mismatches, cut-off sentences, spacing issues, and empty pages.
+                {orderMode
+                  ? "Here's everything still open in your book. None of it has to be finished — this is just so nothing surprises you in print."
+                  : 'We scan every chapter for typos, name mismatches, cut-off sentences, spacing issues, and empty pages.'}
               </p>
             </div>
-            {!loading && (
+            {!loading && !orderMode && (
               <Button
                 variant="outline"
                 size="sm"
@@ -218,7 +225,19 @@ const BookReview = () => {
           </div>
         </div>
 
-        {loading && (
+        {orderMode && bookId && (
+          <PrePrintGate
+            bookId={bookId}
+            copyIssues={copyReady ? issues : null}
+            copyLoading={!copyReady && !error}
+            onCleanedUp={() => {
+              try { sessionStorage.removeItem(cacheKey(bookId)); } catch {}
+              setIssues(prev => prev.filter(i => i.type !== 'double_space'));
+            }}
+          />
+        )}
+
+        {!orderMode && loading && (
           <Card>
             <CardContent className="py-16 flex flex-col items-center gap-4 text-center">
               <Loader2 className="h-8 w-8 text-primary animate-spin" />
@@ -230,7 +249,7 @@ const BookReview = () => {
           </Card>
         )}
 
-        {!loading && error && (
+        {!orderMode && !loading && error && (
           <Card>
             <CardContent className="py-10 text-center">
               <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-3" />
@@ -241,7 +260,7 @@ const BookReview = () => {
           </Card>
         )}
 
-        {!loading && !error && (
+        {!orderMode && !loading && !error && (
           <>
             {/* Summary */}
             <Card className="mb-6">
@@ -329,35 +348,6 @@ const BookReview = () => {
               );})}
             </div>
 
-            {/* Order mode footer */}
-            {mode === 'order' && (
-              <div className="mt-8 sticky bottom-4">
-                <Card className="border-primary/40 shadow-lg">
-                  <CardContent className="py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-foreground flex items-center gap-2">
-                        <ShoppingCart className="h-4 w-4 text-primary" /> Ready to print?
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {issueCount === 0
-                          ? 'No issues found — you\'re good to go.'
-                          : 'Fix the issues above for the cleanest print, or order as-is.'}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      {issueCount > 0 && (
-                        <Button variant="outline" onClick={() => navigate(`/book/${bookId}`)}>
-                          Fix Issues First
-                        </Button>
-                      )}
-                      <Button onClick={handleOrder}>
-                        {issueCount > 0 ? 'Order Anyway' : 'Place Order'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
           </>
         )}
       </div>
