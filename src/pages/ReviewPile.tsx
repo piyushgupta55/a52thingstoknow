@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toBookGender } from '@/lib/genderMap';
+import { fetchOpenPassageChapters, fetchPassageChapters } from '@/lib/passageVariants';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus, PenLine, Camera, Circle, ChevronRight, MessageCircleHeart, CheckCircle2 } from 'lucide-react';
@@ -78,6 +80,16 @@ const ReviewPile = () => {
           setChapters((chapData as Chapter[]) || []);
           setMemories((memData as Memory[]) || []);
           setMemoryChapters(inviteChapters);
+          const { data: bookRow } = await supabase.from('books').select('recipient_gender').eq('id', bookId).single();
+          const g = toBookGender(bookRow?.recipient_gender);
+          const [withPassages, openPassages] = await Promise.all([
+            fetchPassageChapters(g),
+            fetchOpenPassageChapters(bookId, g),
+          ]);
+          if (!cancelled) {
+            setPassageChapters(withPassages);
+            setOpenPassageChapters(openPassages);
+          }
         }
       } catch (e: any) {
         if (!cancelled) setLoadError(e?.message || 'Could not load this basket.');

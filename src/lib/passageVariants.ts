@@ -88,6 +88,15 @@ export async function fetchPassageGroups(
   });
 }
 
+/** Chapter numbers that carry any optional passage for this book gender. */
+export async function fetchPassageChapters(gender: string): Promise<Set<number>> {
+  const { data } = await supabase
+    .from('chapter_passage_variants')
+    .select('chapter_number')
+    .eq('gender', gender);
+  return new Set(((data || []) as { chapter_number: number }[]).map(r => r.chapter_number));
+}
+
 /**
  * Chapter numbers in this book that carry an optional passage the author has
  * not looked at yet. Used to pre-populate the Photos & Decisions basket.
