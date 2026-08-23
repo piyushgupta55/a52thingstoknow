@@ -24,6 +24,8 @@ import PageCanvas from '@/components/chapter/PageCanvas';
 import CompanionBubble from '@/components/chapter/CompanionBubble';
 import MemoryCaptureOverlay from '@/components/chapter/MemoryCaptureOverlay';
 import ReadingRewardCallout from '@/components/chapter/ReadingRewardCallout';
+import PassageVariantCallout from '@/components/chapter/PassageVariantCallout';
+
 import { type CompanionEdit } from '@/hooks/useCompanionChat';
 import {
   ISSUE_LABEL,
@@ -1521,6 +1523,27 @@ const ChapterEditor = () => {
                   : prev,
               )
             }
+          />
+        )}
+
+        {/* Optional-passage chooser — generic; driven entirely by the passage library */}
+        {bookId && chapter && (
+          <PassageVariantCallout
+            bookId={bookId}
+            chapterId={chapter.id}
+            chapterNumber={chapter.chapter_number}
+            gender={toBookGender(recipientGender)}
+            tokenCtx={{ recipientName, recipientGender, authorLabel }}
+            currentText={isLetterChapter ? content : mergedText}
+            onApplyText={(next) => {
+              if (isLetterChapter) {
+                setContent(next);
+                setMergedText(next);
+              } else {
+                setMergedText(next);
+              }
+              setHasUnsavedChanges(true);
+            }}
           />
         )}
 

@@ -344,6 +344,60 @@ export type Database = {
         }
         Relationships: []
       }
+      chapter_passage_selections: {
+        Row: {
+          applied_body: string | null
+          book_id: string
+          chapter_id: string
+          created_at: string
+          id: string
+          passage_key: string
+          previous_content: string | null
+          seen_at: string | null
+          updated_at: string
+          variant_key: string
+        }
+        Insert: {
+          applied_body?: string | null
+          book_id: string
+          chapter_id: string
+          created_at?: string
+          id?: string
+          passage_key: string
+          previous_content?: string | null
+          seen_at?: string | null
+          updated_at?: string
+          variant_key: string
+        }
+        Update: {
+          applied_body?: string | null
+          book_id?: string
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          passage_key?: string
+          previous_content?: string | null
+          seen_at?: string | null
+          updated_at?: string
+          variant_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_passage_selections_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapter_passage_selections_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_passage_variants: {
         Row: {
           body: string
