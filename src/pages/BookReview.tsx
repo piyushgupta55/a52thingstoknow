@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Sparkles, AlertCircle, CheckCircle2, ArrowRight, Loader2, BookOpen, ShoppingCart,
+  Sparkles, AlertCircle, CheckCircle2, ArrowRight, Loader2, BookOpen,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import PrePrintGate from '@/components/review/PrePrintGate';
