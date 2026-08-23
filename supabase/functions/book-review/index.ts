@@ -308,11 +308,15 @@ If no issues, return { "issues": [] }. Never invent issues.`;
           for (const ai of aiIssues) {
             const ch = chMap.get(ai.chapter_id);
             if (!ch) continue;
-            const type = ["typo", "name_mismatch"].includes(ai.type) ? ai.type : null;
+            const type = ["typo", "name_mismatch", "reads_oddly"].includes(ai.type) ? ai.type : null;
             if (!type) continue;
             const fullText = stripMarkers(joinPages(ch.reference_text || "", ch.content || "")).trim();
             const snippet = widenSnippet(fullText, String(ai.snippet || ""));
-            const message = String(ai.message || "").slice(0, 240);
+            // "reads oddly" is always phrased as a question and never carries
+            // model-authored wording — the author decides what (if anything) to change.
+            const message = type === "reads_oddly"
+              ? "This sentence reads oddly — worth a look?"
+              : String(ai.message || "").slice(0, 240);
             // The flagged word must be named in the message AND actually
             // present in the chapter text — otherwise it's a rewrite
             // suggestion dressed up as a typo.
@@ -324,6 +328,7 @@ If no issues, return { "issues": [] }. Never invent issues.`;
               if (!present) continue;
             }
             candidates.push({ ch, type, snippet, message, word });
+
           }
 
           // Second pass: keep a "typo" only if the named word is genuinely
