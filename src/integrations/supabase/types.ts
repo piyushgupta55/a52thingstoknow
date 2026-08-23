@@ -344,6 +344,51 @@ export type Database = {
         }
         Relationships: []
       }
+      chapter_passage_variants: {
+        Row: {
+          body: string
+          chapter_number: number
+          created_at: string
+          explanation: string | null
+          gender: string
+          id: string
+          is_default: boolean
+          label: string
+          passage_key: string
+          sort_order: number
+          updated_at: string
+          variant_key: string
+        }
+        Insert: {
+          body: string
+          chapter_number: number
+          created_at?: string
+          explanation?: string | null
+          gender: string
+          id?: string
+          is_default?: boolean
+          label: string
+          passage_key: string
+          sort_order?: number
+          updated_at?: string
+          variant_key: string
+        }
+        Update: {
+          body?: string
+          chapter_number?: number
+          created_at?: string
+          explanation?: string | null
+          gender?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          passage_key?: string
+          sort_order?: number
+          updated_at?: string
+          variant_key?: string
+        }
+        Relationships: []
+      }
       chapter_review_flags: {
         Row: {
           action: string
