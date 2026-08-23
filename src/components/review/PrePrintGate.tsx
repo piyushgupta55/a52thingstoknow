@@ -205,10 +205,10 @@ const PrePrintGate = ({ bookId, copyIssues, copyLoading, onCleanedUp }: Props) =
 
   const tier3: { label: string; count: number; to: string }[] = [
     { label: 'chapters you haven\u2019t opened yet', count: neverRead, to: `/book/${bookId}/preview?review=1` },
-    { label: 'photo spots still empty', count: openPhotoSpots, to: `/book/${bookId}/review-pile` },
-    { label: 'chapters flagged for editing', count: flagged, to: `/book/${bookId}/review-pile` },
-    { label: 'reading reward decisions', count: openRewards, to: `/book/${bookId}/review-pile` },
-    { label: 'optional passage decisions', count: openPassages, to: `/book/${bookId}/review-pile` },
+    { label: 'photo spots still empty', count: openPhotoSpots, to: `/book/${bookId}/pile/photos` },
+    { label: 'chapters flagged for editing', count: flagged, to: `/book/${bookId}/pile/rewrite` },
+    { label: 'reading reward decisions', count: openRewards, to: `/book/${bookId}/pile/photos` },
+    { label: 'optional passage decisions', count: openPassages, to: `/book/${bookId}/pile/photos` },
   ].filter(r => r.count > 0);
 
   const handleCleanUp = async () => {
