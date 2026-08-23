@@ -167,12 +167,15 @@ serve(async (req: Request) => {
       }
 
       // Double / extra spaces (within a line)
-      const doubleSpaceMatches = combined.match(/[^\n]*?  +[^\n]*/g) || [];
+      const dsRe = /[^\n]  +[^\n]/g;
       const seen = new Set<string>();
-      for (const m of doubleSpaceMatches.slice(0, 3)) {
-        const snip = m.trim().slice(0, 140);
-        if (seen.has(snip)) continue;
+      let dsMatch: RegExpExecArray | null;
+      let dsCount = 0;
+      while ((dsMatch = dsRe.exec(combined)) !== null && dsCount < 3) {
+        const snip = sentenceWindow(combined, dsMatch.index, dsMatch.index + dsMatch[0].length);
+        if (!snip || seen.has(snip)) continue;
         seen.add(snip);
+        dsCount++;
         issues.push({
           id: mkId(),
           chapter_id: ch.id,
@@ -193,8 +196,11 @@ serve(async (req: Request) => {
         // Strip trailing closing quotes/brackets to find the real terminal char
         const stripped = para.replace(/[)\]"'”’»]+$/u, "");
         const last = stripped.slice(-1);
-        if (!/[.!?…]/.test(last)) {
-          const snip = para.slice(-140);
+        if (!SENTENCE_END.test(last)) {
+          const idx = combined.indexOf(para);
+          const snip = idx >= 0
+            ? sentenceWindow(combined, Math.max(idx, idx + para.length - 1), idx + para.length)
+            : para.slice(-200);
           if (punctSeen.has(snip)) continue;
           punctSeen.add(snip);
           issues.push({
@@ -204,11 +210,12 @@ serve(async (req: Request) => {
             chapter_title: ch.title,
             type: "missing_punctuation",
             snippet: snip,
-            message: "This sentence appears to be missing ending punctuation (period, question mark, or exclamation point).",
+            message: "This sentence appears to be missing ending punctuation.",
           });
           if (punctSeen.size >= 5) break;
         }
       }
+
     }
 
     // AI checks (typos, name mismatches, cut-off sentences)
