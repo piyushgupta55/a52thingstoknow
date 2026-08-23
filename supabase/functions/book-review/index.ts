@@ -29,8 +29,15 @@ type Issue = {
   message: string;
 };
 
+// Editor markers (<mark>…</mark> Reading Rewards, <review>…</review> spans) are
+// structural, not prose — strip the wrappers everywhere before any check so a
+// sentence ending in a tag isn't mis-read and tags never leak into excerpts.
+const stripMarkers = (s: string): string =>
+  (s || "").replace(/<\/?mark\b[^>]*>/gi, "").replace(/<\/?review\b[^>]*>/gi, "");
+
 const wordCount = (s: string): number =>
   s ? s.replace(/[—–]/g, " ").trim().split(/\s+/).filter(Boolean).length : 0;
+
 
 // Sentence-final punctuation. Colons and semicolons are valid endings
 // (they introduce lists), so they count as terminated sentences.
