@@ -301,19 +301,8 @@ serve(async (req: Request) => {
         }
       }
 
-      // Homophone candidates — collected here, confirmed by AI below.
-      for (const w of HOMOPHONES) {
-        const re = new RegExp(`(^|[^A-Za-z'’])(${escapeRe(w)})([^A-Za-z'’]|$)`, "gi");
-        let m: RegExpExecArray | null;
-        while ((m = re.exec(combined)) !== null) {
-          const at = m.index + m[1].length;
-          const snip = sentenceWindow(combined, at, at + w.length);
-          if (!snip) continue;
-          homophoneCandidates.push({ ch, word: m[2], snippet: snip });
-        }
-      }
-
     }
+
 
 
     // AI checks (misspellings, recipient-name mismatches, and a deliberately
