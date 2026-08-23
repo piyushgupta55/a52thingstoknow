@@ -205,11 +205,8 @@ serve(async (req: Request) => {
 
     const completedChapters = (chapters || []) as Chapter[];
 
-    // Homophone confusions ("you're" for "your") are collected while scanning and
-    // confirmed by a single narrowly-scoped AI pass afterwards.
-    const homophoneCandidates: { ch: Chapter; word: string; snippet: string }[] = [];
-
     // Deterministic checks
+
     for (const ch of completedChapters) {
       const ref = stripMarkers((ch.reference_text || "") as string);
       const content = stripMarkers((ch.content || "") as string);
