@@ -75,3 +75,15 @@ export const splitForCurrentLayout = (
   }
   return splitRefByWordLimit(text, wordLimit);
 };
+
+// Display join for the two page halves: a paragraph break only when page 1
+// actually ends a sentence, otherwise a single space so a sentence split
+// across the page boundary reads as one sentence.
+export const joinPagesForDisplay = (referenceText: string, content: string) => {
+  const a = (referenceText || '').replace(/\s+$/, '');
+  const b = (content || '').replace(/^\s+/, '');
+  if (!a) return b;
+  if (!b) return a;
+  const last = a.replace(/[)\]"'”’»]+$/u, '').slice(-1);
+  return a + (/[.!?…:;]/.test(last) ? '\n\n' : ' ') + b;
+};
