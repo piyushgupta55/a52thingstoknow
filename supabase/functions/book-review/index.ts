@@ -109,6 +109,50 @@ const widenSnippet = (text: string, snippet: string): string => {
   return sentenceWindow(text, idx, idx + s.length);
 };
 
+// Words that are never correct English in any context.
+const ALWAYS_MISSPELLED = [
+  "alot", "definately", "seperate", "recieve", "occured", "untill", "becuase",
+  "thier", "freind", "beleive", "wich", "acheive", "arguement", "concious",
+  "embarass", "existance", "goverment", "grateful ness", "harrass", "independant",
+  "neccessary", "occassion", "perseverence", "priviledge", "publically",
+  "reccommend", "rythm", "supress", "tommorow", "truely", "wierd",
+];
+
+// Homophone pairs an author genuinely confuses. Detected deterministically,
+// then confirmed one-by-one by a narrowly-scoped AI pass so correct uses stay silent.
+const HOMOPHONES = [
+  "your", "you're", "its", "it's", "their", "there", "they're",
+  "whose", "who's", "then", "than", "to", "too", "lose", "loose",
+  "affect", "effect", "were", "we're", "where",
+];
+
+const escapeRe = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Two snippets overlap when one contains the other (or they share the same
+// normalized sentence) — one problem should never be reported twice.
+const normSnip = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").replace(/[^a-z0-9 ]/g, "").trim();
+
+const dedupeOverlapping = (list: Issue[]): Issue[] => {
+  const kept: Issue[] = [];
+  for (const iss of list) {
+    const n = normSnip(iss.snippet);
+    if (!n) { kept.push(iss); continue; }
+    const clash = kept.find(
+      (k) =>
+        k.chapter_id === iss.chapter_id &&
+        (() => {
+          const kn = normSnip(k.snippet);
+          return !!kn && (kn === n || kn.includes(n) || n.includes(kn));
+        })(),
+    );
+    if (clash) continue;
+    kept.push(iss);
+  }
+  return kept;
+};
+
+
+
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
