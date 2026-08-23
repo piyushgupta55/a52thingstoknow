@@ -44,7 +44,7 @@ const NewBook = () => {
       // Fetch chapter templates (single reference_content column, keyed by gender)
       const { data: templates, error: tplError } = await supabase
         .from('chapter_templates')
-        .select('chapter_number, title, is_photo_chapter, reference_content, bible_verse_text, bible_verse_reference, quote_text, quote_attribution')
+        .select('chapter_number, title, template_key, is_photo_chapter, reference_content, bible_verse_text, bible_verse_reference, quote_text, quote_attribution')
         .eq('gender', bookGender)
         .order('chapter_number');
 
