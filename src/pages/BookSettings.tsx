@@ -120,7 +120,7 @@ const BookSettings = () => {
             <Select value={relationship} onValueChange={setRelationship} required>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Select relationship" /></SelectTrigger>
               <SelectContent>
-                {relationshipChoices.map(r => (
+                {allChoices.map(r => (
                   <SelectItem key={r} value={r}>{r}</SelectItem>
                 ))}
               </SelectContent>
