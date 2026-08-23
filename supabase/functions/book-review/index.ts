@@ -109,6 +109,50 @@ const widenSnippet = (text: string, snippet: string): string => {
   return sentenceWindow(text, idx, idx + s.length);
 };
 
+// Words that are never correct English in any context.
+const ALWAYS_MISSPELLED = [
+  "alot", "definately", "seperate", "recieve", "occured", "untill", "becuase",
+  "thier", "freind", "beleive", "wich", "acheive", "arguement", "concious",
+  "embarass", "existance", "goverment", "grateful ness", "harrass", "independant",
+  "neccessary", "occassion", "perseverence", "priviledge", "publically",
+  "reccommend", "rythm", "supress", "tommorow", "truely", "wierd",
+];
+
+// Homophone pairs an author genuinely confuses. Detected deterministically,
+// then confirmed one-by-one by a narrowly-scoped AI pass so correct uses stay silent.
+const HOMOPHONES = [
+  "your", "you're", "its", "it's", "their", "they're",
+  "whose", "who's", "then", "than", "too", "lose", "loose",
+  "were", "we're",
+];
+
+const escapeRe = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Two snippets overlap when one contains the other (or they share the same
+// normalized sentence) — one problem should never be reported twice.
+const normSnip = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").replace(/[^a-z0-9 ]/g, "").trim();
+
+const dedupeOverlapping = (list: Issue[]): Issue[] => {
+  const kept: Issue[] = [];
+  for (const iss of list) {
+    const n = normSnip(iss.snippet);
+    if (!n) { kept.push(iss); continue; }
+    const clash = kept.find(
+      (k) =>
+        k.chapter_id === iss.chapter_id &&
+        (() => {
+          const kn = normSnip(k.snippet);
+          return !!kn && (kn === n || kn.includes(n) || n.includes(kn));
+        })(),
+    );
+    if (clash) continue;
+    kept.push(iss);
+  }
+  return kept;
+};
+
+
+
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -167,6 +211,10 @@ serve(async (req: Request) => {
     const mkId = () => `iss_${Date.now()}_${++idCounter}`;
 
     const completedChapters = (chapters || []) as Chapter[];
+
+    // Homophone confusions ("you're" for "your") are collected while scanning and
+    // confirmed by a single narrowly-scoped AI pass afterwards.
+    const homophoneCandidates: { ch: Chapter; word: string; snippet: string }[] = [];
 
     // Deterministic checks
     for (const ch of completedChapters) {
@@ -239,7 +287,44 @@ serve(async (req: Request) => {
         }
       }
 
+      // Always-wrong spellings ("alot", "definately"): no judgement needed.
+      const spellSeen = new Set<string>();
+      for (const w of ALWAYS_MISSPELLED) {
+        const re = new RegExp(`(^|[^A-Za-z'’])(${escapeRe(w)})([^A-Za-z'’]|$)`, "gi");
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(combined)) !== null) {
+          const at = m.index + m[1].length;
+          const snip = sentenceWindow(combined, at, at + w.length);
+          const key = `${w}|${snip}`;
+          if (spellSeen.has(key)) continue;
+          spellSeen.add(key);
+          issues.push({
+            id: mkId(),
+            chapter_id: ch.id,
+            chapter_number: ch.chapter_number,
+            chapter_title: ch.title,
+            type: "typo",
+            snippet: snip,
+            message: `"${m[2]}" appears to be misspelled.`,
+          });
+          break; // one flag per misspelling per chapter
+        }
+      }
+
+      // Homophone candidates — collected here, confirmed by AI below.
+      for (const w of HOMOPHONES) {
+        const re = new RegExp(`(^|[^A-Za-z'’])(${escapeRe(w)})([^A-Za-z'’]|$)`, "gi");
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(combined)) !== null) {
+          const at = m.index + m[1].length;
+          const snip = sentenceWindow(combined, at, at + w.length);
+          if (!snip) continue;
+          homophoneCandidates.push({ ch, word: m[2], snippet: snip });
+        }
+      }
+
     }
+
 
     // AI checks (misspellings, recipient-name mismatches, and a deliberately
     // conservative "reads oddly" grammar flag that never proposes wording)
@@ -425,11 +510,71 @@ If no issues, return { "issues": [] }. Never invent issues.`;
       }
     }
 
+    // Homophone confirmation: sentences containing a candidate word are checked
+    // one question at a time — "is the wrong form used here?" — so correct
+    // everyday uses of "your", "then", "its" etc. stay silent.
+    if (LOVABLE_API_KEY && homophoneCandidates.length > 0) {
+      const seenPair = new Set<string>();
+      const batch = homophoneCandidates.filter((c) => {
+        const k = `${c.ch.id}|${c.word.toLowerCase()}|${c.snippet}`;
+        if (seenPair.has(k)) return false;
+        seenPair.add(k);
+        return true;
+      }).slice(0, 150);
+
+      try {
+        const hr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              {
+                role: "system",
+                content:
+                  `Each item is a sentence and one word appearing in it from a homophone set (your/you're, its/it's, their/they're, whose/who's, then/than, too/to, lose/loose, were/we're). Answer one question per item: is the WRONG form of that word used in that sentence? Judge grammar only — ignore style, tone, capitalization, punctuation, idioms and second-person address. If the word is used correctly, say nothing. When unsure, treat it as correct. Return STRICT JSON with the 0-based indexes of items where the wrong form is used: { "wrong": [<index>] }`,
+              },
+              {
+                role: "user",
+                content: JSON.stringify(batch.map((c) => ({ word: c.word, sentence: c.snippet }))),
+              },
+            ],
+            response_format: { type: "json_object" },
+          }),
+        });
+        if (hr.ok) {
+          const hd = await hr.json();
+          const hp = JSON.parse(hd?.choices?.[0]?.message?.content || "{}");
+          const idxs = Array.isArray(hp.wrong) ? hp.wrong : [];
+          for (const i of idxs) {
+            const c = batch[i];
+            if (!c) continue;
+            issues.push({
+              id: mkId(),
+              chapter_id: c.ch.id,
+              chapter_number: c.ch.chapter_number,
+              chapter_title: c.ch.title,
+              type: "typo",
+              snippet: c.snippet,
+              message: `"${c.word}" looks like the wrong form here.`,
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Homophone check failed:", e);
+      }
+    }
+
+    // One problem, one flag: drop later issues whose excerpt overlaps an
+    // earlier one in the same chapter.
+    const dedupedIssues = dedupeOverlapping(issues);
+
     return new Response(
       JSON.stringify({
         chaptersScanned: completedChapters.length,
-        issues,
+        issues: dedupedIssues,
       }),
+
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
