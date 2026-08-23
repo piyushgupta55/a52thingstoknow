@@ -36,6 +36,20 @@ const wordCount = (s: string): number =>
 // (they introduce lists), so they count as terminated sentences.
 const SENTENCE_END = /[.!?…:;]/;
 
+// Page 1 (reference_text) and page 2 (content) are two halves of one flowing
+// chapter. Only insert a paragraph break when page 1 actually ends a sentence;
+// otherwise the two halves belong to the SAME sentence and must join with a
+// single space, or the checks see a manufactured mid-sentence break.
+const joinPages = (ref: string, content: string): string => {
+  const a = (ref || "").replace(/\s+$/, "");
+  const b = (content || "").replace(/^\s+/, "");
+  if (!a) return b;
+  if (!b) return a;
+  const last = a.replace(/[)\]"'”’»]+$/u, "").slice(-1);
+  return a + (SENTENCE_END.test(last) ? "\n\n" : " ") + b;
+};
+
+
 // Return the whole sentence(s) surrounding [start, end) in `text`, so excerpts
 // never begin or end mid-sentence (or mid-word).
 const sentenceWindow = (text: string, start: number, end: number, maxLen = 300): string => {
