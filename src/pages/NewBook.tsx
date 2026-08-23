@@ -111,6 +111,7 @@ const NewBook = () => {
           book_id: book.id,
           chapter_number: t.chapter_number,
           title: t.title,
+          template_key: t.template_key || null,
           bible_verse_text: t.bible_verse_text || null,
           bible_verse_reference: t.bible_verse_reference || null,
           quote_text: t.quote_text || null,
