@@ -298,6 +298,10 @@ If no issues, return { "issues": [] }. Never invent issues.`;
           try { parsed = JSON.parse(raw); } catch (_) { parsed = {}; }
           const aiIssues = Array.isArray(parsed.issues) ? parsed.issues : [];
           const chMap = new Map<string, Chapter>(completedChapters.map((c: Chapter) => [c.id, c]));
+          // Collect candidates first; typos get a second, independent
+          // spelling verification before they are allowed through.
+          type Candidate = { ch: Chapter; type: string; snippet: string; message: string; word: string };
+          const candidates: Candidate[] = [];
           for (const ai of aiIssues) {
             const ch = chMap.get(ai.chapter_id);
             if (!ch) continue;
@@ -305,17 +309,69 @@ If no issues, return { "issues": [] }. Never invent issues.`;
             if (!type) continue;
             const fullText = stripMarkers(joinPages(ch.reference_text || "", ch.content || "")).trim();
             const snippet = widenSnippet(fullText, String(ai.snippet || ""));
+            const message = String(ai.message || "").slice(0, 240);
+            // The flagged word must be named in the message AND actually
+            // present in the chapter text — otherwise it's a rewrite
+            // suggestion dressed up as a typo.
+            const quoted = message.match(/["'“‘]([A-Za-z][A-Za-z'’-]*)["'”’]/);
+            const word = quoted ? quoted[1] : "";
+            if (type === "typo") {
+              if (!word) continue;
+              const present = new RegExp(`(^|[^A-Za-z])${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^A-Za-z]|$)`).test(fullText);
+              if (!present) continue;
+            }
+            candidates.push({ ch, type, snippet, message, word });
+          }
 
+          // Second pass: keep a "typo" only if the named word is genuinely
+          // not a real English word. Correct spellings used in idioms,
+          // capitalization variants and proper nouns are all real words.
+          const typoWords = [...new Set(candidates.filter((c) => c.type === "typo").map((c) => c.word))];
+          let realWords = new Set<string>();
+          if (typoWords.length > 0) {
+            try {
+              const vr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+                body: JSON.stringify({
+                  model: "google/gemini-2.5-flash",
+                  messages: [
+                    {
+                      role: "system",
+                      content:
+                        `For each candidate, decide only one thing: is it a real, correctly spelled English word, or a legitimate proper noun or name? Ignore capitalization entirely ("Godly" and "godly" are both real). Ignore meaning, style and context. Answer "real" unless the letters do not form a word at all (e.g. "recieve", "freind"). Return STRICT JSON: { "real": ["<words that ARE real>"] }`,
+                    },
+                    { role: "user", content: JSON.stringify(typoWords) },
+                  ],
+                  response_format: { type: "json_object" },
+                }),
+              });
+              if (vr.ok) {
+                const vd = await vr.json();
+                const vp = JSON.parse(vd?.choices?.[0]?.message?.content || "{}");
+                realWords = new Set((Array.isArray(vp.real) ? vp.real : []).map((w: string) => String(w).toLowerCase()));
+              } else {
+                // Verification unavailable: suppress typos rather than risk bad advice.
+                realWords = new Set(typoWords.map((w) => w.toLowerCase()));
+              }
+            } catch (_) {
+              realWords = new Set(typoWords.map((w) => w.toLowerCase()));
+            }
+          }
+
+          for (const c of candidates) {
+            if (c.type === "typo" && realWords.has(c.word.toLowerCase())) continue;
             issues.push({
               id: mkId(),
-              chapter_id: ch.id,
-              chapter_number: ch.chapter_number,
-              chapter_title: ch.title,
-              type,
-              snippet,
-              message: String(ai.message || "").slice(0, 240),
+              chapter_id: c.ch.id,
+              chapter_number: c.ch.chapter_number,
+              chapter_title: c.ch.title,
+              type: c.type as Issue["type"],
+              snippet: c.snippet,
+              message: c.message,
             });
           }
+
 
         } else {
           console.error("AI gateway error:", resp.status, await resp.text());
