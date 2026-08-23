@@ -241,7 +241,8 @@ serve(async (req: Request) => {
 
     }
 
-    // AI checks (misspellings and recipient-name mismatches only)
+    // AI checks (misspellings, recipient-name mismatches, and a deliberately
+    // conservative "reads oddly" grammar flag that never proposes wording)
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (LOVABLE_API_KEY && completedChapters.length > 0) {
       const payload = completedChapters.map((ch: Chapter) => ({
@@ -251,25 +252,27 @@ serve(async (req: Request) => {
         text: stripMarkers(joinPages(ch.reference_text || "", ch.content || "")).trim(),
       }));
 
-      const systemPrompt = `You are a spell-checker for a personalized printed book written for "${recipientName}". You are NOT an editor. You do not improve writing.
+      const systemPrompt = `You are a cautious proofreader for a personalized printed book written for "${recipientName}". Your bias is silence: when in doubt, say nothing. A false alarm is far worse than a missed issue, because the author may "fix" correct writing and make the book worse.
 
-Report ONLY these two issue types:
+Report ONLY these issue types:
 - "typo": a MISSPELLED WORD — a sequence of letters that is not a real English word (or a clearly misspelled proper noun). Example: "recieve", "beleive", "freind".
 - "name_mismatch": a different person's first name is used where the recipient should be addressed (e.g. "I hope you remember this, Sarah" when the recipient is "${recipientName}"). Ignore names of third parties (grandparents, friends, teachers, historical or biblical figures). Only flag when the wrong name is clearly standing in for the recipient's name.
+- "reads_oddly": a genuine grammatical error that a careful editor would DEFINITELY correct — a missing or duplicated word, a broken subject-verb agreement, a mangled or unfinished clause. Only flag when the sentence is actually wrong, not merely unusual. If you are less than certain, stay silent.
 
 HARD RULES — violating any of these is a failure:
-- If every word in a sentence is spelled correctly, do NOT flag it. No exceptions.
-- Never suggest a rewrite, rephrasing, or "clearer" wording. No grammar, tense, agreement, word-choice, preposition, or phrasing suggestions.
-- Never flag idioms or figurative language ("nursing grudges", "as you think it is", "carry a torch"). Real idioms are correct.
-- Never flag capitalization, consistency, or house-style ("godly" vs "Godly", "Mom" vs "mom"). Never flag punctuation, spacing, or sentence length.
-- Never flag second-person writing. Titles and sentences that address the reader as "you" are intentional — do NOT propose replacing "you" with "${recipientName}".
+- Never propose replacement text, a rewrite, or "clearer" wording anywhere in your output. Only point at the sentence.
+- Never flag idioms or figurative language ("nursing grudges", "as you think it is", "carry a torch"). Real idioms are correct English.
+- Never flag style, tone, rhythm, sentence length, word choice, preposition choice, or fragments used for effect.
+- Never flag capitalization, consistency, or house-style ("godly" vs "Godly", "Mom" vs "mom"). Never flag punctuation, spacing, commas, or oxford commas.
+- Never flag second-person address. Titles and sentences that speak to the reader as "you" are intentional — never propose replacing "you" with "${recipientName}".
 - Never flag archaic, poetic, biblical, or regional wording.
 - Returning zero issues is the correct and expected answer for well-written text.
 
 Return STRICT JSON only with this shape:
-{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch", "snippet": "<verbatim excerpt: one complete sentence from the text, never cut mid-word>", "message": "<one short sentence naming the misspelled word or wrong name>" } ] }
+{ "issues": [ { "chapter_id": "<id>", "type": "typo|name_mismatch|reads_oddly", "snippet": "<verbatim excerpt: one complete sentence from the text, never cut mid-word>", "message": "<one short sentence naming the misspelled word or wrong name; for reads_oddly leave this empty>" } ] }
 
 If no issues, return { "issues": [] }. Never invent issues.`;
+
 
 
       const userPrompt = `Recipient name: ${recipientName}\n\nChapters:\n${JSON.stringify(payload)}`;
