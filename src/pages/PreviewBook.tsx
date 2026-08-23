@@ -1427,7 +1427,7 @@ const PreviewBook = () => {
 
     const left = (
       <div className="flex flex-col h-full">
-        <div className={`flex flex-col items-center text-center px-4 ${ancestryImageUrl ? 'flex-none pt-2' : 'flex-1 overflow-hidden justify-center'}`}>
+        <div className={`flex flex-col items-center text-center px-4 ${ancestryImageUrl ? 'flex-none' : 'flex-1 overflow-hidden justify-center'}`}>
           <p className="uppercase tracking-[0.25em] mb-2" style={{ fontFamily: SERIF, fontSize: '9px', color: '#9CA3AF' }}>
             A Final Page
           </p>
@@ -1436,19 +1436,17 @@ const PreviewBook = () => {
             Where You Come From
           </h2>
           <div className="w-8 mt-4" style={{ height: '1px', background: GOLD }} />
-          {!ancestryImageUrl && (
-            <p className="italic mt-6 px-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280', lineHeight: 1.7 }}>
-              The story of your family — where you come from, who came before you, and the thread that connects it all to you.
-            </p>
-          )}
+          <p className="italic mt-4 px-4" style={{ fontFamily: SERIF, fontSize: '11px', color: '#6B7280', lineHeight: 1.7 }}>
+            The story of your family — where you come from, who came before you, and the thread that connects it all to you.
+          </p>
         </div>
         {ancestryImageUrl && (
-          <div className="flex-1 flex items-center justify-center overflow-hidden px-2 pt-4">
+          <div className="flex-1 flex items-start justify-center overflow-hidden px-2 pt-3">
             <img
               src={ancestryImageUrl}
               alt="Family history upload"
               className="ancestry-image"
-              style={{ maxHeight: `${PREVIEW_ANCESTRY_IMAGE_HEIGHT}px`, height: 'auto', maxWidth: '100%', objectFit: 'contain' }}
+              style={{ height: `${PREVIEW_ANCESTRY_IMAGE_HEIGHT}px`, maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
             />
           </div>
         )}
@@ -1459,6 +1457,7 @@ const PreviewBook = () => {
     const right = (
       <div className="flex flex-col h-full">
         <div className="flex-1 overflow-y-auto pr-1">
+
           {useText ? (
             paragraphs.map((para, i) => (
               <p key={i} style={{ fontFamily: SERIF, fontSize: '12px', color: '#2D3748', lineHeight: 1.8, marginBottom: '1em', textAlign: 'justify', textJustify: 'inter-word', hyphens: 'auto', WebkitHyphens: 'auto' }}>

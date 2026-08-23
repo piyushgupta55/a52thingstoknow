@@ -68,8 +68,8 @@
 .ancestry-image {
   width: 100%;
   max-width: 100%;
-  height: 6in;
-  max-height: 6in;
+  height: 6.6in;
+  max-height: 6.6in;
   object-fit: contain;
   object-position: center;
   display: block;
@@ -420,4 +420,39 @@
   width: auto;
   max-width: 100%;
   max-height: 2.2in; /* Safe ceiling to prevent shifting elements off-page */
+}
+
+/* "Where You Come From" back-matter spread */
+.ancestry-page {
+  justify-content: flex-start;
+  padding-top: 0.45in !important; /* Same top margin as chapter content pages */
+}
+
+.ancestry-header {
+  text-align: center;
+  margin-bottom: 0.6em;
+}
+
+.ancestry-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-size: 7pt;
+  color: #9CA3AF;
+  margin-bottom: 0.6em;
+}
+
+.ancestry-rule {
+  height: 1px;
+  width: 32px;
+  background-color: var(--gold);
+  margin: 0.8em auto;
+}
+
+.ancestry-blurb {
+  font-style: italic;
+  font-size: 9.5pt;
+  line-height: 1.7;
+  color: #6B7280;
+  margin: 0.6em auto 0;
+  max-width: 22em;
 }

@@ -24,7 +24,7 @@ export const PREVIEW_PHOTO_BLOCK_HEIGHT = toPx(PHOTO_BLOCK_HEIGHT_IN);
 // block, so it gets close to the full text height of the page.
 // Must stay in sync with --ancestry-image-block-height in src/index.css
 // and .ancestry-image in backend/src/pdf/styles/layout.css.
-export const ANCESTRY_IMAGE_BLOCK_HEIGHT_IN = 6;
+export const ANCESTRY_IMAGE_BLOCK_HEIGHT_IN = 6.6;
 export const PREVIEW_ANCESTRY_IMAGE_HEIGHT = toPx(ANCESTRY_IMAGE_BLOCK_HEIGHT_IN);
 
 export const PREVIEW_PHOTO_HORIZONTAL_HEIGHT = PREVIEW_PHOTO_BLOCK_HEIGHT;

@@ -398,9 +398,13 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
       : '';
     chaptersHtml += `
       <!-- Page 1: Where You Come From (title + uploaded image) -->
-      <div class="page chapter-content-page page-p1" data-chapter="ancestry">
-        <div class="chapter-header">
+      <div class="page chapter-content-page ancestry-page page-p1" data-chapter="ancestry">
+        <div class="chapter-header ancestry-header">
+          <div class="ancestry-eyebrow">A Final Page</div>
+          <div class="ancestry-rule"></div>
           <h2 class="chapter-title">Where You Come From</h2>
+          <div class="ancestry-rule"></div>
+          <p class="ancestry-blurb">The story of your family — where you come from, who came before you, and the thread that connects it all to you.</p>
         </div>
         ${ancestryImageHtml}
         ${!ancestryImageHtml && bookData.ancestryText ? `
@@ -410,7 +414,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         ` : ''}
       </div>
       <!-- Page 2: Text (or overflow target) -->
-      <div class="page chapter-content-page page-p2" data-chapter="ancestry">
+      <div class="page chapter-content-page ancestry-page page-p2" data-chapter="ancestry">
         ${ancestryImageHtml && bookData.ancestryText ? `
         <div class="wisdom-text">
           ${formatContent(bookData.ancestryText, true)}
@@ -418,6 +422,7 @@ export async function renderBook(bookData: BookData, actualChapterPages?: Record
         ` : '<div class="wisdom-text"></div>'}
       </div>
     `;
+
   }
 
   const blankPageHtml = `
