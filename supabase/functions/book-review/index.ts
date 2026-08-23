@@ -367,8 +367,44 @@ If no issues, return { "issues": [] }. Never invent issues.`;
             }
           }
 
+          // Second opinion for "reads oddly": an independent pass that only
+          // confirms sentences containing an actual grammatical error. Anything
+          // merely unusual, idiomatic or stylistic is dropped.
+          const oddSentences = candidates.filter((c) => c.type === "reads_oddly").map((c) => c.snippet);
+          let confirmedOdd = new Set<string>();
+          if (oddSentences.length > 0) {
+            try {
+              const gr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+                body: JSON.stringify({
+                  model: "google/gemini-2.5-flash",
+                  messages: [
+                    {
+                      role: "system",
+                      content:
+                        `For each sentence, answer one question only: does it contain an outright grammatical ERROR — a missing or duplicated word, broken subject-verb agreement, or a mangled/unfinished clause? Idioms, informal phrasing, fragments for effect, second-person address, capitalization, punctuation and style are NOT errors. If the sentence is grammatical, it is fine. When unsure, say it is fine. Return STRICT JSON with the 0-based indexes of only the sentences containing a real error: { "errors": [<index>] }`,
+                    },
+                    { role: "user", content: JSON.stringify(oddSentences) },
+                  ],
+                  response_format: { type: "json_object" },
+                }),
+              });
+              if (gr.ok) {
+                const gd = await gr.json();
+                const gp = JSON.parse(gd?.choices?.[0]?.message?.content || "{}");
+                const idxs = Array.isArray(gp.errors) ? gp.errors : [];
+                confirmedOdd = new Set(idxs.map((i: number) => oddSentences[i]).filter(Boolean));
+              }
+            } catch (_) {
+              // Verification unavailable: stay silent rather than risk bad advice.
+            }
+          }
+
           for (const c of candidates) {
             if (c.type === "typo" && realWords.has(c.word.toLowerCase())) continue;
+            if (c.type === "reads_oddly" && !confirmedOdd.has(c.snippet)) continue;
+
             issues.push({
               id: mkId(),
               chapter_id: c.ch.id,
