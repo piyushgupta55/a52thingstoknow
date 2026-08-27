@@ -233,7 +233,7 @@ serve(async (req: Request) => {
 
 
       // Empty page 2 (content section empty / near-empty)
-      if (wordCount(content) < 5) {
+      if (wordCount(content) < 5 && !chapterIdsWithMemories.has(ch.id)) {
         issues.push({
           id: mkId(),
           chapter_id: ch.id,
