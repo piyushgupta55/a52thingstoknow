@@ -205,6 +205,24 @@ serve(async (req: Request) => {
 
     const completedChapters = (chapters || []) as Chapter[];
 
+    // Chapters that carry placed family memories on page 2 are not "empty",
+    // even when the author wrote no wisdom text of their own.
+    const chapterIdsWithMemories = new Set<string>();
+    {
+      const ids = completedChapters.map((c) => c.id);
+      if (ids.length) {
+        const { data: mems } = await supabase
+          .from("memories")
+          .select("chapter_id")
+          .eq("book_id", bookId)
+          .in("chapter_id", ids);
+        for (const m of (mems || []) as { chapter_id: string | null }[]) {
+          if (m.chapter_id) chapterIdsWithMemories.add(m.chapter_id);
+        }
+      }
+    }
+
+
     // Deterministic checks
 
     for (const ch of completedChapters) {
