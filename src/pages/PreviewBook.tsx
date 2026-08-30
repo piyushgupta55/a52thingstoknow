@@ -256,7 +256,7 @@ const PreviewBook = () => {
       const widthScale = availableWidth / targetWidth;
       const heightScale = availableHeight / targetHeight;
       const next = Math.min(widthScale, heightScale, 1.25);
-      setViewportScale(Math.max(reviewMode ? 0.18 : 0.35, next));
+      setViewportScale(Math.max(0.12, next));
     };
 
     computeScale();
