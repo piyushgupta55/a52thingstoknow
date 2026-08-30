@@ -249,14 +249,14 @@ const PreviewBook = () => {
       // Review pass never falls back to one page — the spread scales down to fit instead.
       const compact = !reviewMode && window.innerWidth < 1200;
       setIsCompactPreview(compact);
-      const availableWidth = window.innerWidth * PREVIEW_MAX_VIEWPORT_WIDTH_RATIO;
-      const availableHeight = window.innerHeight * PREVIEW_MAX_VIEWPORT_HEIGHT_RATIO;
+      const availableWidth = Math.max(240, window.innerWidth * PREVIEW_MAX_VIEWPORT_WIDTH_RATIO - 40);
+      const availableHeight = Math.max(240, window.innerHeight * PREVIEW_MAX_VIEWPORT_HEIGHT_RATIO - 24);
       const targetWidth = compact ? PREVIEW_PAGE_WIDTH : PREVIEW_SPREAD_WIDTH;
       const targetHeight = compact ? PREVIEW_PAGE_HEIGHT : PREVIEW_SPREAD_HEIGHT;
       const widthScale = availableWidth / targetWidth;
       const heightScale = availableHeight / targetHeight;
       const next = Math.min(widthScale, heightScale, 1.25);
-      setViewportScale(Math.max(reviewMode ? 0.18 : 0.35, next));
+      setViewportScale(Math.max(0.12, next));
     };
 
     computeScale();
@@ -731,6 +731,8 @@ const PreviewBook = () => {
             style={{
               width: `${isCompactPreview ? compactWidth : PREVIEW_SPREAD_WIDTH}px`,
               height: `${isCompactPreview ? PREVIEW_PAGE_HEIGHT : PREVIEW_SPREAD_HEIGHT}px`,
+              flex: '0 0 auto',
+              flexShrink: 0,
               boxShadow: '0 12px 34px rgba(58, 55, 46, 0.22)',
               borderRadius: '4px',
               overflow: 'hidden',
@@ -1567,6 +1569,8 @@ const PreviewBook = () => {
           className="flex relative"
           style={{
             width: `${PREVIEW_SPREAD_WIDTH}px`,
+            flex: '0 0 auto',
+            flexShrink: 0,
             minHeight: `${PREVIEW_SPREAD_HEIGHT}px`,
             boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
             borderRadius: '3px',
