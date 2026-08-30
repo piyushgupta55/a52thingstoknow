@@ -1569,6 +1569,8 @@ const PreviewBook = () => {
           className="flex relative"
           style={{
             width: `${PREVIEW_SPREAD_WIDTH}px`,
+            flex: '0 0 auto',
+            flexShrink: 0,
             minHeight: `${PREVIEW_SPREAD_HEIGHT}px`,
             boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
             borderRadius: '3px',
