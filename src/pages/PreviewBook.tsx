@@ -249,8 +249,8 @@ const PreviewBook = () => {
       // Review pass never falls back to one page — the spread scales down to fit instead.
       const compact = !reviewMode && window.innerWidth < 1200;
       setIsCompactPreview(compact);
-      const availableWidth = window.innerWidth * PREVIEW_MAX_VIEWPORT_WIDTH_RATIO;
-      const availableHeight = window.innerHeight * PREVIEW_MAX_VIEWPORT_HEIGHT_RATIO;
+      const availableWidth = Math.max(240, window.innerWidth * PREVIEW_MAX_VIEWPORT_WIDTH_RATIO - 40);
+      const availableHeight = Math.max(240, window.innerHeight * PREVIEW_MAX_VIEWPORT_HEIGHT_RATIO - 24);
       const targetWidth = compact ? PREVIEW_PAGE_WIDTH : PREVIEW_SPREAD_WIDTH;
       const targetHeight = compact ? PREVIEW_PAGE_HEIGHT : PREVIEW_SPREAD_HEIGHT;
       const widthScale = availableWidth / targetWidth;
