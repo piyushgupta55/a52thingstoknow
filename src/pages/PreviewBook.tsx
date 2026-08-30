@@ -731,6 +731,8 @@ const PreviewBook = () => {
             style={{
               width: `${isCompactPreview ? compactWidth : PREVIEW_SPREAD_WIDTH}px`,
               height: `${isCompactPreview ? PREVIEW_PAGE_HEIGHT : PREVIEW_SPREAD_HEIGHT}px`,
+              flex: '0 0 auto',
+              flexShrink: 0,
               boxShadow: '0 12px 34px rgba(58, 55, 46, 0.22)',
               borderRadius: '4px',
               overflow: 'hidden',
